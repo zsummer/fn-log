@@ -6,7 +6,7 @@
 int main(int argc, char* argv[])
 {
     FNLog::GuardLogger gl(FNLog::GetDefaultLogger());
-    FNLog::InitFromYMALFile("../log.yaml", FNLog::GetDefaultLogger());
+    FNLog::InitFromYMALFile("./log.yaml", FNLog::GetDefaultLogger());
     int ret = FNLog::StartDefaultLogger();
     if (ret != 0 || FNLog::GetDefaultLogger().last_error_ != 0)
     {
