@@ -8,17 +8,15 @@ Support 64/32 of windows/linux/mac/android/iOS.
 FNLog是一款开源的轻量级高性能的跨平台日志库, 从log4z迭代而来, 主要针对7*24小时服务器程序的日志输出与跟踪调试,   
 支持64/32位的windows/linux/mac/android/iOS等操作系统.  
 ```
-# Feature:  
+# 特性列表:  
 
-### MIT open source license,very liberal.  
-> MIT开源授权 授权的限制非常小.  
-
-### Cross Platform Linux & Windows & mac, and header only impl.  
-> 跨平台支持linux & windows & mac, 实现代码只有头文件.   
+### MIT开源授权 授权的限制非常小.  
+ 
+### 跨平台支持linux & windows & mac, 仅头文件实现.  
 
 ### 自动生命周期管理, 无需关心销毁问题.  
 
-### Channel-device M:N组合方式的多管道-多输出端设计.  
+### CHANNEL-DEVICE M:N组合方式的多管道-多输出端设计.  
 > 对不同Channel的工作模式进行完全隔离, 提供高效并且灵活的组合使用方案.  
 
 ### 灵活的过滤机制.  
@@ -30,18 +28,18 @@ FNLog是一款开源的轻量级高性能的跨平台日志库, 从log4z迭代�
 > 可以挂靠任意类型和任意数量的输出设备(文件/UDP/屏幕).
 > 可以按照过滤策略单独定义每个输出端的内容 .
 
-### 可在Channel级别并行开启同步写入模式和异步写入模式.  
+### 可在CHANNEL级别并行开启同步写入模式和异步写入模式.  
 
 ### 支持日志文件回滚, 支持屏显日志染色输出.  
 
-### C++ stream输入风格, 类型安全. 
+### C++ STREAM 输入风格, 类型安全. 
 
-### 支持配置文件实时(延迟)热更新开关, 从设计概念上清晰的划分可热更配置和不不可热更配置, 安全可靠.  
+### 支持配置文件实时(延迟)热更新开关.  
 
-### High-performance. 
+### 高性能. 
 > 文件写入可以达到200万行/秒, UDP 50万/秒. 
 
-### yaml自定义的配置解析器 简洁易用  
+### 自定义的配置解析器 简洁易用  
 
 
 # 配置文件示例:   
