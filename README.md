@@ -47,7 +47,7 @@ FNLog是一款开源的轻量级高性能的跨平台日志库, 从log4z迭代�
 文件输出压测配置.  详见stress_test.cpp  
 out_type改为udp即可成为udp输出的压测配置.
 
-```   
+```   YAML
 # 压测配表  
  # 0通道为多线程文件输出和一个CLS筛选的屏显输出 
  - channel: 0
@@ -128,7 +128,7 @@ stress_test_2019.log.3
 [20190514 16:47:20.548][ALARM] [15868] FNLog\tests\simple_test.cpp:<46> main finish
 ```
 # Example  
-```  
+```  C++
 #include "fn_log.h"
 
 static const std::string example_config_text =
