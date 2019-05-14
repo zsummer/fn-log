@@ -1,0 +1,29 @@
+sudo: true
+language: cpp
+compiler: 
+  - g++ 
+  - clang
+os:
+  - linux
+  - osx
+
+before_install:
+  - if [ "${TRAVIS_OS_NAME}" = "linux" ]; then sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test; fi
+  - if [ "${TRAVIS_OS_NAME}" = "linux" ]; then sudo apt-get update -qq; fi
+
+install:
+  - if [ "${TRAVIS_OS_NAME}" = "linux" ]; then  sudo apt-get install -qq cmake; fi
+
+script:
+  - cmake --version
+  - mkdir build
+  - cd build
+  - cmake ..
+  - make
+  - ls bin/*
+  - cd bin
+  - ./buffer_test
+  - ./buffer_correct_test
+  - ./simple_test
+  - ./stress_udp_test
+  - ./load_config_test
