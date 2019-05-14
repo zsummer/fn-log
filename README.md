@@ -105,7 +105,7 @@ out_type改为udp即可成为udp输出的压测配置.
 
 # 日志文件输出  
 ##### 文件名可配  
-以下为压测日志中的回滚日志输出文件列表. 
+回滚日志列表  
 ```
 stress_test_2019.log
 stress_test_2019.log.1
@@ -128,7 +128,7 @@ stress_test_2019.log.3
 [20190514 16:47:20.548][ALARM] [15868] FNLog\tests\simple_test.cpp:<46> main finish
 ```
 # Example  
-```  C++
+```  C++ yaml 
 #include "fn_log.h"
 
 static const std::string example_config_text =
@@ -183,8 +183,10 @@ int main(int argc, char* argv[])
 直接嵌入头文件即可  
 
 # How to test  
-> mkdir build 
-> sh make.sh   
+``` shell
+mkdir build 
+sh make.sh   
+```
 
 # About The Author  
 Author: YaweiZhang  
