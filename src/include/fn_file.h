@@ -64,7 +64,7 @@
 #include <unordered_map>
 #include <set>
 #include <unordered_set>
-
+#include <memory>
 
 #ifdef WIN32
 #include <WinSock2.h>

@@ -25,7 +25,7 @@ enable_language(ASM)
 #  SET_PROPERTY(GLOBAL PROPERTY USE_FOLDERS ON) 
 
 # use C++ 14
-# set(CMAKE_CXX_FLAGS -std=c++17) 
+# set(CMAKE_CXX_FLAGS -std=c++14) 
 
 # 
 # CMAKE_SOURCE_DIR   cmake root dir 
@@ -97,7 +97,7 @@ if(WIN32)
     #SET_PROPERTY(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${PROJECT_NAME})
 else()
     ADD_DEFINITIONS(-Wall -g -ggdb -O0 )
-    SET(CMAKE_CXX_FLAGS -std=c++14)
+    SET(CMAKE_CXX_FLAGS -std=c++11)
     LINK_LIBRARIES(pthread m c)
 endif()
 

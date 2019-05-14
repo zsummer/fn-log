@@ -50,7 +50,7 @@ namespace FNLog
 
     int InitFromYMAL(const std::string& text, const std::string& path, Logger& logger)
     {
-        std::unique_ptr<LexState> ls = std::make_unique<LexState>();
+        std::unique_ptr<LexState> ls(new LexState);
         int ret = ParseLogger(*ls, text);
         if (ret != 0)
         {
@@ -68,7 +68,7 @@ namespace FNLog
 
     int InitFromYMALFile(const std::string& path, Logger& logger)
     {
-        std::unique_ptr<LexState> ls = std::make_unique<LexState>();
+        std::unique_ptr<LexState> ls(new LexState);
         FileHandler config;
         static_assert(std::is_same<decltype(logger.channels_), decltype(ls->channels_)>::value, "");
         //static_assert(std::is_trivial<decltype(logger.channels_)>::value, "");
@@ -128,7 +128,7 @@ namespace FNLog
         }
         dst_chl.yaml_mtime_ = file_stat.st_mtime;
 
-        std::unique_ptr<LexState> ls = std::make_unique<LexState>();
+        std::unique_ptr<LexState> ls(new LexState);
         static_assert(std::is_same<decltype(logger.channels_), decltype(ls->channels_)>::value, "");
         //static_assert(std::is_trivial<decltype(logger.channels_)>::value, "");
 
