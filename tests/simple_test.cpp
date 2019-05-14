@@ -1,9 +1,8 @@
-#include "fn_log.h"
+ï»¿#include "fn_log.h"
 
 static const std::string example_config_text =
 R"----(
- # Ñ¹²âÅä±í  
- # 0Í¨µÀÎªÖ§³Ö¶àÏß³ÌĞ´ÈëµÄÆÁÏÔÊä³öºÍÎÄ¼şÊä³ö, Ö»ÓĞclsÎª1µÄÈÕÖ¾»áÆÁÏÔ 
+ # 0é€šé“ä¸ºæ”¯æŒå¤šçº¿ç¨‹å†™å…¥çš„å±æ˜¾è¾“å‡ºå’Œæ–‡ä»¶è¾“å‡º, åªæœ‰clsä¸º1çš„æ—¥å¿—ä¼šå±æ˜¾ 
  - channel: 0
     sync: null
     filter_level: trace
@@ -20,9 +19,9 @@ R"----(
         filter_level: trace
         filter_cls_begin: 0
         filter_cls_count: 0
-        path: "./"  #µ±Ç°Â·¾¶  
-        file: "$PNAME_$YEAR$MON$DAY" #ÎÄ¼şÃûÎª½ø³ÌÃû+ÄêÔÂÈÕ.log 
-        rollback: 4 #»Ø¹ö4¸öÎÄ¼ş
+        path: "./"  #å½“å‰è·¯å¾„  
+        file: "$PNAME_$YEAR$MON$DAY" #æ–‡ä»¶åä¸ºè¿›ç¨‹å+å¹´æœˆæ—¥.log 
+        rollback: 4 #å›æ»š4ä¸ªæ–‡ä»¶
         limit_size: 100 m #only support M byte
 
 )----";

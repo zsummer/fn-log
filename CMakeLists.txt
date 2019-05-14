@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.7)
-project(yaml)
+project(FNLog)
 enable_language(ASM)
 
 #from github.com/zsummer
