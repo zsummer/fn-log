@@ -185,8 +185,8 @@ int main(int argc, char* argv[])
 # How to test  
 > mkdir build 
 > sh make.sh   
-> 
-#About The Author  
+
+# About The Author  
 Author: YaweiZhang  
 Mail: yawei.zhang@foxmail.com  
 GitHub: https://github.com/zsummer/FNLog  
