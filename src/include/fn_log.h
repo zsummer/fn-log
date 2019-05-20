@@ -43,7 +43,6 @@
 #define _FN_LOG_LOG_H_
 
 #include "fn_data.h"
-#include "fn_file.h"
 #include "fn_parse.h"
 #include "fn_load.h"
 #include "fn_core.h"
