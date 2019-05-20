@@ -39,4 +39,3 @@ script:
   - ./buffer_correct_test
   - ./simple_test
   - ./stress_udp_test
-  - ./load_config_test
