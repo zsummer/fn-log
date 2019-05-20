@@ -79,19 +79,6 @@ namespace FNLog
         (void)second_sync_screen_device;
     }
 
-    //all write to file,  info level out screen both.
-    void UseDefaultConfig1(Logger& logger)
-    {
-        static_assert(Logger::MAX_CHANNEL_SIZE >= 1, "");
-        static_assert(Channel::MAX_DEVICE_SIZE >= 2, "");
-        Channel* defaul_async_channel = NewChannel(logger, CHANNEL_MULTI);
-        Device* default_file_device = NewDevice(logger, *defaul_async_channel, DEVICE_OUT_FILE);
-        default_file_device->config_fields_[DEVICE_CFG_FILE_LIMIT_SIZE].num_ = 1000 * 1000 * 1000;
-        default_file_device->config_fields_[DEVICE_CFG_FILE_ROLLBACK].num_ = 4;
-
-        Device* default_screen_device = NewDevice(logger, *defaul_async_channel, DEVICE_OUT_SCREEN);
-        default_screen_device->config_fields_[DEVICE_CFG_FILTER_LEVEL].num_ = LOG_LEVEL_INFO;
-    }
 
 
     int StartDefaultLogger()

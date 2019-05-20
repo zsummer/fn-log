@@ -9,7 +9,15 @@ R"----(
  # 0通道为多线程文件输出和一个CLS筛选的屏显输出 
  - channel: 0
     sync: null
-    -device:0
+    -device: 0
+        disable: false
+        out_type: file
+        filter_level: trace
+        path: "./log/"
+        file: "$PNAME_$YEAR$MON$DAY"
+        rollback: 4
+        limit_size: 100 m #only support M byte
+    -device:1
         disable: false
         out_type: screen
         filter_level: info
@@ -68,9 +76,9 @@ int main(int argc, char* argv[])
 
     do
     {
-        long long last_writed = logger.channels_[0].log_fields_[FNLog::CHANNEL_LOG_ALLOC_CALL].num_;
+        long long last_writed = logger.channels_[0].devices_[0].log_fields_[FNLog::DEVICE_LOG_TOTAL_WRITE_LINE].num_;
         std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-        long long now_writed = logger.channels_[0].log_fields_[FNLog::CHANNEL_LOG_ALLOC_CALL].num_;
+        long long now_writed = logger.channels_[0].devices_[0].log_fields_[FNLog::DEVICE_LOG_TOTAL_WRITE_LINE].num_;
         LOGI() << "now thread:" << thread_id+1 << ": writed:" << now_writed - last_writed << ", cache hit:"
             << (double)logger.channels_[0].log_fields_[FNLog::CHANNEL_LOG_ALLOC_CACHE].num_
             / logger.channels_[0].log_fields_[FNLog::CHANNEL_LOG_ALLOC_CALL].num_ * 100.0;

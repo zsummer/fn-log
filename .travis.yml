@@ -18,6 +18,10 @@ script:
   - cd ../bin
   - ./buffer_test
   - ./buffer_correct_test
+  - ./load_config_test
   - ./simple_test
   - ./stress_udp_test
   - ./stress_test
+  - ./multi-thread_test
+  - ./multi-thread_write_file_test
+

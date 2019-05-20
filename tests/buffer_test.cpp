@@ -1,11 +1,29 @@
 #include "fn_log.h"
 
+static const std::string example_config_text =
+R"----(
+ # 0通道为多线程文件输出和一个CLS筛选的屏显输出 
+ - channel: 0
+    sync: null
+    -device: 0
+        disable: false
+        out_type: file
+        filter_level: trace
+        path: "./log/"
+        file: "$PNAME_$YEAR$MON$DAY"
+        rollback: 4
+        limit_size: 100 m #only support M byte
+    -device:1
+        disable: false
+        out_type: screen
+        filter_level: info
 
+)----";
 
 int main(int argc, char* argv[])
 {
     FNLog::GuardLogger gl(FNLog::GetDefaultLogger());
-    FNLog::UseDefaultConfig1(FNLog::GetDefaultLogger());
+    FNLog::InitFromYMAL(example_config_text, "", FNLog::GetDefaultLogger());
     int ret = FNLog::StartDefaultLogger();
     if (ret != 0 || FNLog::GetDefaultLogger().last_error_ != 0)
     {
