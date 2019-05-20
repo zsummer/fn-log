@@ -1,6 +1,6 @@
 Welcome to the FNLog wiki!  
 # Introduction:  
-[![Build Status](https://travis-ci.org/zsummer/log4z.svg?branch=master)](https://travis-ci.org/zsummer/log4z)
+[![Build Status](https://travis-ci.org/zsummer/FNLog.svg?branch=master)](https://travis-ci.org/zsummer/FNLog)
 ```
 FNLog is an open source C++ lightweight & cross platform log library. It's a iteration version from log4z.
 It provides in a C++ application log and trace debug function for 7*24h service program.  
