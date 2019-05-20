@@ -43,6 +43,7 @@
 #define _FN_LOG_FILE_H_
 
 #include <cstddef>
+#include <cstring>
 #include <stdio.h>
 #include <iostream>
 #include <vector>
