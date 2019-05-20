@@ -153,12 +153,15 @@ namespace FNLog
         using LogDataPtr = LogData *;
         using SizeType = unsigned int;
         static const int MAX_LOG_QUEUE_LEN = 80000;
-        static const int CHUNK_SIZE = alignof(std::max_align_t) * 2;
     public:
-        alignas(CHUNK_SIZE) long long log_count_;
-        alignas(CHUNK_SIZE) volatile SizeType write_count_;
-        alignas(CHUNK_SIZE) volatile SizeType read_count_;
-        alignas(CHUNK_SIZE) LogDataPtr log_queue_[MAX_LOG_QUEUE_LEN];
+        char chunk_1_[CHUNK_SIZE];
+        long long log_count_;
+        char chunk_2_[CHUNK_SIZE];
+        volatile SizeType write_count_;
+        char chunk_3_[CHUNK_SIZE];
+        volatile SizeType read_count_;
+        char chunk_4_[CHUNK_SIZE];
+        LogDataPtr log_queue_[MAX_LOG_QUEUE_LEN];
     };
    
     enum ChannelType
@@ -194,20 +197,25 @@ namespace FNLog
     public:
         using ConfigFields = std::array<AnyVal, CHANNEL_CFG_MAX_ID>;
         using LogFields = std::array<AnyVal, CHANNEL_LOG_MAX_ID>;
-        static const int CHUNK_SIZE = LogQueue::CHUNK_SIZE;
         static const int MAX_DEVICE_SIZE = 20;
         static const int MAX_FREE_POOL_SIZE = 4000;
         static_assert(MAX_FREE_POOL_SIZE <= LogQueue::MAX_LOG_QUEUE_LEN, "");
     public:
+        char chunk_1_[CHUNK_SIZE];
+
         int  channel_id_;
         int channel_type_;
         bool actived_;
         time_t yaml_mtime_;
         time_t last_hot_check_;
-        alignas(CHUNK_SIZE) int write_red_;
-        alignas(CHUNK_SIZE) LogQueue red_black_queue_[2];
-        alignas(CHUNK_SIZE) LogQueue log_pool_;
-        alignas(CHUNK_SIZE) int chunk_;
+
+        char chunk_2_[CHUNK_SIZE];
+        int write_red_;
+        LogQueue red_black_queue_[2];
+        LogQueue log_pool_;
+        char chunk_3_[CHUNK_SIZE];
+
+        int chunk_;
         int device_size_;
         Device devices_[MAX_DEVICE_SIZE];
         ConfigFields config_fields_;
@@ -216,9 +224,12 @@ namespace FNLog
 
     struct SyncGroup
     {
-        alignas(Channel::CHUNK_SIZE) std::thread log_thread_;
-        alignas(Channel::CHUNK_SIZE) std::mutex write_lock_;
-        alignas(Channel::CHUNK_SIZE) std::mutex pool_lock_;
+        char chunk_1_[CHUNK_SIZE];
+        std::thread log_thread_;
+        char chunk_2_[CHUNK_SIZE];
+        std::mutex write_lock_;
+        char chunk_3_[CHUNK_SIZE];
+        std::mutex pool_lock_;
     };
 
     class Logger
@@ -248,8 +259,6 @@ namespace FNLog
         SyncGroup screen_;
         FileHandles file_handles_;
         UDPHandles udp_handles_;
-
-        
     public:
         AllocLogData sys_alloc_;
         FreeLogData sys_free_;

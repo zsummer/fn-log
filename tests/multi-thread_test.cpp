@@ -22,7 +22,7 @@ int main(int argc, char* argv[])
         printf("log start error. ret:<%d>.", ret);
         return ret || FNLog::GetDefaultLogger().last_error_;
     }
-    static const int WRITE_THREAD_COUNT = 1;
+    static const int WRITE_THREAD_COUNT = 3;
     for (int i = 0; i < WRITE_THREAD_COUNT; i++)
     {
         new std::thread(thread_proc);

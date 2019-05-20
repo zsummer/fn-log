@@ -105,7 +105,7 @@
 
 namespace FNLog
 {
-
+    static const int CHUNK_SIZE = 128;
     class FileHandler
     {
     public:
@@ -130,6 +130,7 @@ namespace FNLog
 
         static bool rollback(const std::string& path, int depth, int max_depth);
     public:
+        char chunk_1_[128];
         FILE* file_;
     };
 
@@ -490,6 +491,7 @@ public:
     }
  
 public:
+    char chunk_1_[128];
     SOCKET handler_;
 };
 
