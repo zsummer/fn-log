@@ -15,4 +15,5 @@ cat src/include/fn_channel.h  |sed 's/\xEF\xBB\xBF//' >> fn_log.h
 cat src/include/fn_core.h  |sed 's/\xEF\xBB\xBF//' >> fn_log.h
 cat src/include/fn_log.h  |sed 's/\xEF\xBB\xBF//' >> fn_log.h
 
-sed -i ".bak" '/#include.*fn_/d' ./fn_log.h
+cat fn_log.h | sed '/#include.*fn_/d' > fn_log.h.bak
+mv fn_log.h.bak fn_log.h
