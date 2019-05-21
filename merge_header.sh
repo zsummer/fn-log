@@ -1,6 +1,6 @@
 #!/bin/bash
-export LC_COLLATE='C'
-export LC_CTYPE='C'
+export LC_COLLATE=C
+export LC_CTYPE=C
 
 cat src/include/fn_file.h  |sed 's/\xEF\xBB\xBF//' > fn_log.h
 cat src/include/fn_data.h  |sed 's/\xEF\xBB\xBF//' >> fn_log.h
@@ -15,4 +15,4 @@ cat src/include/fn_channel.h  |sed 's/\xEF\xBB\xBF//' >> fn_log.h
 cat src/include/fn_core.h  |sed 's/\xEF\xBB\xBF//' >> fn_log.h
 cat src/include/fn_log.h  |sed 's/\xEF\xBB\xBF//' >> fn_log.h
 
-sed -i '/#include.*fn_/d' fn_log.h
+sed -i ".bak" '/#include.*fn_/d' ./fn_log.h
