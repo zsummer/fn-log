@@ -22,12 +22,10 @@ R"----(
 
 int main(int argc, char* argv[])
 {
-    FNLog::GuardLogger gl(FNLog::GetDefaultLogger());
-    FNLog::InitFromYMAL(example_config_text, "", FNLog::GetDefaultLogger());
-    int ret = FNLog::StartDefaultLogger();
-    if (ret != 0 || FNLog::GetDefaultLogger().last_error_ != 0)
+    int ret = FNLog::FastStartDefaultLogger(example_config_text);
+    if (ret != 0 )
     {
-        return ret || FNLog::GetDefaultLogger().last_error_;
+        return ret ;
     }
 
     LOGA() << "log init success";  //sync write

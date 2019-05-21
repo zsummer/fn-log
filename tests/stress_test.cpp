@@ -2,7 +2,7 @@
 
 
 
-constexpr int size = sizeof(FNLog::Logger);
+
 static const std::string example_config_text =
 R"----(
  # 压测配表  
@@ -76,21 +76,14 @@ std::string ChannelDesc(int channel_type)
 
 int main(int argc, char *argv[])
 {
-    FNLog::Logger& logger = FNLog::GetDefaultLogger();
-    FNLog::GuardLogger gl(logger);
-    int ret = FNLog::InitFromYMAL(example_config_text, "", logger);
-    if (ret != 0 || logger.last_error_ != 0)
+    int ret = FNLog::FastStartDefaultLogger(example_config_text);
+    if (ret != 0)
     {
-        printf("log init error. ret:<%d>.", ret);
-        return ret || logger.last_error_;
+        return ret;
     }
 
-    ret = FNLog::StartDefaultLogger();
-    if (ret != 0 || logger.last_error_ != 0)
-    {
-        printf("log start error. ret:<%d>.", ret);
-        return ret || FNLog::GetDefaultLogger().last_error_;
-    }
+    FNLog::Logger& logger = FNLog::GetDefaultLogger();
+
     unsigned int total_count = 0;
     for (int i = 0; i < logger.channel_size_; i++)
     {

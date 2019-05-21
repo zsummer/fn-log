@@ -43,7 +43,7 @@
 
 #include "fn_data.h"
 #include "fn_parse.h"
-
+#include <sstream>
 
 namespace FNLog
 {
@@ -54,10 +54,23 @@ namespace FNLog
         int ret = ParseLogger(*ls, text);
         if (ret != 0)
         {
+            std::stringstream os;
+            os << "load has error:<" << ret << "> in line:[" << ls->line_number_ << "], line type:" << ls->line_.line_type_;
+            if (ls->current_ != nullptr)
+            {
+                os << " before:";
+                int limit = 0;
+                while (limit < 10 && ls->current_[limit] != '\0')
+                {
+                    limit++;
+                }
+                os.write(ls->current_, limit);
+            }
+            printf("%s", os.str().c_str());
             return ret;
         }
 
-//      printf("ret:<%d>, line:<%d>, line_type:<%d>", ret, ls->line_number_, ls->line_.line_type_);
+        
         logger.last_error_ = 0;
         logger.yaml_path_ = path;
         logger.hot_update_ = ls->hot_update_;

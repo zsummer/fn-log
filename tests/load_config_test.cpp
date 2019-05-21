@@ -5,13 +5,13 @@
 
 int main(int argc, char* argv[])
 {
-    FNLog::GuardLogger gl(FNLog::GetDefaultLogger());
-    FNLog::InitFromYMALFile("./log.yaml", FNLog::GetDefaultLogger());
-    int ret = FNLog::StartDefaultLogger();
-    if (ret != 0 || FNLog::GetDefaultLogger().last_error_ != 0)
+    int ret = FNLog::LoadAndStartDefaultLogger("./log.yaml");
+    if (ret != 0)
     {
-        return ret || FNLog::GetDefaultLogger().last_error_;
+        return ret;
     }
+    
+
     int limit_second = 50;
     while (limit_second > 0)
     {

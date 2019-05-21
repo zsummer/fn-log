@@ -34,13 +34,10 @@ int main(int argc, char* argv[])
     }
 #endif
 
-    Logger& logger = GetDefaultLogger();
-    GuardLogger gl(logger);
-    InitFromYMAL(example_config_text, "", logger);
-    int ret = FNLog::StartDefaultLogger();
-    if (ret != 0 || FNLog::GetDefaultLogger().last_error_ != 0)
+    int ret = FNLog::FastStartDefaultLogger(example_config_text);
+    if (ret != 0)
     {
-        return ret || FNLog::GetDefaultLogger().last_error_;
+        return ret;
     }
 
     LOGD() << "log init success";

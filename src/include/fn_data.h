@@ -179,10 +179,9 @@ namespace FNLog
         CHANNEL_CFG_MAX_ID
     };
 
-    //多线程统计不准确 
+
     enum ChannelLogEnum
     {
-        CHANNEL_LOG_WRITE_COUNT,
         CHANNEL_LOG_ALLOC_CALL,
         CHANNEL_LOG_ALLOC_REAL,
         CHANNEL_LOG_ALLOC_CACHE,

@@ -10,36 +10,25 @@ FNLog是一款开源的轻量级高性能的跨平台日志库, 从log4z迭代�
 ```
 # 特性列表:  
 
-> **MIT开源授权 授权的限制非常小.**   
- 
-> **跨平台支持linux & windows & mac, 仅头文件实现.**   
- 
-> **自动生命周期管理, 无需关心销毁问题.**    
-  
-> **CHANNEL-DEVICE M:N组合方式的多管道-多输出端设计.**    
+- [x] **MIT开源授权 授权的限制非常小.**   
+- [x] **跨平台支持linux & windows & mac, 仅头文件实现.**   
+- [x] **自动生命周期管理, 无需关心销毁问题.**    
+- [x] **CHANNEL-DEVICE M:N组合方式的多管道-多输出端设计.**    
   > 对不同Channel的工作模式进行完全隔离, 提供高效并且灵活的组合使用方案.   
-
-> **灵活的过滤机制.**  
+- [x] **灵活的过滤机制.**  
   > 支持Channel级别的优先级过滤和标签过滤.   
   > 支持Device终端输出的优先级过滤和标签过滤.   
-
-> **灵活的日志分流机制**  
+- [x] **灵活的日志分流机制**  
   > 不同Channel的日志写入相互隔离,独立控制.   
   > 可以挂靠任意类型和任意数量的输出设备(文件/UDP/屏幕).   
   > 可以按照过滤策略单独定义每个输出端的内容 .    
-
-> **可在CHANNEL级别并行开启同步写入模式和异步写入模式.**  
-
-> **支持日志文件回滚, 支持屏显日志染色输出.**   
-
-> **C++ STREAM 输入风格, 类型安全.**  
-
-> **支持配置文件实时(延迟)热更新开关.**   
-
-> **高性能.**   
+- [x] **可在CHANNEL级别并行开启同步写入模式和异步写入模式.**  
+- [x] **支持日志文件回滚, 支持屏显日志染色输出.**   
+- [x] **C++ STREAM 输入风格, 类型安全.**  
+- [x] **支持配置文件实时(延迟)热更新开关.**   
+- [x] **高性能.**   
  > 文件写入可以达到200万行/秒, UDP 50万/秒. 
-
-> **自定义的配置解析器 简洁易用**      
+- [x] **自定义的配置解析器 简洁易用**      
 
 
 # 配置文件示例:   
@@ -127,65 +116,118 @@ stress_test_2019.log.3
 	
 [20190514 16:47:20.548][ALARM] [15868] FNLog\tests\simple_test.cpp:<46> main finish
 ```
-# Example  
-```  C++ yaml 
-#include "fn_log.h"
+# Example  Read Config 
+配置文件   
+``` yaml
+# 配表文件  
 
-static const std::string example_config_text =
-R"----(
- # 0通道为支持多线程写入的屏显输出和文件输出, 只有cls为1的日志会屏显 
- - channel: 0
-    sync: null
+ hot_update: true
+ # 0通道为多线程文件输出和一个CLS筛选的屏显输出
+ - channel: 0  
     filter_level: trace
     filter_cls_begin: 0
     filter_cls_count: 0
     -device: 0
         disable: false
-        out_type: screen
-        filter_cls_begin: 1
-        filter_cls_count: 1
-    -device:1
-        disable: false
         out_type: file
         filter_level: trace
         filter_cls_begin: 0
         filter_cls_count: 0
-        path: "./"  #当前路径  
-        file: "$PNAME_$YEAR$MON$DAY" #文件名为进程名+年月日.log 
-        rollback: 4 #回滚4个文件
-        limit_size: 100 m #only support M byte
+        path: "./log/"
+        file: "$PNAME_$YEAR$MON$DAY"
+        rollback: 4
+        limit_size: 1000 m #only support M byte
+    -device: 1
+        disable: false
+        out_type: screen
+        filter_cls_begin: 0
+        filter_cls_count: 0
+ # 1通道为多线程不挂任何输出端
+ - channel: 1
 
-)----";
+ # 2通道为单线程同步写文件
+ - channel: 2
+    sync_write: 1 #only support single thread
+    -device: 0
+        disable: false
+        out_type: file
+
+ # 3通道为单线程无输出端
+ - channel: 3
+    sync_write: 1 #only support single thread
+
+```
+代码   
+```  C++ 
+#include "fn_log.h"
+#include "fn_load.h"
 
 int main(int argc, char* argv[])
 {
-    FNLog::GuardLogger gl(FNLog::GetDefaultLogger());
-    int ret = FNLog::InitFromYMAL(example_config_text, "", FNLog::GetDefaultLogger());
-    ret |= FNLog::StartDefaultLogger();
-    if (ret != 0 || FNLog::GetDefaultLogger().last_error_ != 0)
+    int ret = FNLog::LoadAndStartDefaultLogger("./log.yaml");
+    if (ret != 0)
     {
-        return ret || FNLog::GetDefaultLogger().last_error_;
+        return ret;
+    }
+    
+    int limit_second = 50;
+    while (limit_second > 0)
+    {
+        LOGD() << "default channel.";
+        LOGCD(1, 0) << "channel:1, cls:0.";
+        LOGCD(2, 0) << "channel:2, cls:0.";
+        LOGCD(3, 0) << "channel:3, cls:0.";
+        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+        limit_second--;
     }
 
-    LOGD() << "log init success";
+
+    LOGA() << "finish";
+    return 0;
+}
+
+```  
+# FAST USE EXAMPLE  
+``` C++
+#include "fn_log.h"
+
+int main(int argc, char* argv[])
+{
+    int ret = FNLog::FastStartDefaultLogger();
+    if (ret != 0)
+    {
+        return ret;
+    }
+
+    LOGA() << "log init success";
 
     LOGD() << "now time:" << (long long)time(nullptr) << ";";
     
-    (LOGD() <<"hex text:").write_binary("fnlog", sizeof("fnlog"));
-
-    LOGCA(0, 1) << "finish";
+    LOGA() << "finish";
 
     return 0;
 }
-```  
+```
+
 
 # How to compile  
 直接嵌入头文件即可  
 
 # How to test  
 ``` shell
-mkdir build 
-sh make.sh   
+mkdir build
+cd build
+cmake ..
+make
+cd ../bin
+./buffer_test
+./buffer_correct_test
+./load_config_test
+./simple_test
+./stress_udp_test
+./stress_test
+./multi-thread_test
+./multi-thread_write_file_test
 ```
 
 # About The Author  

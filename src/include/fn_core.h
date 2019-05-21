@@ -280,6 +280,22 @@ namespace FNLog
         return logger.last_error_;
     }
 
+    int AutoStartLogger(Logger& logger)
+    {
+        int ret = StartLogger(logger);
+        if (ret != 0)
+        {
+            StopAndCleanLogger(logger);
+            return ret;
+        }
+        if (logger.last_error_ != 0)
+        {
+            StopAndCleanLogger(logger);
+            return logger.last_error_;
+        }
+        return 0;
+    }
+
     class GuardLogger
     {
     public:

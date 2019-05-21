@@ -54,45 +54,66 @@ namespace FNLog
     {
         static std::once_flag once;
         static Logger logger;
+        static GuardLogger gl(logger);
         std::call_once(once, [](Logger& logger) {InitLogger(logger);}, std::ref(logger));
         return logger;
     }
 
-    //channel0 write file and screen both.
-    //channel1 sync write file and screen both 
-    void UseDefaultConfig(Logger& logger)
+    int LoadAndStartDefaultLogger(const std::string& path)
     {
-        static_assert(Logger::MAX_CHANNEL_SIZE >= 2, "");
-        static_assert(Channel::MAX_DEVICE_SIZE >= 2, "");
-        Channel * defaul_async_channel = NewChannel(logger, CHANNEL_MULTI);
-        Device * default_file_device = NewDevice(logger, *defaul_async_channel, DEVICE_OUT_FILE);
-        default_file_device->config_fields_[DEVICE_CFG_FILE_LIMIT_SIZE].num_ = 1000* 1000 * 1000;
-        default_file_device->config_fields_[DEVICE_CFG_FILE_ROLLBACK].num_ = 4;
-
-        Device * default_screen_device = NewDevice(logger, *defaul_async_channel, DEVICE_OUT_SCREEN);
-        (void)default_screen_device;
-
-        Channel* second_sync_channel = NewChannel(logger, CHANNEL_SYNC);
-        Device* second_file_device = NewDevice(logger, *second_sync_channel, DEVICE_OUT_FILE);
-        (void)second_file_device;
-        Device * second_sync_screen_device = NewDevice(logger, *second_sync_channel, DEVICE_OUT_SCREEN);
-        (void)second_sync_screen_device;
-    }
-
-
-
-    int StartDefaultLogger()
-    {
-        Logger& logger = GetDefaultLogger();
-        int ret = StartLogger(logger);
+        int ret = InitFromYMALFile(path, GetDefaultLogger());
         if (ret != 0)
         {
-            StopAndCleanLogger(logger);
+            printf("init and load default logger error. ret:<%d>.", ret);
             return ret;
         }
-        return logger.last_error_;
+        ret = AutoStartLogger(GetDefaultLogger());
+        if (ret != 0)
+        {
+            printf("auto start default logger error. ret:<%d>.", ret);
+            return ret;
+        }
+        return 0;
     }
-    
+
+    int FastStartDefaultLogger(const std::string& config_text)
+    {
+        int ret = InitFromYMAL(config_text, "", GetDefaultLogger());
+        if (ret != 0)
+        {
+            printf("init default logger error. ret:<%d>.", ret);
+            return ret;
+        }
+        ret = AutoStartLogger(GetDefaultLogger());
+        if (ret != 0)
+        {
+            printf("auto start default logger error. ret:<%d>.", ret);
+            return ret;
+        }
+        return 0;
+    }
+
+    int FastStartDefaultLogger()
+    {
+        static const std::string default_config_text =
+R"----(
+ # 默认配置  
+ # 0通道为多线程文件输出和一个CLS筛选的屏显输出 
+ - channel: 0
+    sync: null
+    -device: 0
+        disable: false
+        out_type: file
+        file: "$PNAME_$YEAR$MON$DAY"
+        rollback: 4
+        limit_size: 100 m #only support M byte
+    -device:1
+        disable: false
+        out_type: screen
+        filter_level: info
+)----";
+        return FastStartDefaultLogger(default_config_text);
+    }
 
 
     class LogStream

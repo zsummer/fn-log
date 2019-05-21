@@ -57,7 +57,7 @@ namespace FNLog
         }
 
         Channel& channel = logger.channels_[channel_id];
-        channel.log_fields_[CHANNEL_LOG_ALLOC_CALL].num_++; //warn: has error data.
+        channel.log_fields_[CHANNEL_LOG_ALLOC_CALL].num_++; //warn: not atom op, will have count loss in multi-thread mod.
 
         switch (channel.channel_type_)
         {

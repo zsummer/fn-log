@@ -2,7 +2,7 @@
 
 
 
-constexpr int size = sizeof(FNLog::Logger);
+
 static const std::string example_config_text =
 R"----(
  # —π≤‚≈‰±Ì  
@@ -53,15 +53,14 @@ std::thread g_multi_proc[WRITE_THREAD_COUNT];
 
 int main(int argc, char* argv[])
 {
-    FNLog::Logger& logger = FNLog::GetDefaultLogger();
-    FNLog::GuardLogger gl(logger);
-    FNLog::InitFromYMAL(example_config_text, "", logger);
-    int ret = FNLog::StartDefaultLogger();
-    if (ret != 0 || logger.last_error_ != 0)
+    int ret = FNLog::FastStartDefaultLogger(example_config_text);
+    if (ret != 0)
     {
-        printf("log start error. ret:<%d>.", ret);
-        return ret || FNLog::GetDefaultLogger().last_error_;
+        return ret;
     }
+
+    FNLog::Logger& logger = FNLog::GetDefaultLogger();
+
     int limit_second = 0;
     int thread_id = 0;
     g_multi_proc[thread_id] = std::thread(thread_proc, thread_id);

@@ -492,6 +492,8 @@ namespace FNLog
             case RK_UDP_ADDR:
                 ParseAddres(ls.line_.val_begin_, ls.line_.val_end_, device.config_fields_[DEVICE_CFG_UDP_IP].num_, device.config_fields_[DEVICE_CFG_UDP_PORT].num_);
                 break;
+            default:
+                return LINE_ERROR;
             }
         } while (true);
         return 0;
@@ -555,10 +557,12 @@ namespace FNLog
                     line_state = ParseDevice(ls, device, ls.line_.blank_);
                     if (line_state == LINE_EOF || line_state == LINE_ERROR)
                     {
-                        return ls.line_.line_type_;
+                        return line_state;
                     }
                 }
                 break;
+            default:
+                return LINE_ERROR;
             }
 
         } while (true);
@@ -631,6 +635,8 @@ namespace FNLog
                     }
                 }
                 break;
+            default:
+                return LINE_ERROR;
             }
         } while (true);
         return 0;
