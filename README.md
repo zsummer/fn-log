@@ -201,7 +201,7 @@ int main(int argc, char* argv[])
 
     LOGA() << "log init success";
 
-    LOGD() << "now time:" << (long long)time(nullptr) << ";";
+    LOGD() << "now time:" << time(nullptr) << ";";
     
     LOGA() << "finish";
 
