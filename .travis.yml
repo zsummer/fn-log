@@ -29,6 +29,7 @@ script:
   - rm src/include/*
   - mv fn_log.h src/include/
   - cd build
+  - rm -fr * 
   - cmake ..
   - make
   - ls ../bin/*
