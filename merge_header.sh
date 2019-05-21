@@ -1,4 +1,7 @@
 #!/bin/bash
+export LC_COLLATE='C'
+export LC_CTYPE='C'
+
 cat src/include/fn_file.h  |sed 's/\xEF\xBB\xBF//' > fn_log.h
 cat src/include/fn_data.h  |sed 's/\xEF\xBB\xBF//' >> fn_log.h
 cat src/include/fn_parse.h  |sed 's/\xEF\xBB\xBF//' >> fn_log.h
