@@ -1,5 +1,4 @@
 #include "fn_log.h"
-#include "fn_load.h"
 
 
 
@@ -11,7 +10,6 @@ int main(int argc, char* argv[])
         return ret;
     }
     
-
     int limit_second = 50;
     while (limit_second > 0)
     {
