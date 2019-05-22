@@ -2,9 +2,9 @@ Welcome to the FNLog wiki!
 # Introduction:  
 [![Build Status](https://travis-ci.org/zsummer/FNLog.svg?branch=master)](https://travis-ci.org/zsummer/FNLog)  
 FNLog is an open source C++ lightweight & cross platform log library. It's a iteration version from log4z.   
-It provides in a C++ application log and trace debug function for 7*24h service program.    
+It provides in a C++ application log and trace debug function for 7\*24h service program.    
 Support 64/32 of windows/linux/mac/android/iOS.    
-FNLog是一款开源的轻量级高性能的跨平台日志库, 从log4z迭代而来, 主要针对7*24小时服务器程序的日志输出与跟踪调试,   
+FNLog是一款开源的轻量级高性能的跨平台日志库, 从log4z迭代而来, 主要针对7\*24小时服务器程序的日志输出与跟踪调试,   
 支持64/32位的windows/linux/mac/android/iOS等操作系统.   
 
 # Feature:  
@@ -275,10 +275,15 @@ int main(int argc, char* argv[])
 # How To Use  
 ### multi header file  
 cp src/include/*.h to dst project.   
+
 ### single header file  
 cp fn_log.h.only to dst project and remove suffix ".only"   
 > the file fn_log.h.only merge from src/include/*.h  
 
+### Supported Compilers  
+* GCC >= 4.8  
+* MSVC >= VS2015  
+* CLANG >= 3.3  
 
 # How To Test  
 ``` shell  
