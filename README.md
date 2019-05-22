@@ -1,14 +1,13 @@
 Welcome to the FNLog wiki!  
 # Introduction:  
-[![Build Status](https://travis-ci.org/zsummer/FNLog.svg?branch=master)](https://travis-ci.org/zsummer/FNLog)
-```
-FNLog is an open source C++ lightweight & cross platform log library. It's a iteration version from log4z.
-It provides in a C++ application log and trace debug function for 7*24h service program.  
-Support 64/32 of windows/linux/mac/android/iOS.   
+[![Build Status](https://travis-ci.org/zsummer/FNLog.svg?branch=master)](https://travis-ci.org/zsummer/FNLog)  
+FNLog is an open source C++ lightweight & cross platform log library. It's a iteration version from log4z.   
+It provides in a C++ application log and trace debug function for 7*24h service program.    
+Support 64/32 of windows/linux/mac/android/iOS.    
 FNLog是一款开源的轻量级高性能的跨平台日志库, 从log4z迭代而来, 主要针对7*24小时服务器程序的日志输出与跟踪调试,   
-支持64/32位的windows/linux/mac/android/iOS等操作系统.  
-```
-# 特性列表:  
+支持64/32位的windows/linux/mac/android/iOS等操作系统.   
+
+# Feature:  
 
 - [x] **MIT开源授权 授权的限制非常小.**   
 - [x] **跨平台支持linux & windows & mac, 仅头文件实现.**   
@@ -32,9 +31,9 @@ FNLog是一款开源的轻量级高性能的跨平台日志库, 从log4z迭代�
 - [x] **自定义的配置解析器 简洁易用**      
 
 
-# 配置文件示例:   
+# .YAML CONFIGURE EXAMPLE:   
 
-文件输出压测配置.  详见stress_test.cpp  
+文件输出压测配置.  测试代码见stress_test.cpp  
 out_type改为udp即可成为udp输出的压测配置.
 
 ```   YAML
@@ -92,18 +91,80 @@ out_type改为udp即可成为udp输出的压测配置.
     sync: sync #only support single thread
 
 ```  
+### GLOBAL OPTION:  
+- [x] hot_update
+  > option: true false  
+  > default: false  
+  > desc: moniter yaml file modify and update logger option.  
+### CHANNEL OPTION: (channel.)   
+- [x] sync
+  > option: async syncring  
+  > default: async  
+  > desc: async support multi-thread write, other not.  
+  > desc: sync is sync write file and flush file every write op.  
+  > desc: ring is async write file but only support single thread write, it's ring-buffer channel impl.  
+- [x] filter_level  
+  > option: trace debug info warn error alarm fatal   
+  > default: trace  
+  > desc: log will discard when log level less than filter level.  
+- [x] filter_cls_begin
+- [x] filter_cls_count
+  > option:  
+  > default: 0, invalid value.  
+  > desc: log will reserve when cls id in set [filter_cls_begin, filter_cls_begin+1), and other not.   
+### DEVICE OPTION: (channel.device.)  
+- [x] disable  
+  > option: true, false  
+  > default: true  
+  > desc: the device will ignore in proc log when this option is disable state.  
+- [x] out_type  
+  > option: null, file, udp, screen  
+  > default: null  
+  > desc: as the option name.  
+- [x] filter_level  
+  > option: trace debug info warn error alarm fatal   
+  > default: trace  
+  > desc: log will not process when log level less than filter level.  
+- [x] filter_cls_begin
+- [x] filter_cls_count
+  > option:  
+  > default: 0, invalid value.  
+  > desc: log will process when cls id in set [filter_cls_begin, filter_cls_begin+1), and other not.   
+- [x] udp_addr  
+  > option:  
+  > default:  
+  > desc: in out_type:udp valid.  
+  > desc: example format 127.0.0.1_8080   
+- [x] path  
+  > option:  
+  > default: "./"  
+  > desc: in out_type:file valid.  
+  > desc: out file path.  
+- [x] file 
+  > option:   
+  > ```default: "$PNAME_$YEAR$MON$DAY_$PID."```  
+  > desc: in out_type:file valid.  
+  > desc: diy out file name. support escape string: $PNAME $PID $YEAR $MON $DAY $HOUR $MIN $SEC  
+- [x] rollback
+  > option: 
+  > default: 0  
+  > desc: in out_type:file valid.  
+  > desc: 0 is no rollback op, and other number is rollback file count.   
+- [x] limit_size
+  > option: 
+  > default: 0  
+  > desc: in out_type:file valid.  
+  > desc: 0 is no limit, and other number is rollback file limit size (M byte).   
+  ```
+  stress_test_2019.log
+  stress_test_2019.log.1
+  stress_test_2019.log.2
+  stress_test_2019.log.3
+  ```
 
-# 日志文件输出  
-##### 文件名可配  
-回滚日志列表  
-```
-stress_test_2019.log
-stress_test_2019.log.1
-stress_test_2019.log.2
-stress_test_2019.log.3
-```
-##### 日志内容  
-示例  
+#  Example  
+
+### log format  example 
 ```
 [20190514 16:47:20.536][ALARM] [15868]channel [0] start.
 
@@ -117,8 +178,8 @@ stress_test_2019.log.3
 	
 [20190514 16:47:20.548][ALARM] [15868] FNLog\tests\simple_test.cpp:<46> main finish
 ```
-# Example  Read Config 
-配置文件   
+### Read Config Code Example 
+yaml file    
 ``` yaml
 # 配表文件  
 
@@ -158,7 +219,7 @@ stress_test_2019.log.3
     sync_write: 1 #only support single thread
 
 ```
-代码   
+code   
 ```  C++ 
 #include "fn_log.h"
 #include "fn_load.h"
@@ -188,7 +249,7 @@ int main(int argc, char* argv[])
 }
 
 ```  
-# FAST USE EXAMPLE  
+### FAST USE EXAMPLE WITH OUT YAML FILE  
 ``` C++
 #include "fn_log.h"
 
@@ -211,11 +272,16 @@ int main(int argc, char* argv[])
 ```
 
 
-# How to compile  
-直接嵌入头文件即可  
+# How To Use  
+### multi header file  
+cp src/include/*.h to dst project.   
+### single header file  
+cp fn_log.h.only to dst project and remove suffix ".only"   
+> the file fn_log.h.only merge from src/include/*.h  
 
-# How to test  
-``` shell
+
+# How To Test  
+``` shell  
 mkdir build
 cd build
 cmake ..
