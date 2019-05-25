@@ -52,7 +52,7 @@
 namespace FNLog
 {
     
-    void EnterProcDevice(Logger& logger, int channel_id, int device_id, bool loop_end, LogData & log)
+    inline void EnterProcDevice(Logger& logger, int channel_id, int device_id, bool loop_end, LogData & log)
     {
         Channel& channel = logger.channels_[channel_id];
         Device& device = channel.devices_[device_id];
@@ -72,7 +72,7 @@ namespace FNLog
         }
     }
     
-    void DispatchLog(Logger & logger, Channel& channel, bool loop_end, LogData& log)
+    inline void DispatchLog(Logger & logger, Channel& channel, bool loop_end, LogData& log)
     {
         for (int device_id = 0; device_id < channel.device_size_; device_id++)
         {
@@ -97,7 +97,7 @@ namespace FNLog
         }
     }
     
-    bool EnterProcAsyncChannel(Logger & logger, int channel_id)
+    inline bool EnterProcAsyncChannel(Logger & logger, int channel_id)
     {
         Channel& channel = logger.channels_[channel_id];
         std::mutex& write_lock = logger.syncs_[channel_id].write_lock_;
@@ -136,7 +136,7 @@ namespace FNLog
     }
     
     
-    bool EnterProcSyncChannel(Logger & logger, int channel_id)
+    inline bool EnterProcSyncChannel(Logger & logger, int channel_id)
     {
         Channel& channel = logger.channels_[channel_id];
         auto & local_que = channel.red_black_queue_[channel.write_red_];
@@ -158,7 +158,7 @@ namespace FNLog
         return true;
     }
     
-    bool EnterProcRingChannel(Logger & logger, int channel_id)
+    inline bool EnterProcRingChannel(Logger & logger, int channel_id)
     {
         Channel& channel = logger.channels_[channel_id];
         auto & local_que = channel.red_black_queue_[channel.write_red_];
@@ -184,7 +184,7 @@ namespace FNLog
         return true;
     }
     
-    bool EnterProcChannel(Logger & logger, int channel_id)
+    inline bool EnterProcChannel(Logger & logger, int channel_id)
     {
         Channel& channel = logger.channels_[channel_id];
         switch (channel.channel_type_)
@@ -200,7 +200,7 @@ namespace FNLog
     }
     
 
-    int PushLogToChannel(Logger& logger, LogData* plog)
+    inline int PushLogToChannel(Logger& logger, LogData* plog)
     {
         LogData& log = *plog;
         Channel& channel = logger.channels_[log.channel_id_];

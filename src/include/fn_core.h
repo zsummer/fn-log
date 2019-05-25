@@ -46,7 +46,7 @@
 
 namespace FNLog
 {
-    int CanPushLog(Logger& logger, int channel_id, int filter_level, int filter_cls)
+    inline int CanPushLog(Logger& logger, int channel_id, int filter_level, int filter_cls)
     {
         if (channel_id >= logger.channel_size_ || channel_id < 0)
         {
@@ -69,7 +69,7 @@ namespace FNLog
         return 0;
     }
 
-    int PushLog(Logger& logger, LogData* plog)
+    inline int PushLog(Logger& logger, LogData* plog)
     {
         if (plog == nullptr)
         {
@@ -93,7 +93,7 @@ namespace FNLog
         return 0;
     }
 
-    void InitLogger(Logger& logger)
+    inline void InitLogger(Logger& logger)
     {
         logger.last_error_ = 0;
         logger.hot_update_ = false;
@@ -103,7 +103,7 @@ namespace FNLog
     }
 
     //not thread-safe
-    Channel* NewChannel(Logger& logger, int channel_type)
+    inline Channel* NewChannel(Logger& logger, int channel_type)
     {
         Channel * channel = nullptr;
         if (logger.channel_size_ < Logger::MAX_CHANNEL_SIZE) 
@@ -119,7 +119,7 @@ namespace FNLog
     }
 
     //not thread-safe
-    Device* NewDevice(Logger& logger, Channel& channel, int out_type)
+    inline Device* NewDevice(Logger& logger, Channel& channel, int out_type)
     {
         Device* device = nullptr;
         if (channel.device_size_ < Channel::MAX_DEVICE_SIZE) {
@@ -134,7 +134,7 @@ namespace FNLog
         return device;
     }
 
-    int StartLogger(Logger& logger)
+    inline int StartLogger(Logger& logger)
     {
         if (logger.channel_size_ > Logger::MAX_CHANNEL_SIZE || logger.channel_size_ <= 0)
         {
@@ -148,7 +148,7 @@ namespace FNLog
             LogData* log = AllocLogData(logger, channel_id, LOG_LEVEL_ALARM, 0);
             log->content_len_ += write_cstring(log->content_ + log->content_len_, LogData::MAX_LOG_SIZE - log->content_len_, "channel [");
             log->content_len_ += write_integer<10, 0>(log->content_ + log->content_len_, LogData::MAX_LOG_SIZE - log->content_len_, (long long)channel_id);
-            log->content_len_ += write_cstring(log->content_ + log->content_len_, LogData::MAX_LOG_SIZE - log->content_len_, "] start.\n");
+            log->content_len_ += write_cstring(log->content_ + log->content_len_, LogData::MAX_LOG_SIZE - log->content_len_, "] start.");
             log->content_[log->content_len_] = '\0';
             if (log->content_len_ <= 0)
             {
@@ -186,7 +186,7 @@ namespace FNLog
         return logger.last_error_;
     }
 
-    int StopAndCleanLogger(Logger& logger)
+    inline int StopAndCleanLogger(Logger& logger)
     {
         logger.last_error_ = 0;
         if (logger.channel_size_ > Logger::MAX_CHANNEL_SIZE || logger.channel_size_ <= 0)
@@ -280,7 +280,7 @@ namespace FNLog
         return logger.last_error_;
     }
 
-    int AutoStartLogger(Logger& logger)
+    inline int AutoStartLogger(Logger& logger)
     {
         int ret = StartLogger(logger);
         if (ret != 0)

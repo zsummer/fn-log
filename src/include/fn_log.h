@@ -50,7 +50,7 @@
 namespace FNLog
 {
 
-    Logger& GetDefaultLogger()
+    inline Logger& GetDefaultLogger()
     {
         static std::once_flag once;
         static Logger logger;
@@ -59,7 +59,7 @@ namespace FNLog
         return logger;
     }
 
-    int LoadAndStartDefaultLogger(const std::string& path)
+    inline int LoadAndStartDefaultLogger(const std::string& path)
     {
         int ret = InitFromYMALFile(path, GetDefaultLogger());
         if (ret != 0)
@@ -76,7 +76,7 @@ namespace FNLog
         return 0;
     }
 
-    int FastStartDefaultLogger(const std::string& config_text)
+    inline int FastStartDefaultLogger(const std::string& config_text)
     {
         int ret = InitFromYMAL(config_text, "", GetDefaultLogger());
         if (ret != 0)
@@ -93,7 +93,7 @@ namespace FNLog
         return 0;
     }
 
-    int FastStartDefaultLogger()
+    inline int FastStartDefaultLogger()
     {
         static const std::string default_config_text =
 R"----(

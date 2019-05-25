@@ -110,26 +110,26 @@ namespace FNLog
     class FileHandler
     {
     public:
-        FileHandler();
-        ~FileHandler();
-        bool is_open();
-        long open(const char* path, const char* mod, struct stat& file_stat);
-        void close();
-        void write(const char* data, size_t len);
-        void flush();
+        inline FileHandler();
+        inline ~FileHandler();
+        inline bool is_open();
+        inline long open(const char* path, const char* mod, struct stat& file_stat);
+        inline void close();
+        inline void write(const char* data, size_t len);
+        inline void flush();
 
-        std::string read_line();
-        std::string read_content();
+        inline std::string read_line();
+        inline std::string read_content();
 
-        static bool is_dir(const std::string & path);
-        static bool is_file(const std::string & path);
-        static bool create_dir(const std::string& path);
-        static std::string process_id();
-        static std::string process_name();
-        static bool remove_file(const std::string& path);
-        static struct tm time_to_tm(time_t t);
+        static inline bool is_dir(const std::string & path);
+        static inline bool is_file(const std::string & path);
+        static inline bool create_dir(const std::string& path);
+        static inline std::string process_id();
+        static inline std::string process_name();
+        static inline bool remove_file(const std::string& path);
+        static inline struct tm time_to_tm(time_t t);
 
-        static bool rollback(const std::string& path, int depth, int max_depth);
+        static inline bool rollback(const std::string& path, int depth, int max_depth);
     public:
         char chunk_1_[128];
         FILE* file_;
@@ -139,7 +139,7 @@ namespace FNLog
 
 
 
-    inline long FileHandler::open(const char* path, const char* mod, struct stat& file_stat)
+    long FileHandler::open(const char* path, const char* mod, struct stat& file_stat)
     {
         if (file_ != nullptr)
         {
@@ -159,7 +159,7 @@ namespace FNLog
         }
         return -1;
     }
-    inline void FileHandler::close()
+    void FileHandler::close()
     {
         if (file_ != nullptr)
         {
@@ -186,12 +186,12 @@ namespace FNLog
         close();
     }
 
-    inline bool FileHandler::is_open()
+    bool FileHandler::is_open()
     {
         return file_ != nullptr;
     }
 
-    inline void FileHandler::write(const char* data, size_t len)
+    void FileHandler::write(const char* data, size_t len)
     {
         if (file_ && len > 0)
         {
@@ -201,7 +201,7 @@ namespace FNLog
             }
         }
     }
-    inline void FileHandler::flush()
+    void FileHandler::flush()
     {
         if (file_)
         {
@@ -209,7 +209,7 @@ namespace FNLog
         }
     }
 
-    inline std::string FileHandler::read_line()
+    std::string FileHandler::read_line()
     {
         char buf[500] = { 0 };
         if (file_ && fgets(buf, 500, file_) != nullptr)
@@ -218,7 +218,7 @@ namespace FNLog
         }
         return std::string();
     }
-    inline std::string FileHandler::read_content()
+    std::string FileHandler::read_content()
     {
         std::string content;
 
@@ -405,7 +405,7 @@ namespace FNLog
         return true;
     }
 
-    int short_path(const char* path, int len)
+    inline int short_path(const char* path, int len)
     {
         int count = 3;
         if (path == nullptr || len <= 0)
@@ -855,7 +855,7 @@ namespace FNLog
         RK_ROLLBACK,
         RK_UDP_ADDR,
     };
-    ReseveKey ParseReserve(const char* begin, const char* end)
+    inline ReseveKey ParseReserve(const char* begin, const char* end)
     {
         if (end - begin < 2)
         {
@@ -920,7 +920,7 @@ namespace FNLog
         return RK_NULL;
     }
 
-    ENUM_LOG_LEVEL ParseLogLevel(const char* begin, const char* end)
+    inline ENUM_LOG_LEVEL ParseLogLevel(const char* begin, const char* end)
     {
         if (end <= begin)
         {
@@ -946,7 +946,7 @@ namespace FNLog
         return LOG_LEVEL_TRACE;
     }
 
-    bool ParseBool(const char* begin, const char* end)
+    inline bool ParseBool(const char* begin, const char* end)
     {
         if (end <= begin)
         {
@@ -959,7 +959,7 @@ namespace FNLog
         return true;
     }
 
-    ChannelType ParseChannelType(const char* begin, const char* end)
+    inline ChannelType ParseChannelType(const char* begin, const char* end)
     {
         if (end <= begin)
         {
@@ -979,7 +979,7 @@ namespace FNLog
         return CHANNEL_MULTI;
     }
     
-    DeviceOutType ParseOutType(const char* begin, const char* end)
+    inline DeviceOutType ParseOutType(const char* begin, const char* end)
     {
         if (end <= begin)
         {
@@ -999,7 +999,7 @@ namespace FNLog
         return DEVICE_OUT_NULL;
     }
 
-    void ParseAddres(const char* begin, const char* end, long long& ip, long long& port)
+    inline void ParseAddres(const char* begin, const char* end, long long& ip, long long& port)
     {
         ip = 0;
         port = 0;
@@ -1061,13 +1061,13 @@ namespace FNLog
         bool hot_update_;
     };
 
-    void InitState(LexState& state)
+    inline void InitState(LexState& state)
     {
         //static_assert(std::is_trivial<LexState>::value, "");
         memset(&state, 0, sizeof(state));
     }
 
-    int Lex(LexState& ls)
+    inline int Lex(LexState& ls)
     {
         memset(&ls.line_, 0, sizeof(ls.line_));
         while (true)
@@ -1198,7 +1198,7 @@ namespace FNLog
         return ls.line_.line_type_;
     }
 
-    int ParseDevice(LexState& ls, Device& device, int indent)
+    inline int ParseDevice(LexState& ls, Device& device, int indent)
     {
         do
         {
@@ -1270,7 +1270,7 @@ namespace FNLog
         } while (true);
         return 0;
     }
-    int ParseChannel(LexState& ls, Channel& channel, int indent)
+    inline int ParseChannel(LexState& ls, Channel& channel, int indent)
     {
         do
         {
@@ -1340,7 +1340,7 @@ namespace FNLog
         } while (true);
         return 0;
     }
-    int ParseLogger(LexState& ls, const std::string& text)
+    inline int ParseLogger(LexState& ls, const std::string& text)
     {
         //UTF8 BOM 
         const char* first = &text[0];
@@ -2058,7 +2058,7 @@ namespace FNLog
 namespace FNLog
 {
 
-    int InitFromYMAL(const std::string& text, const std::string& path, Logger& logger)
+    inline int InitFromYMAL(const std::string& text, const std::string& path, Logger& logger)
     {
         std::unique_ptr<LexState> ls(new LexState);
         int ret = ParseLogger(*ls, text);
@@ -2089,7 +2089,7 @@ namespace FNLog
         return 0;
     }
 
-    int InitFromYMALFile(const std::string& path, Logger& logger)
+    inline int InitFromYMALFile(const std::string& path, Logger& logger)
     {
         std::unique_ptr<LexState> ls(new LexState);
         FileHandler config;
@@ -2115,7 +2115,7 @@ namespace FNLog
         return 0;
     }
 
-    int HotUpdateLogger(Logger& logger, int channel_id)
+    inline int HotUpdateLogger(Logger& logger, int channel_id)
     {
         if (logger.channel_size_ <= channel_id)
         {
@@ -2255,7 +2255,7 @@ namespace FNLog
 
     //support
     //[$PNAME $PID $YEAR $MON $DAY $HOUR $MIN $SEC]
-    std::string MakeFileName(Channel& channel, Device& device, const struct tm& t, LogData& log)
+    inline std::string MakeFileName(Channel& channel, Device& device, const struct tm& t, LogData& log)
     {
         std::string name = device.out_file_;
         if (name.empty())
@@ -2364,7 +2364,7 @@ namespace FNLog
         return name;
     }
 
-    void OpenFileDevice(Logger & logger, Channel & channel, Device & device, FileHandler & writer, LogData & log)
+    inline void OpenFileDevice(Logger & logger, Channel & channel, Device & device, FileHandler & writer, LogData & log)
     {
         bool sameday = true;
         if (log.timestamp_ < device.log_fields_[DEVICE_LOG_CUR_FILE_CREATE_DAY].num_
@@ -2452,7 +2452,7 @@ namespace FNLog
 
 
 
-    void EnterProcOutFileDevice(Logger& logger, int channel_id, int device_id, bool loop_end, LogData& log)
+    inline void EnterProcOutFileDevice(Logger& logger, int channel_id, int device_id, bool loop_end, LogData& log)
     {
         Channel& channel = logger.channels_[channel_id];
         Device& device = channel.devices_[device_id];
@@ -2530,7 +2530,7 @@ namespace FNLog
 namespace FNLog
 {
 
-    void EnterProcOutUDPDevice(Logger& logger, int channel_id, int device_id, bool loop_end, LogData& log)
+    inline void EnterProcOutUDPDevice(Logger& logger, int channel_id, int device_id, bool loop_end, LogData& log)
     {
         auto& udp = logger.udp_handles_[channel_id * device_id];
         if (!udp.is_open())
@@ -2597,7 +2597,7 @@ namespace FNLog
 namespace FNLog
 {
 
-    void EnterProcOutScreenDevice(Logger& logger, int channel_id, int device_id, bool loop_end, LogData& log)
+    inline void EnterProcOutScreenDevice(Logger& logger, int channel_id, int device_id, bool loop_end, LogData& log)
     {
         std::lock_guard<std::mutex> l(logger.screen_.write_lock_);
         int filter_level = log.filter_level_;
@@ -2683,7 +2683,7 @@ namespace FNLog
 
 namespace FNLog
 {
-    LogData* AllocLogDataImpl(Logger& logger, int channel_id)
+    inline LogData* AllocLogDataImpl(Logger& logger, int channel_id)
     {
         LogData* plog = nullptr;
         if (channel_id >= logger.channel_size_ || channel_id < 0)
@@ -2750,7 +2750,7 @@ namespace FNLog
         return plog;
     }
 
-    LogData* AllocLogData(Logger& logger, int channel_id, int filter_level, int filter_cls)
+    inline LogData* AllocLogData(Logger& logger, int channel_id, int filter_level, int filter_cls)
     {
         LogData* plog = AllocLogDataImpl(logger, channel_id);
         LogData& log = *plog;
@@ -2797,7 +2797,7 @@ namespace FNLog
         return &log;
     }
 
-    void FreeLogData(Logger& logger, int channel_id, LogData*& plog)
+    inline void FreeLogData(Logger& logger, int channel_id, LogData*& plog)
     {
         if (plog == nullptr)
         {
@@ -2921,7 +2921,7 @@ namespace FNLog
 namespace FNLog
 {
     
-    void EnterProcDevice(Logger& logger, int channel_id, int device_id, bool loop_end, LogData & log)
+    inline void EnterProcDevice(Logger& logger, int channel_id, int device_id, bool loop_end, LogData & log)
     {
         Channel& channel = logger.channels_[channel_id];
         Device& device = channel.devices_[device_id];
@@ -2941,7 +2941,7 @@ namespace FNLog
         }
     }
     
-    void DispatchLog(Logger & logger, Channel& channel, bool loop_end, LogData& log)
+    inline void DispatchLog(Logger & logger, Channel& channel, bool loop_end, LogData& log)
     {
         for (int device_id = 0; device_id < channel.device_size_; device_id++)
         {
@@ -2966,7 +2966,7 @@ namespace FNLog
         }
     }
     
-    bool EnterProcAsyncChannel(Logger & logger, int channel_id)
+    inline bool EnterProcAsyncChannel(Logger & logger, int channel_id)
     {
         Channel& channel = logger.channels_[channel_id];
         std::mutex& write_lock = logger.syncs_[channel_id].write_lock_;
@@ -3005,7 +3005,7 @@ namespace FNLog
     }
     
     
-    bool EnterProcSyncChannel(Logger & logger, int channel_id)
+    inline bool EnterProcSyncChannel(Logger & logger, int channel_id)
     {
         Channel& channel = logger.channels_[channel_id];
         auto & local_que = channel.red_black_queue_[channel.write_red_];
@@ -3027,7 +3027,7 @@ namespace FNLog
         return true;
     }
     
-    bool EnterProcRingChannel(Logger & logger, int channel_id)
+    inline bool EnterProcRingChannel(Logger & logger, int channel_id)
     {
         Channel& channel = logger.channels_[channel_id];
         auto & local_que = channel.red_black_queue_[channel.write_red_];
@@ -3053,7 +3053,7 @@ namespace FNLog
         return true;
     }
     
-    bool EnterProcChannel(Logger & logger, int channel_id)
+    inline bool EnterProcChannel(Logger & logger, int channel_id)
     {
         Channel& channel = logger.channels_[channel_id];
         switch (channel.channel_type_)
@@ -3069,7 +3069,7 @@ namespace FNLog
     }
     
 
-    int PushLogToChannel(Logger& logger, LogData* plog)
+    inline int PushLogToChannel(Logger& logger, LogData* plog)
     {
         LogData& log = *plog;
         Channel& channel = logger.channels_[log.channel_id_];
@@ -3184,7 +3184,7 @@ namespace FNLog
 
 namespace FNLog
 {
-    int CanPushLog(Logger& logger, int channel_id, int filter_level, int filter_cls)
+    inline int CanPushLog(Logger& logger, int channel_id, int filter_level, int filter_cls)
     {
         if (channel_id >= logger.channel_size_ || channel_id < 0)
         {
@@ -3207,7 +3207,7 @@ namespace FNLog
         return 0;
     }
 
-    int PushLog(Logger& logger, LogData* plog)
+    inline int PushLog(Logger& logger, LogData* plog)
     {
         if (plog == nullptr)
         {
@@ -3231,7 +3231,7 @@ namespace FNLog
         return 0;
     }
 
-    void InitLogger(Logger& logger)
+    inline void InitLogger(Logger& logger)
     {
         logger.last_error_ = 0;
         logger.hot_update_ = false;
@@ -3241,7 +3241,7 @@ namespace FNLog
     }
 
     //not thread-safe
-    Channel* NewChannel(Logger& logger, int channel_type)
+    inline Channel* NewChannel(Logger& logger, int channel_type)
     {
         Channel * channel = nullptr;
         if (logger.channel_size_ < Logger::MAX_CHANNEL_SIZE) 
@@ -3257,7 +3257,7 @@ namespace FNLog
     }
 
     //not thread-safe
-    Device* NewDevice(Logger& logger, Channel& channel, int out_type)
+    inline Device* NewDevice(Logger& logger, Channel& channel, int out_type)
     {
         Device* device = nullptr;
         if (channel.device_size_ < Channel::MAX_DEVICE_SIZE) {
@@ -3272,7 +3272,7 @@ namespace FNLog
         return device;
     }
 
-    int StartLogger(Logger& logger)
+    inline int StartLogger(Logger& logger)
     {
         if (logger.channel_size_ > Logger::MAX_CHANNEL_SIZE || logger.channel_size_ <= 0)
         {
@@ -3286,7 +3286,7 @@ namespace FNLog
             LogData* log = AllocLogData(logger, channel_id, LOG_LEVEL_ALARM, 0);
             log->content_len_ += write_cstring(log->content_ + log->content_len_, LogData::MAX_LOG_SIZE - log->content_len_, "channel [");
             log->content_len_ += write_integer<10, 0>(log->content_ + log->content_len_, LogData::MAX_LOG_SIZE - log->content_len_, (long long)channel_id);
-            log->content_len_ += write_cstring(log->content_ + log->content_len_, LogData::MAX_LOG_SIZE - log->content_len_, "] start.\n");
+            log->content_len_ += write_cstring(log->content_ + log->content_len_, LogData::MAX_LOG_SIZE - log->content_len_, "] start.");
             log->content_[log->content_len_] = '\0';
             if (log->content_len_ <= 0)
             {
@@ -3324,7 +3324,7 @@ namespace FNLog
         return logger.last_error_;
     }
 
-    int StopAndCleanLogger(Logger& logger)
+    inline int StopAndCleanLogger(Logger& logger)
     {
         logger.last_error_ = 0;
         if (logger.channel_size_ > Logger::MAX_CHANNEL_SIZE || logger.channel_size_ <= 0)
@@ -3418,7 +3418,7 @@ namespace FNLog
         return logger.last_error_;
     }
 
-    int AutoStartLogger(Logger& logger)
+    inline int AutoStartLogger(Logger& logger)
     {
         int ret = StartLogger(logger);
         if (ret != 0)
@@ -3499,7 +3499,7 @@ namespace FNLog
 namespace FNLog
 {
 
-    Logger& GetDefaultLogger()
+    inline Logger& GetDefaultLogger()
     {
         static std::once_flag once;
         static Logger logger;
@@ -3508,7 +3508,7 @@ namespace FNLog
         return logger;
     }
 
-    int LoadAndStartDefaultLogger(const std::string& path)
+    inline int LoadAndStartDefaultLogger(const std::string& path)
     {
         int ret = InitFromYMALFile(path, GetDefaultLogger());
         if (ret != 0)
@@ -3525,7 +3525,7 @@ namespace FNLog
         return 0;
     }
 
-    int FastStartDefaultLogger(const std::string& config_text)
+    inline int FastStartDefaultLogger(const std::string& config_text)
     {
         int ret = InitFromYMAL(config_text, "", GetDefaultLogger());
         if (ret != 0)
@@ -3542,7 +3542,7 @@ namespace FNLog
         return 0;
     }
 
-    int FastStartDefaultLogger()
+    inline int FastStartDefaultLogger()
     {
         static const std::string default_config_text =
 R"----(

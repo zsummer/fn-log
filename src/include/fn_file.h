@@ -110,26 +110,26 @@ namespace FNLog
     class FileHandler
     {
     public:
-        FileHandler();
-        ~FileHandler();
-        bool is_open();
-        long open(const char* path, const char* mod, struct stat& file_stat);
-        void close();
-        void write(const char* data, size_t len);
-        void flush();
+        inline FileHandler();
+        inline ~FileHandler();
+        inline bool is_open();
+        inline long open(const char* path, const char* mod, struct stat& file_stat);
+        inline void close();
+        inline void write(const char* data, size_t len);
+        inline void flush();
 
-        std::string read_line();
-        std::string read_content();
+        inline std::string read_line();
+        inline std::string read_content();
 
-        static bool is_dir(const std::string & path);
-        static bool is_file(const std::string & path);
-        static bool create_dir(const std::string& path);
-        static std::string process_id();
-        static std::string process_name();
-        static bool remove_file(const std::string& path);
-        static struct tm time_to_tm(time_t t);
+        static inline bool is_dir(const std::string & path);
+        static inline bool is_file(const std::string & path);
+        static inline bool create_dir(const std::string& path);
+        static inline std::string process_id();
+        static inline std::string process_name();
+        static inline bool remove_file(const std::string& path);
+        static inline struct tm time_to_tm(time_t t);
 
-        static bool rollback(const std::string& path, int depth, int max_depth);
+        static inline bool rollback(const std::string& path, int depth, int max_depth);
     public:
         char chunk_1_[128];
         FILE* file_;
@@ -139,7 +139,7 @@ namespace FNLog
 
 
 
-    inline long FileHandler::open(const char* path, const char* mod, struct stat& file_stat)
+    long FileHandler::open(const char* path, const char* mod, struct stat& file_stat)
     {
         if (file_ != nullptr)
         {
@@ -159,7 +159,7 @@ namespace FNLog
         }
         return -1;
     }
-    inline void FileHandler::close()
+    void FileHandler::close()
     {
         if (file_ != nullptr)
         {
@@ -186,12 +186,12 @@ namespace FNLog
         close();
     }
 
-    inline bool FileHandler::is_open()
+    bool FileHandler::is_open()
     {
         return file_ != nullptr;
     }
 
-    inline void FileHandler::write(const char* data, size_t len)
+    void FileHandler::write(const char* data, size_t len)
     {
         if (file_ && len > 0)
         {
@@ -201,7 +201,7 @@ namespace FNLog
             }
         }
     }
-    inline void FileHandler::flush()
+    void FileHandler::flush()
     {
         if (file_)
         {
@@ -209,7 +209,7 @@ namespace FNLog
         }
     }
 
-    inline std::string FileHandler::read_line()
+    std::string FileHandler::read_line()
     {
         char buf[500] = { 0 };
         if (file_ && fgets(buf, 500, file_) != nullptr)
@@ -218,7 +218,7 @@ namespace FNLog
         }
         return std::string();
     }
-    inline std::string FileHandler::read_content()
+    std::string FileHandler::read_content()
     {
         std::string content;
 
@@ -405,7 +405,7 @@ namespace FNLog
         return true;
     }
 
-    int short_path(const char* path, int len)
+    inline int short_path(const char* path, int len)
     {
         int count = 3;
         if (path == nullptr || len <= 0)

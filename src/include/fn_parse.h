@@ -83,7 +83,7 @@ namespace FNLog
         RK_ROLLBACK,
         RK_UDP_ADDR,
     };
-    ReseveKey ParseReserve(const char* begin, const char* end)
+    inline ReseveKey ParseReserve(const char* begin, const char* end)
     {
         if (end - begin < 2)
         {
@@ -148,7 +148,7 @@ namespace FNLog
         return RK_NULL;
     }
 
-    ENUM_LOG_LEVEL ParseLogLevel(const char* begin, const char* end)
+    inline ENUM_LOG_LEVEL ParseLogLevel(const char* begin, const char* end)
     {
         if (end <= begin)
         {
@@ -174,7 +174,7 @@ namespace FNLog
         return LOG_LEVEL_TRACE;
     }
 
-    bool ParseBool(const char* begin, const char* end)
+    inline bool ParseBool(const char* begin, const char* end)
     {
         if (end <= begin)
         {
@@ -187,7 +187,7 @@ namespace FNLog
         return true;
     }
 
-    ChannelType ParseChannelType(const char* begin, const char* end)
+    inline ChannelType ParseChannelType(const char* begin, const char* end)
     {
         if (end <= begin)
         {
@@ -207,7 +207,7 @@ namespace FNLog
         return CHANNEL_MULTI;
     }
     
-    DeviceOutType ParseOutType(const char* begin, const char* end)
+    inline DeviceOutType ParseOutType(const char* begin, const char* end)
     {
         if (end <= begin)
         {
@@ -227,7 +227,7 @@ namespace FNLog
         return DEVICE_OUT_NULL;
     }
 
-    void ParseAddres(const char* begin, const char* end, long long& ip, long long& port)
+    inline void ParseAddres(const char* begin, const char* end, long long& ip, long long& port)
     {
         ip = 0;
         port = 0;
@@ -289,13 +289,13 @@ namespace FNLog
         bool hot_update_;
     };
 
-    void InitState(LexState& state)
+    inline void InitState(LexState& state)
     {
         //static_assert(std::is_trivial<LexState>::value, "");
         memset(&state, 0, sizeof(state));
     }
 
-    int Lex(LexState& ls)
+    inline int Lex(LexState& ls)
     {
         memset(&ls.line_, 0, sizeof(ls.line_));
         while (true)
@@ -426,7 +426,7 @@ namespace FNLog
         return ls.line_.line_type_;
     }
 
-    int ParseDevice(LexState& ls, Device& device, int indent)
+    inline int ParseDevice(LexState& ls, Device& device, int indent)
     {
         do
         {
@@ -498,7 +498,7 @@ namespace FNLog
         } while (true);
         return 0;
     }
-    int ParseChannel(LexState& ls, Channel& channel, int indent)
+    inline int ParseChannel(LexState& ls, Channel& channel, int indent)
     {
         do
         {
@@ -568,7 +568,7 @@ namespace FNLog
         } while (true);
         return 0;
     }
-    int ParseLogger(LexState& ls, const std::string& text)
+    inline int ParseLogger(LexState& ls, const std::string& text)
     {
         //UTF8 BOM 
         const char* first = &text[0];

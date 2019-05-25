@@ -48,7 +48,7 @@
 namespace FNLog
 {
 
-    void EnterProcOutScreenDevice(Logger& logger, int channel_id, int device_id, bool loop_end, LogData& log)
+    inline void EnterProcOutScreenDevice(Logger& logger, int channel_id, int device_id, bool loop_end, LogData& log)
     {
         std::lock_guard<std::mutex> l(logger.screen_.write_lock_);
         int filter_level = log.filter_level_;

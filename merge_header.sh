@@ -17,4 +17,7 @@ cat src/include/fn_core.h  |sed `echo -e 's/\xEF\xBB\xBF//'` >> fn_log.h
 cat src/include/fn_log.h  |sed `echo -e 's/\xEF\xBB\xBF//'` >> fn_log.h
 
 cat fn_log.h | sed '/#include.*fn_/d' > fn_log.h.bak
-mv fn_log.h.bak fn_log.h
+
+mv fn_log.h.bak  fn_log.h
+mv fn_log.h fn_log.h.only
+

@@ -48,7 +48,7 @@
 
 namespace FNLog
 {
-    LogData* AllocLogDataImpl(Logger& logger, int channel_id)
+    inline LogData* AllocLogDataImpl(Logger& logger, int channel_id)
     {
         LogData* plog = nullptr;
         if (channel_id >= logger.channel_size_ || channel_id < 0)
@@ -115,7 +115,7 @@ namespace FNLog
         return plog;
     }
 
-    LogData* AllocLogData(Logger& logger, int channel_id, int filter_level, int filter_cls)
+    inline LogData* AllocLogData(Logger& logger, int channel_id, int filter_level, int filter_cls)
     {
         LogData* plog = AllocLogDataImpl(logger, channel_id);
         LogData& log = *plog;
@@ -162,7 +162,7 @@ namespace FNLog
         return &log;
     }
 
-    void FreeLogData(Logger& logger, int channel_id, LogData*& plog)
+    inline void FreeLogData(Logger& logger, int channel_id, LogData*& plog)
     {
         if (plog == nullptr)
         {

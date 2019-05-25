@@ -47,7 +47,7 @@ namespace FNLog
 
     //support
     //[$PNAME $PID $YEAR $MON $DAY $HOUR $MIN $SEC]
-    std::string MakeFileName(Channel& channel, Device& device, const struct tm& t, LogData& log)
+    inline std::string MakeFileName(Channel& channel, Device& device, const struct tm& t, LogData& log)
     {
         std::string name = device.out_file_;
         if (name.empty())
@@ -156,7 +156,7 @@ namespace FNLog
         return name;
     }
 
-    void OpenFileDevice(Logger & logger, Channel & channel, Device & device, FileHandler & writer, LogData & log)
+    inline void OpenFileDevice(Logger & logger, Channel & channel, Device & device, FileHandler & writer, LogData & log)
     {
         bool sameday = true;
         if (log.timestamp_ < device.log_fields_[DEVICE_LOG_CUR_FILE_CREATE_DAY].num_
@@ -244,7 +244,7 @@ namespace FNLog
 
 
 
-    void EnterProcOutFileDevice(Logger& logger, int channel_id, int device_id, bool loop_end, LogData& log)
+    inline void EnterProcOutFileDevice(Logger& logger, int channel_id, int device_id, bool loop_end, LogData& log)
     {
         Channel& channel = logger.channels_[channel_id];
         Device& device = channel.devices_[device_id];

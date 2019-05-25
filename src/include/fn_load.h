@@ -48,7 +48,7 @@
 namespace FNLog
 {
 
-    int InitFromYMAL(const std::string& text, const std::string& path, Logger& logger)
+    inline int InitFromYMAL(const std::string& text, const std::string& path, Logger& logger)
     {
         std::unique_ptr<LexState> ls(new LexState);
         int ret = ParseLogger(*ls, text);
@@ -79,7 +79,7 @@ namespace FNLog
         return 0;
     }
 
-    int InitFromYMALFile(const std::string& path, Logger& logger)
+    inline int InitFromYMALFile(const std::string& path, Logger& logger)
     {
         std::unique_ptr<LexState> ls(new LexState);
         FileHandler config;
@@ -105,7 +105,7 @@ namespace FNLog
         return 0;
     }
 
-    int HotUpdateLogger(Logger& logger, int channel_id)
+    inline int HotUpdateLogger(Logger& logger, int channel_id)
     {
         if (logger.channel_size_ <= channel_id)
         {
