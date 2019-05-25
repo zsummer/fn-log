@@ -31,7 +31,7 @@
  /*
  * AUTHORS:  YaweiZhang <yawei.zhang@foxmail.com>
  * VERSION:  0.0.1
- * PURPOSE:  FNLog is a cpp-based logging utility.
+ * PURPOSE:  fn_log is a cpp-based logging utility.
  * CREATION: 2019.4.20
  * RELEASED: 2019.6.27
  * QQGROUP:  524700770
@@ -531,7 +531,7 @@ public:
  /*
   * AUTHORS:  YaweiZhang <yawei.zhang@foxmail.com>
   * VERSION:  0.0.1
-  * PURPOSE:  FNLog is a cpp-based logging utility.
+  * PURPOSE:  fn_log is a cpp-based logging utility.
   * CREATION: 2019.4.20
   * RELEASED: 2019.6.27
   * QQGROUP:  524700770
@@ -804,7 +804,7 @@ namespace FNLog
  /*
   * AUTHORS:  YaweiZhang <yawei.zhang@foxmail.com>
   * VERSION:  0.0.1
-  * PURPOSE:  FNLog is a cpp-based logging utility.
+  * PURPOSE:  fn_log is a cpp-based logging utility.
   * CREATION: 2019.4.20
   * RELEASED: 2019.6.27
   * QQGROUP:  524700770
@@ -1451,7 +1451,7 @@ namespace FNLog
  /*
   * AUTHORS:  YaweiZhang <yawei.zhang@foxmail.com>
   * VERSION:  0.0.1
-  * PURPOSE:  FNLog is a cpp-based logging utility.
+  * PURPOSE:  fn_log is a cpp-based logging utility.
   * CREATION: 2019.4.20
   * RELEASED: 2019.6.27
   * QQGROUP:  524700770
@@ -2043,7 +2043,7 @@ namespace FNLog
  /*
   * AUTHORS:  YaweiZhang <yawei.zhang@foxmail.com>
   * VERSION:  0.0.1
-  * PURPOSE:  FNLog is a cpp-based logging utility.
+  * PURPOSE:  fn_log is a cpp-based logging utility.
   * CREATION: 2019.4.20
   * RELEASED: 2019.6.27
   * QQGROUP:  524700770
@@ -2239,7 +2239,7 @@ namespace FNLog
  /*
   * AUTHORS:  YaweiZhang <yawei.zhang@foxmail.com>
   * VERSION:  0.0.1
-  * PURPOSE:  FNLog is a cpp-based logging utility.
+  * PURPOSE:  fn_log is a cpp-based logging utility.
   * CREATION: 2019.4.20
   * RELEASED: 2019.6.27
   * QQGROUP:  524700770
@@ -2515,7 +2515,7 @@ namespace FNLog
  /*
   * AUTHORS:  YaweiZhang <yawei.zhang@foxmail.com>
   * VERSION:  0.0.1
-  * PURPOSE:  FNLog is a cpp-based logging utility.
+  * PURPOSE:  fn_log is a cpp-based logging utility.
   * CREATION: 2019.4.20
   * RELEASED: 2019.6.27
   * QQGROUP:  524700770
@@ -2582,7 +2582,7 @@ namespace FNLog
  /*
   * AUTHORS:  YaweiZhang <yawei.zhang@foxmail.com>
   * VERSION:  0.0.1
-  * PURPOSE:  FNLog is a cpp-based logging utility.
+  * PURPOSE:  fn_log is a cpp-based logging utility.
   * CREATION: 2019.4.20
   * RELEASED: 2019.6.27
   * QQGROUP:  524700770
@@ -2670,7 +2670,7 @@ namespace FNLog
  /*
   * AUTHORS:  YaweiZhang <yawei.zhang@foxmail.com>
   * VERSION:  0.0.1
-  * PURPOSE:  FNLog is a cpp-based logging utility.
+  * PURPOSE:  fn_log is a cpp-based logging utility.
   * CREATION: 2019.4.20
   * RELEASED: 2019.6.27
   * QQGROUP:  524700770
@@ -2906,7 +2906,7 @@ namespace FNLog
  /*
   * AUTHORS:  YaweiZhang <yawei.zhang@foxmail.com>
   * VERSION:  0.0.1
-  * PURPOSE:  FNLog is a cpp-based logging utility.
+  * PURPOSE:  fn_log is a cpp-based logging utility.
   * CREATION: 2019.4.20
   * RELEASED: 2019.6.27
   * QQGROUP:  524700770
@@ -3170,7 +3170,7 @@ namespace FNLog
  /*
   * AUTHORS:  YaweiZhang <yawei.zhang@foxmail.com>
   * VERSION:  0.0.1
-  * PURPOSE:  FNLog is a cpp-based logging utility.
+  * PURPOSE:  fn_log is a cpp-based logging utility.
   * CREATION: 2019.4.20
   * RELEASED: 2019.6.27
   * QQGROUP:  524700770
@@ -3484,7 +3484,7 @@ namespace FNLog
  /*
   * AUTHORS:  YaweiZhang <yawei.zhang@foxmail.com>
   * VERSION:  0.0.1
-  * PURPOSE:  FNLog is a cpp-based logging utility.
+  * PURPOSE:  fn_log is a cpp-based logging utility.
   * CREATION: 2019.4.20
   * RELEASED: 2019.6.27
   * QQGROUP:  524700770
@@ -3546,8 +3546,8 @@ namespace FNLog
     {
         static const std::string default_config_text =
 R"----(
- # Ä¬ÈÏÅäÖÃ  
- # 0Í¨µÀÎª¶àÏß³ÌÎÄ¼þÊä³öºÍÒ»¸öCLSÉ¸Ñ¡µÄÆÁÏÔÊä³ö 
+ # Ä¬ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½  
+ # 0Í¨ï¿½ï¿½Îªï¿½ï¿½ï¿½ß³ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½CLSÉ¸Ñ¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ 
  - channel: 0
     sync: null
     -device: 0

@@ -31,7 +31,7 @@
  /*
   * AUTHORS:  YaweiZhang <yawei.zhang@foxmail.com>
   * VERSION:  0.0.1
-  * PURPOSE:  FNLog is a cpp-based logging utility.
+  * PURPOSE:  fn_log is a cpp-based logging utility.
   * CREATION: 2019.4.20
   * RELEASED: 2019.6.27
   * QQGROUP:  524700770
@@ -97,8 +97,8 @@ namespace FNLog
     {
         static const std::string default_config_text =
 R"----(
- # д╛хоеДжц  
- # 0м╗╣юн╙╤ЮоъЁлнд╪ЧйДЁЖ╨мр╩╦ЖCLSи╦я║╣дфаотйДЁЖ 
+ # д╛О©╫О©╫О©╫О©╫О©╫О©╫  
+ # 0м╗О©╫О©╫н╙О©╫О©╫О©╫ъЁО©╫О©╫д╪О©╫О©╫О©╫О©╫О©╫О©╫р╩О©╫О©╫CLSи╦я║О©╫О©╫О©╫О©╫О©╫О©╫О©╫О©╫О©╫ 
  - channel: 0
     sync: null
     -device: 0
