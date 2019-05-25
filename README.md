@@ -31,137 +31,6 @@ FNLog是一款开源的轻量级高性能的跨平台日志库, 从log4z迭代�
 - [x] **自定义的配置解析器 简洁易用**      
 
 
-# .YAML CONFIGURE EXAMPLE:   
-
-文件输出压测配置.  测试代码见stress_test.cpp  
-out_type改为udp即可成为udp输出的压测配置.
-
-```   YAML
-# 压测配表  
- # 0通道为多线程文件输出和一个CLS筛选的屏显输出 
- - channel: 0
-    sync: null
-    filter_level: trace
-    filter_cls_begin: 0
-    filter_cls_count: 0
-    -device: 0
-        disable: false
-        out_type: file
-        filter_level: trace
-        filter_cls_begin: 0
-        filter_cls_count: 0
-        path: "./log/"
-        file: "$PNAME_$YEAR$MON$DAY"
-        rollback: 4
-        limit_size: 100 m #only support M byte
-    -device:1
-        disable: false
-        out_type: screen
-        filter_cls_begin: 1
-        filter_cls_count: 1
- # 1通道为多线程不挂任何输出端 
- - channel: 1
-
- # 2通道为单线程异步写文件(回环队列) 
- - channel: 2
-    sync: ring #only support single thread
-    -device: 0
-        disable: false
-        out_type: file
-        file: "$PNAME_$YEAR_ring"
-        rollback: 4
-        limit_size: 100 m #only support M byte
-
- # 3通道为单线程异步无输出端(回环队列) 
- - channel: 3
-    sync: ring #only support single thread
-
- # 4通道为单线程同步写文件 
- - channel: 4
-    sync: sync #only support single thread
-    -device: 0
-        disable: false
-        out_type: file
-        file: "$PNAME_$YEAR"
-        rollback: 4
-        limit_size: 100 m #only support M byte
-
- # 5通道为单线程无输出端 
- - channel: 5
-    sync: sync #only support single thread
-
-```  
-### GLOBAL OPTION:  
-- [x] hot_update
-  > option: true false  
-  > default: false  
-  > desc: moniter yaml file modify and update logger option.  
-### CHANNEL OPTION: (channel.)   
-- [x] sync
-  > option: async syncring  
-  > default: async  
-  > desc: async support multi-thread write, other not.  
-  > desc: sync is sync write file and flush file every write op.  
-  > desc: ring is async write file but only support single thread write, it's ring-buffer channel impl.  
-- [x] filter_level  
-  > option: trace debug info warn error alarm fatal   
-  > default: trace  
-  > desc: log will discard when log level less than filter level.  
-- [x] filter_cls_begin
-- [x] filter_cls_count
-  > option:  
-  > default: 0, invalid value.  
-  > desc: log will reserve when cls id in set [filter_cls_begin, filter_cls_begin+1), and other not.   
-### DEVICE OPTION: (channel.device.)  
-- [x] disable  
-  > option: true, false  
-  > default: true  
-  > desc: the device will ignore in proc log when this option is disable state.  
-- [x] out_type  
-  > option: null, file, udp, screen  
-  > default: null  
-  > desc: as the option name.  
-- [x] filter_level  
-  > option: trace debug info warn error alarm fatal   
-  > default: trace  
-  > desc: log will not process when log level less than filter level.  
-- [x] filter_cls_begin
-- [x] filter_cls_count
-  > option:  
-  > default: 0, invalid value.  
-  > desc: log will process when cls id in set [filter_cls_begin, filter_cls_begin+1), and other not.   
-- [x] udp_addr  
-  > option:  
-  > default:  
-  > desc: in out_type:udp valid.  
-  > desc: example format 127.0.0.1_8080   
-- [x] path  
-  > option:  
-  > default: "./"  
-  > desc: in out_type:file valid.  
-  > desc: out file path.  
-- [x] file 
-  > option:   
-  > ```default: "$PNAME_$YEAR$MON$DAY_$PID."```  
-  > desc: in out_type:file valid.  
-  > desc: diy out file name. support escape string: $PNAME $PID $YEAR $MON $DAY $HOUR $MIN $SEC  
-- [x] rollback
-  > option: 
-  > default: 0  
-  > desc: in out_type:file valid.  
-  > desc: 0 is no rollback op, and other number is rollback file count.   
-- [x] limit_size
-  > option: 
-  > default: 0  
-  > desc: in out_type:file valid.  
-  > desc: 0 is no limit, and other number is rollback file limit size (M byte).   
-  ```
-  stress_test_2019.log
-  stress_test_2019.log.1
-  stress_test_2019.log.2
-  stress_test_2019.log.3
-  ```
-
 #  Example  
 
 ### log format  example 
@@ -178,6 +47,29 @@ out_type改为udp即可成为udp输出的压测配置.
 	
 [20190514 16:47:20.548][ALARM] [15868] FNLog\tests\simple_test.cpp:<46> main finish
 ```
+
+### FAST USE EXAMPLE WITH OUT YAML FILE  
+``` C++
+#include "fn_log.h"
+
+int main(int argc, char* argv[])
+{
+    int ret = FNLog::FastStartDefaultLogger();
+    if (ret != 0)
+    {
+        return ret;
+    }
+
+    LOGA() << "log init success";
+
+    LOGD() << "now time:" << time(nullptr) << ";";
+    
+    LOGA() << "finish";
+
+    return 0;
+}
+```
+
 ### Read Config Code Example 
 yaml file    
 ``` yaml
@@ -249,28 +141,6 @@ int main(int argc, char* argv[])
 }
 
 ```  
-### FAST USE EXAMPLE WITH OUT YAML FILE  
-``` C++
-#include "fn_log.h"
-
-int main(int argc, char* argv[])
-{
-    int ret = FNLog::FastStartDefaultLogger();
-    if (ret != 0)
-    {
-        return ret;
-    }
-
-    LOGA() << "log init success";
-
-    LOGD() << "now time:" << time(nullptr) << ";";
-    
-    LOGA() << "finish";
-
-    return 0;
-}
-```
-
 
 # How To Use  
 ### multi header file  
@@ -301,6 +171,80 @@ cd ../bin
 ./multi-thread_test
 ./multi-thread_write_file_test
 ```
+
+
+# CONFIG MANUAL
+### GLOBAL OPTION:  
+- [x] hot_update
+  > option: true false  
+  > default: false  
+  > desc: moniter yaml file modify and update logger option.  
+### CHANNEL OPTION: (channel.)   
+- [x] sync
+  > option: async syncring  
+  > default: async  
+  > desc: async support multi-thread write, other not.  
+  > desc: sync is sync write file and flush file every write op.  
+  > desc: ring is async write file but only support single thread write, it's ring-buffer channel impl.  
+- [x] filter_level  
+  > option: trace debug info warn error alarm fatal   
+  > default: trace  
+  > desc: log will discard when log level less than filter level.  
+- [x] filter_cls_begin
+- [x] filter_cls_count
+  > option:  
+  > default: 0, invalid value.  
+  > desc: log will reserve when cls id in set [filter_cls_begin, filter_cls_begin+1), and other not.   
+### DEVICE OPTION: (channel.device.)  
+- [x] disable  
+  > option: true, false  
+  > default: true  
+  > desc: the device will ignore in proc log when this option is disable state.  
+- [x] out_type  
+  > option: null, file, udp, screen  
+  > default: null  
+  > desc: as the option name.  
+- [x] filter_level  
+  > option: trace debug info warn error alarm fatal   
+  > default: trace  
+  > desc: log will not process when log level less than filter level.  
+- [x] filter_cls_begin
+- [x] filter_cls_count
+  > option:  
+  > default: 0, invalid value.  
+  > desc: log will process when cls id in set [filter_cls_begin, filter_cls_begin+1), and other not.   
+- [x] udp_addr  
+  > option:  
+  > default:  
+  > desc: in out_type:udp valid.  
+  > desc: example format 127.0.0.1_8080   
+- [x] path  
+  > option:  
+  > default: "./"  
+  > desc: in out_type:file valid.  
+  > desc: out file path.  
+- [x] file 
+  > option:   
+  > ```default: "$PNAME_$YEAR$MON$DAY_$PID."```  
+  > desc: in out_type:file valid.  
+  > desc: diy out file name. support escape string: $PNAME $PID $YEAR $MON $DAY $HOUR $MIN $SEC  
+- [x] rollback
+  > option: 
+  > default: 0  
+  > desc: in out_type:file valid.  
+  > desc: 0 is no rollback op, and other number is rollback file count.   
+- [x] limit_size
+  > option: 
+  > default: 0  
+  > desc: in out_type:file valid.  
+  > desc: 0 is no limit, and other number is rollback file limit size (M byte).   
+  ```
+  stress_test_2019.log
+  stress_test_2019.log.1
+  stress_test_2019.log.2
+  stress_test_2019.log.3
+  ```
+
 
 # About The Author  
 Author: YaweiZhang  
