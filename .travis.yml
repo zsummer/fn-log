@@ -27,7 +27,7 @@ script:
   - cd ..
   - sh merge_header.sh
   - rm src/include/*
-  - mv fn_log.h src/include/
+  - mv fn_log.h.only src/include/fn_log.h
   - cd build
   - rm -fr * 
   - cmake ..
