@@ -372,7 +372,10 @@ R"----(
     };
 }
 
+#ifdef USE_LOG4Z_FORMAT
 
+
+#else
 
 #define LOG_STREAM_IMPL(logger, channel, level, cls) \
 FNLog::LogStream(logger, channel, level, cls, \
@@ -397,5 +400,6 @@ __LINE__, __FUNCTION__, sizeof(__FUNCTION__) -1)
 #define LOGA() LOGCA(0,0)
 #define LOGF() LOGCF(0,0)
 
+#endif
 
 #endif
