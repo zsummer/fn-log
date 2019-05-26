@@ -1,4 +1,4 @@
-﻿#include "fn_log.h"
+#include "fn_log.h"
 
 
 
@@ -97,7 +97,7 @@ int main(int argc, char *argv[])
                                 sizeof("rrrrrrrrrrrrrrrrrrrradfads33333333333333rrd") - 1)
                 << -23 << ": " << 32.2223 << (void*) nullptr;
             
-            if (total_count %1000000 == 0)
+            if (total_count %100000 == 0)
             {
                 static long long last = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
                 long long now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
@@ -105,14 +105,14 @@ int main(int argc, char *argv[])
                 {
                     LOGCI(0, 1) << "channel:<" << (long long)i << "> "
                         << ChannelDesc(logger.channels_[i].channel_type_) << " <"
-                        << logger.channels_[i].device_size_ << "> test " << now - last << "ms. cache hit:"
+                        << logger.channels_[i].device_size_ << "> test " << 100000*1000 / (now - last)  << "line/sec. cache hit:"
                         << (double)logger.channels_[i].log_fields_[FNLog::CHANNEL_LOG_ALLOC_CACHE].num_ 
                                 / logger.channels_[i].log_fields_[FNLog::CHANNEL_LOG_ALLOC_CALL].num_ * 100 << "%";
                     last = now;
                 }
             }
 
-            if (total_count / 2000000 > 0)
+            if (total_count / 300000 > 0)
             {
                 break;
             }

@@ -80,14 +80,14 @@ int main(int argc, char* argv[])
         LOGI() << "now thread:" << thread_id+1 << ": writed:" << now_writed - last_writed << ", cache hit:"
             << (double)logger.channels_[0].log_fields_[FNLog::CHANNEL_LOG_ALLOC_CACHE].num_
             / logger.channels_[0].log_fields_[FNLog::CHANNEL_LOG_ALLOC_CALL].num_ * 100.0;
-        if (limit_second/10 > thread_id && thread_id+1 < WRITE_THREAD_COUNT)
+        if (limit_second/3 > thread_id && thread_id+1 < WRITE_THREAD_COUNT)
         {
             thread_id++;
             LOGI() << "add new thread:" << thread_id;
             g_multi_proc[thread_id] = std::thread(thread_proc, thread_id);
         }
         limit_second++;
-    } while (limit_second < 40);
+    } while (limit_second < 12);
 
     LOGA() << "finish";
     state = END;

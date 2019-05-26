@@ -66,20 +66,21 @@ int main(int argc, char* argv[])
 
     do
     {
-        long long last_writed = logger.channels_[0].log_fields_[FNLog::CHANNEL_LOG_ALLOC_CALL].num_;
+        long long last_writed = logger.channels_[0].log_fields_[FNLog::CHANNEL_LOG_PROCESSED].num_;
         std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-        long long now_writed = logger.channels_[0].log_fields_[FNLog::CHANNEL_LOG_ALLOC_CALL].num_;
+        long long now_writed = logger.channels_[0].log_fields_[FNLog::CHANNEL_LOG_PROCESSED].num_;
         LOGI() << "now thread:" << thread_id+1 << ": writed:" << now_writed - last_writed << ", cache hit:"
             << (double)logger.channels_[0].log_fields_[FNLog::CHANNEL_LOG_ALLOC_CACHE].num_
             / logger.channels_[0].log_fields_[FNLog::CHANNEL_LOG_ALLOC_CALL].num_ * 100.0;
-        if (limit_second/10 > thread_id && thread_id+1 < WRITE_THREAD_COUNT)
+        
+        if (limit_second/3 > thread_id && thread_id+1 < WRITE_THREAD_COUNT)
         {
             thread_id++;
             LOGI() << "add new thread:" << thread_id;
             g_multi_proc[thread_id] = std::thread(thread_proc, thread_id);
         }
         limit_second++;
-    } while (limit_second < 40);
+    } while (limit_second < 12);
 
     LOGA() << "finish";
     state = END;

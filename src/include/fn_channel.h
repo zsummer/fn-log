@@ -122,6 +122,7 @@ namespace FNLog
                     LogData& log = *cur_log;
                     DispatchLog(logger, channel, cur_log_id +1 == local_que.log_count_, log);
                     FreeLogData(logger, channel_id, cur_log);
+                    channel.log_fields_[CHANNEL_LOG_PROCESSED].num_++;
                 }
                 local_que.log_count_ = 0;
             }
@@ -150,6 +151,7 @@ namespace FNLog
                 LogData& log = *cur_log;
                 DispatchLog(logger, channel, cur_log_id +1 == local_que.log_count_, log);
                 FreeLogData(logger, channel_id, cur_log);
+                channel.log_fields_[CHANNEL_LOG_PROCESSED].num_++;
             }
             local_que.log_count_ = 0;
         }
@@ -172,6 +174,7 @@ namespace FNLog
                 DispatchLog(logger, channel, (next_read == local_que.read_count_), log);
                 FreeLogData(logger, channel_id, cur_log);
                 local_que.read_count_ = next_read;
+                channel.log_fields_[CHANNEL_LOG_PROCESSED].num_++;
             }
             
             if (!channel.actived_ && !logger.waiting_close_)

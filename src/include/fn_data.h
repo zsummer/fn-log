@@ -188,6 +188,7 @@ namespace FNLog
         CHANNEL_LOG_FREE_CALL,
         CHANNEL_LOG_FREE_REAL,
         CHANNEL_LOG_FREE_CACHE,
+        CHANNEL_LOG_PROCESSED,
         CHANNEL_LOG_MAX_ID
     };
 
