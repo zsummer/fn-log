@@ -5,8 +5,7 @@
 
 static const std::string example_config_text =
 R"----(
- # 压测配表  
- # 0通道为多线程文件输出和一个CLS筛选的屏显输出 
+ # info and high level print screen and all write file
  - channel: 0
     sync: null
     -device: 0
@@ -21,7 +20,7 @@ R"----(
         disable: false
         out_type: screen
         filter_level: info
- # 1通道为多线程不挂任何输出端 
+ # empty  
  - channel: 1
 
 )----";

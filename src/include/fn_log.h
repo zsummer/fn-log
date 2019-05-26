@@ -97,8 +97,9 @@ namespace FNLog
     {
         static const std::string default_config_text =
 R"----(
- # Ĭ������  
- # 0ͨ��Ϊ���߳��ļ������һ��CLSɸѡ��������� 
+ # default is mult-thread - async write channel.  
+ # the first device is write rollback file  
+ # the second device is print to screen.  
  - channel: 0
     sync: null
     -device: 0

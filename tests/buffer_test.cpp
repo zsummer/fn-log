@@ -2,7 +2,7 @@
 
 static const std::string example_config_text =
 R"----(
- # 0通道为多线程文件输出和一个CLS筛选的屏显输出 
+ # info log print screen and all write file
  - channel: 0
     sync: null
     -device: 0

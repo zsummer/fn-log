@@ -4,8 +4,7 @@ using namespace FNLog;
 
 static const std::string example_config_text =
 R"----(
- # 压测配表  
- # 0通道为屏显输出和UDP输出 
+ # desc
  - channel: 0
     sync: null
     filter_level: trace
@@ -29,7 +28,7 @@ int main(int argc, char* argv[])
     WSADATA wsaData;
     if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0)
     {
-        printf("WSAStartup 无法初始化！");
+        printf("WSAStartup 锟睫凤拷锟斤拷始锟斤拷锟斤拷");
         return -1;
     }
 #endif
