@@ -180,6 +180,7 @@ namespace FNLog
                 writer.close();
             }
         }
+
         if (writer.is_open())
         {
             return;

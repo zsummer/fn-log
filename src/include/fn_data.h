@@ -75,7 +75,7 @@ namespace FNLog
     struct LogData
     {
     public:
-        static const int MAX_LOG_SIZE = 700;
+        static const int MAX_LOG_SIZE = 2000;
     public:
         int    channel_id_;
         int    log_type_;
