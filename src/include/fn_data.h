@@ -134,6 +134,7 @@ namespace FNLog
         static const int MAX_ROLLBACK_LEN = 4;
         static const int MAX_ROLLBACK_PATHS = 5;
         static_assert(MAX_PATH_LEN + MAX_NAME_LEN + MAX_ROLLBACK_LEN < MAX_PATH_SYS_LEN, "");
+        static_assert(LogData::MAX_LOG_SIZE > MAX_PATH_SYS_LEN*2, ""); // promise format length: date, time, source file path, function length.
         static_assert(MAX_ROLLBACK_PATHS < 10, "");
         using ConfigFields = std::array<AnyVal, DEVICE_CFG_MAX_ID>;
         using LogFields = std::array<AnyVal, DEVICE_LOG_MAX_ID>;

@@ -102,16 +102,12 @@ int main(int argc, char *argv[])
                 {
                     LOGCI(0, 1) << "channel:<" << (long long)i << "> "
                         << ChannelDesc(logger.channels_[i].channel_type_) << " <"
-                        << logger.channels_[i].device_size_ << "> test " << 1000000*1000 / (now - last) << "line/sec. cache hit:"
+                        << logger.channels_[i].device_size_ << "> test " << 1000000*1000 / (now - last) << " line/sec. cache hit:"
                         << (double)logger.channels_[i].log_fields_[FNLog::CHANNEL_LOG_ALLOC_CACHE].num_ 
                                 / logger.channels_[i].log_fields_[FNLog::CHANNEL_LOG_ALLOC_CALL].num_ * 100 << "%";
                     last = now;
+                    break;
                 }
-            }
-
-            if (total_count / 2000000 > 0)
-            {
-                break;
             }
         } while (++total_count);
     }

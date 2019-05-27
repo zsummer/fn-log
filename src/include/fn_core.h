@@ -145,16 +145,17 @@ namespace FNLog
         {
             Channel& channel = logger.channels_[channel_id];
             std::thread& thd = logger.syncs_[channel_id].log_thread_;
+            static_assert(LogData::MAX_LOG_SIZE > Device::MAX_PATH_SYS_LEN*2+100, "");
             LogData* log = AllocLogData(logger, channel_id, LOG_LEVEL_ALARM, 0);
-            log->content_len_ += write_cstring(log->content_ + log->content_len_, LogData::MAX_LOG_SIZE - log->content_len_, "channel [");
+
+            memcpy(log->content_ + log->content_len_, "channel [", sizeof("channel [") - 1);
+            log->content_len_ += sizeof("channel [") - 1;
+
             log->content_len_ += write_integer<10, 0>(log->content_ + log->content_len_, LogData::MAX_LOG_SIZE - log->content_len_, (long long)channel_id);
-            log->content_len_ += write_cstring(log->content_ + log->content_len_, LogData::MAX_LOG_SIZE - log->content_len_, "] start.");
+            memcpy(log->content_ + log->content_len_, "] start.", sizeof("] start.") - 1);
+            log->content_len_ += sizeof("] start.") - 1;  
             log->content_[log->content_len_] = '\0';
-            if (log->content_len_ <= 0)
-            {
-                log->content_len_ = 0;
-                logger.last_error_ = -3;
-            }
+
             PushLog(logger, log);
             if (logger.last_error_ != 0)
             {

@@ -55,12 +55,12 @@ namespace FNLog
         static std::once_flag once;
         static Logger logger;
         static GuardLogger gl(logger);
-        std::call_once(once, [](Logger& logger) {InitLogger(logger);}, std::ref(logger));
         return logger;
     }
 
     inline int LoadAndStartDefaultLogger(const std::string& path)
     {
+        InitLogger(GetDefaultLogger());
         int ret = InitFromYMALFile(path, GetDefaultLogger());
         if (ret != 0)
         {
@@ -78,6 +78,7 @@ namespace FNLog
 
     inline int FastStartDefaultLogger(const std::string& config_text)
     {
+        InitLogger(GetDefaultLogger());
         int ret = InitFromYMAL(config_text, "", GetDefaultLogger());
         if (ret != 0)
         {
@@ -142,34 +143,31 @@ R"----(
             }
             logger_ = &logger;
             log_data_ = AllocLogData(logger, channel_id, filter_level, filter_cls);
-            if (log_data_ == nullptr)
-            {
-                return;
-            }
-
-            write_buffer(" ", 1);
+            write_char_unsafe(' ');
             if (file_name && file_name_len > 0)
             {
                 int jump_bytes = short_path(file_name, file_name_len);
-                write_buffer(file_name + jump_bytes, file_name_len - jump_bytes);
+                write_buffer_unsafe(file_name + jump_bytes, file_name_len - jump_bytes);
             }
             else
             {
-                write_buffer("nofile", 6);
+                write_buffer_unsafe("nofile", 6);
             }
-            write_buffer(":<", 2);
+            write_char_unsafe(':');
+            write_char_unsafe('<');
             *this << (unsigned long long)line;
-            write_buffer("> ", 2);
-            
+            write_char_unsafe('>');
+            write_char_unsafe(' ');
+
             if (func_name && func_name_len > 0)
             {
-                write_buffer(func_name, func_name_len);
+                write_buffer_unsafe(func_name, func_name_len);
             }
             else
             {
-                write_buffer("null", 4);
+                write_buffer_unsafe("null", 4);
             }
-            write_buffer(" ", 1);
+            write_char_unsafe(' ');
         }
         
         ~LogStream()
@@ -182,20 +180,37 @@ R"----(
         }
         
         LogStream& set_filter_cls(int filter_cls) { if (log_data_) log_data_->filter_cls_ = filter_cls;  return *this; }
+        LogStream& write_char_unsafe(char ch)
+        {
+            log_data_->content_[log_data_->content_len_] = ch;
+            log_data_->content_len_++;
+            return *this;
+        }
+        LogStream& write_buffer_unsafe(const char* src, int src_len)
+        {
+            memcpy(log_data_->content_ + log_data_->content_len_, src, src_len);
+            log_data_->content_len_ += src_len;
+            return *this;
+        }
+
         LogStream& write_buffer(const char* src, int src_len)
         {
-            if (log_data_ && src && src_len > 0)
+            if (log_data_ && src && src_len > 0 && log_data_->content_len_ < LogData::MAX_LOG_SIZE)
             {
-                log_data_->content_len_ 
-                    += FNLog::write_buffer(log_data_->content_ + log_data_->content_len_, 
-                        LogData::MAX_LOG_SIZE - log_data_->content_len_, src, src_len);
+                src_len = FN_MIN(src_len, LogData::MAX_LOG_SIZE - log_data_->content_len_);
+                memcpy(log_data_->content_ + log_data_->content_len_, src, src_len);
+                log_data_->content_len_ += src_len;
             }
             return *this;
         }
+
         LogStream& write_pointer(const void* ptr)
         {
-            log_data_->content_len_ += FNLog::write_pointer(log_data_->content_ + log_data_->content_len_,
-                LogData::MAX_LOG_SIZE - log_data_->content_len_, ptr);
+            if (log_data_ && log_data_->content_len_ + sizeof(ptr) <= LogData::MAX_LOG_SIZE)
+            {
+                log_data_->content_len_ += FNLog::write_pointer(log_data_->content_ + log_data_->content_len_,
+                    LogData::MAX_LOG_SIZE - log_data_->content_len_, ptr);
+            }
             return *this;
         }
 
@@ -255,16 +270,13 @@ R"----(
         }
         LogStream& operator <<(const void* ptr)
         {
-            if (log_data_)
+            if (ptr)
             {
-                if (ptr)
-                {
-                    write_pointer(ptr);
-                }
-                else
-                {
-                    write_buffer("null", 4);
-                }
+                write_pointer(ptr);
+            }
+            else
+            {
+                write_buffer("null", 4);
             }
             return *this;
         }
@@ -285,7 +297,7 @@ R"----(
         
         LogStream& operator << (long long integer)
         {
-            if (log_data_)
+            if (log_data_ && log_data_->content_len_ + 30 <= LogData::MAX_LOG_SIZE)
             {
                 log_data_->content_len_ += write_integer<10, 0>(log_data_->content_ + log_data_->content_len_, LogData::MAX_LOG_SIZE - log_data_->content_len_, (long long)integer);
             }
@@ -294,7 +306,7 @@ R"----(
 
         LogStream& operator << (unsigned long long integer)
         {
-            if (log_data_)
+            if (log_data_ && log_data_->content_len_ + 30 <= LogData::MAX_LOG_SIZE)
             {
                 log_data_->content_len_ += write_integer<10, 0>(log_data_->content_ + log_data_->content_len_, LogData::MAX_LOG_SIZE - log_data_->content_len_, (unsigned long long)integer);
             }
@@ -303,7 +315,7 @@ R"----(
 
         LogStream& operator << (float f)
         {
-            if (log_data_)
+            if (log_data_ && log_data_->content_len_ + 30 <= LogData::MAX_LOG_SIZE)
             {
                 log_data_->content_len_ += write_float(log_data_->content_ + log_data_->content_len_, LogData::MAX_LOG_SIZE - log_data_->content_len_, f);
             }
@@ -311,7 +323,7 @@ R"----(
         }
         LogStream& operator << (double df)
         {
-            if (log_data_)
+            if (log_data_ && log_data_->content_len_ + 30 <= LogData::MAX_LOG_SIZE)
             {
                 log_data_->content_len_ += write_double(log_data_->content_ + log_data_->content_len_, LogData::MAX_LOG_SIZE - log_data_->content_len_, df);
             }
