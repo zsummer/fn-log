@@ -92,22 +92,22 @@ namespace FNLog
 
     
     template<int DEC, int WIDE>
-    int write_integer(char* dst, int dst_len, unsigned long long number);
+    int write_integer_unsafe(char* dst, unsigned long long number);
     
     template<int DEC, int WIDE>
-    int write_integer(char* dst, int dst_len, long long number)
+    int write_integer_unsafe(char* dst, long long number)
     {
         if (number < 0)
         {
             *dst = '-';
             number = -number;
-            return 1 + write_integer<DEC, WIDE <= 0 ? 0 : WIDE - 1>(dst + 1, dst_len - 1, (unsigned long long) number);
+            return 1 + write_integer_unsafe<DEC, WIDE <= 0 ? 0 : WIDE - 1>(dst + 1, (unsigned long long) number);
         }
-        return write_integer<DEC, WIDE>(dst, dst_len, (unsigned long long) number);
+        return write_integer_unsafe<DEC, WIDE>(dst, (unsigned long long) number);
     }
 
     template<int DEC, int WIDE>
-    int write_integer(char* dst, int dst_len, unsigned long long number)
+    int write_integer_unsafe(char* dst, unsigned long long number)
     {
         static_assert(DEC == 2 || DEC == 10 || DEC == 16, "");
         static_assert(WIDE >= 0, "");
@@ -164,7 +164,7 @@ namespace FNLog
 
         if /*constexpr*/ (DEC == 10)
         {
-            static const int buf_len = 66;
+            static const int buf_len = 30;
             char buf[buf_len];
             int write_index = buf_len;
             do
@@ -268,28 +268,27 @@ namespace FNLog
     }
 
 
-    inline int write_double(char* dst, int dst_len, double number)
+    inline int write_double_unsafe(char* dst, double number)
     {
-        if (std::isnan(number))
+        int fp_class = std::fpclassify(number);
+        switch (fp_class)
         {
+        case FP_NAN:
             memcpy(dst, "nan", 3);
             return 3;
-        }
-        else if (std::isinf(number))
-        {
+        case FP_INFINITE:
             memcpy(dst, "inf", 3);
             return 3;
         }
+
 
         double fabst = std::fabs(number);
 
         
         if (fabst < 0.0001 || fabst > 0xFFFFFFFFFFFFFFFULL)
         {
-            char buf[40] = { 0 };
-            gcvt(number, 16, buf);
-            int len = (int)strlen(buf);
-            memcpy(dst, buf, (int)len);
+            gcvt(number, 16, dst);
+            int len = (int)strlen(dst);
             return len;
         }
 
@@ -298,18 +297,18 @@ namespace FNLog
             double intpart = 0;
             unsigned long long fractpart = (unsigned long long)(modf(fabst, &intpart) * 10000);
             *dst = '-';
-            int writed_len = 1 + write_integer<10, 0>(dst + 1, dst_len - 1, (unsigned long long)intpart);
+            int writed_len = 1 + write_integer_unsafe<10, 0>(dst + 1, (unsigned long long)intpart);
             if (fractpart > 0)
             {
                 *(dst + writed_len) = '.';
-                return writed_len + 1 + write_integer<10, 4>(dst + writed_len + 1, dst_len - writed_len - 1, (unsigned long long)fractpart);
+                return writed_len + 1 + write_integer_unsafe<10, 4>(dst + writed_len + 1, (unsigned long long)fractpart);
             }
             return writed_len;
         }
 
         double intpart = 0;
         unsigned long long fractpart = (unsigned long long)(modf(fabst, &intpart) * 10000);
-        int writed_len = write_integer<10, 0>(dst, dst_len, (unsigned long long)intpart);
+        int writed_len = write_integer_unsafe<10, 0>(dst, (unsigned long long)intpart);
         if (fractpart > 0)
         {
             *(dst + writed_len) = '.';
@@ -350,7 +349,7 @@ namespace FNLog
         return writed_len;
     }
 
-    inline int write_float(char* dst, int dst_len, float number)
+    inline int write_float_unsafe(char* dst, float number)
     {
         if (std::isnan(number))
         {
@@ -368,10 +367,8 @@ namespace FNLog
 
         if (fabst < 0.0001 || fabst > 0xFFFFFFFULL)
         {
-            char buf[40] = { 0 };
-            gcvt(number, 7, buf);
-            int len = (int)strlen(buf);
-            memcpy(dst, buf, len);
+            gcvt(number, 7, dst);
+            int len = (int)strlen(dst);
             return len;
         }
 
@@ -380,18 +377,18 @@ namespace FNLog
             double intpart = 0;
             unsigned long long fractpart = (unsigned long long)(modf(fabst, &intpart) * 10000);
             *dst = '-';
-            int writed_len = 1 + write_integer<10, 0>(dst + 1, dst_len - 1, (unsigned long long)intpart);
+            int writed_len = 1 + write_integer_unsafe<10, 0>(dst + 1, (unsigned long long)intpart);
             if (fractpart > 0)
             {
                 *(dst + writed_len) = '.';
-                return writed_len + 1 + write_integer<10, 4>(dst + writed_len + 1, dst_len - writed_len - 1, (unsigned long long)fractpart);
+                return writed_len + 1 + write_integer_unsafe<10, 4>(dst + writed_len + 1, (unsigned long long)fractpart);
             }
             return writed_len;
         }
 
         double intpart = 0;
         unsigned long long fractpart = (unsigned long long)(modf(fabst, &intpart) * 10000);
-        int writed_len = write_integer<10, 0>(dst, dst_len, (unsigned long long)intpart);
+        int writed_len = write_integer_unsafe<10, 0>(dst, (unsigned long long)intpart);
         if (fractpart > 0)
         {
             *(dst + writed_len) = '.';
@@ -432,7 +429,7 @@ namespace FNLog
         return writed_len;
     }
 
-    inline int write_date(char* dst, int dst_len, long long timestamp, unsigned int precise)
+    inline int write_date_unsafe(char* dst, long long timestamp, unsigned int precise)
     {
         static thread_local tm cache_date = { 0 };
         static thread_local long long cache_timestamp = 0;
@@ -452,26 +449,26 @@ namespace FNLog
 
         *(dst + write_bytes++) = '[';
 
-        write_bytes += write_integer<10, 4>(dst + write_bytes, dst_len - write_bytes, (unsigned long long)cache_date.tm_year + 1900);
-        write_bytes += write_integer<10, 2>(dst + write_bytes, dst_len - write_bytes, (unsigned long long)cache_date.tm_mon + 1);
-        write_bytes += write_integer<10, 2>(dst + write_bytes, dst_len - write_bytes, (unsigned long long)cache_date.tm_mday);
+        write_bytes += write_integer_unsafe<10, 4>(dst + write_bytes, (unsigned long long)cache_date.tm_year + 1900);
+        write_bytes += write_integer_unsafe<10, 2>(dst + write_bytes, (unsigned long long)cache_date.tm_mon + 1);
+        write_bytes += write_integer_unsafe<10, 2>(dst + write_bytes, (unsigned long long)cache_date.tm_mday);
 
         *(dst + write_bytes++) = ' ';
 
-        write_bytes += write_integer<10, 2>(dst + write_bytes, dst_len - write_bytes, (unsigned long long)day_second/3600);
+        write_bytes += write_integer_unsafe<10, 2>(dst + write_bytes, (unsigned long long)day_second/3600);
         *(dst + write_bytes++) = ':';
         day_second %= 3600;
-        write_bytes += write_integer<10, 2>(dst + write_bytes, dst_len - write_bytes, (unsigned long long)day_second / 60);
+        write_bytes += write_integer_unsafe<10, 2>(dst + write_bytes, (unsigned long long)day_second / 60);
         *(dst + write_bytes++) = ':';
         day_second %= 60;
-        write_bytes += write_integer<10, 2>(dst + write_bytes, dst_len - write_bytes, (unsigned long long)day_second);
+        write_bytes += write_integer_unsafe<10, 2>(dst + write_bytes, (unsigned long long)day_second);
 
         *(dst + write_bytes++) = '.';
         if (precise >= 1000)
         {
             precise = 999;
         }
-        write_bytes += write_integer<10, 3>(dst + write_bytes, dst_len - write_bytes, (unsigned long long)precise);
+        write_bytes += write_integer_unsafe<10, 3>(dst + write_bytes, (unsigned long long)precise);
 
         *(dst + write_bytes++) = ']';
 
@@ -483,27 +480,27 @@ namespace FNLog
         return write_bytes;
     }
 
-    inline int write_log_level(char* dst, int dst_len, int level)
+    inline int write_log_level_unsafe(char* dst, int level)
     {
         level = level % LOG_LEVEL_MAX;
         memcpy(dst, LEVEL_RENDER[level].level_name_, LEVEL_RENDER[level].level_len_);
         return LEVEL_RENDER[level].level_len_;
     }
 
-    inline int write_log_thread(char* dst, int dst_len, unsigned int thread_id)
+    inline int write_log_thread_unsafe(char* dst, unsigned int thread_id)
     {
         int write_bytes = 0;
         *(dst + write_bytes) = ' ';
         write_bytes++;
         *(dst + write_bytes) = '[';
         write_bytes++;
-        write_bytes += write_integer<10, 0>(dst + write_bytes, dst_len - write_bytes, (unsigned long long) thread_id);
+        write_bytes += write_integer_unsafe<10, 0>(dst + write_bytes, (unsigned long long) thread_id);
         *(dst + write_bytes) = ']';
         write_bytes++;
         return write_bytes;
     }
 
-    inline int write_pointer(char* dst, int dst_len, const void* ptr)
+    inline int write_pointer_unsafe(char* dst, const void* ptr)
     {
         if (ptr == nullptr)
         {
@@ -512,7 +509,7 @@ namespace FNLog
         }
         int write_bytes = 2;
         memcpy(dst, "0x", 2);
-        write_bytes += write_integer<16, 0>(dst + write_bytes, dst_len - write_bytes, (unsigned long long) ptr);
+        write_bytes += write_integer_unsafe<16, 0>(dst + write_bytes, (unsigned long long) ptr);
         return write_bytes;
     }
 

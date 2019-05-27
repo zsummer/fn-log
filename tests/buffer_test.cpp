@@ -34,10 +34,13 @@ int main(int argc, char* argv[])
     {
         auto ls(LOGD());
         ls << "log begin test buffer";
+        int rd = 0;
+        int last_len = 0;
         for (int j = 0; j < FNLog::LogData::MAX_LOG_SIZE; j++)
         {
-
-            switch (rand() % 10)
+            rd = rand() % 10;
+            last_len = ls.log_data_->content_len_;
+            switch (rd)
             {
             case 0:
                 ls.write_binary("aaa", 3);
@@ -72,13 +75,14 @@ int main(int argc, char* argv[])
             default:
                 break;
             }
+            int length = ls.log_data_->content_len_;
+            if (length > FNLog::LogData::MAX_LOG_SIZE)
+            {
+                LOGF() << "error len:" << length;
+                return -1;
+            }
         }
-        int length = ls.log_data_->content_len_;
-        if (length > FNLog::LogData::MAX_LOG_SIZE)
-        {
-            LOGF() << "error len:" << length;
-            return -1;
-        }
+
     }
     LOGA() << "finish";
 

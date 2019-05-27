@@ -155,9 +155,9 @@ namespace FNLog
         log.thread_ = therad_id;
 #endif
 
-        log.content_len_ += write_date(log.content_+ log.content_len_, LogData::MAX_LOG_SIZE - log.content_len_, log.timestamp_, log.precise_);
-        log.content_len_ += write_log_level(log.content_ + log.content_len_, LogData::MAX_LOG_SIZE - log.content_len_, log.filter_level_);
-        log.content_len_ += write_log_thread(log.content_ + log.content_len_, LogData::MAX_LOG_SIZE - log.content_len_, log.thread_);
+        log.content_len_ += write_date_unsafe(log.content_+ log.content_len_, log.timestamp_, log.precise_);
+        log.content_len_ += write_log_level_unsafe(log.content_ + log.content_len_, log.filter_level_);
+        log.content_len_ += write_log_thread_unsafe(log.content_ + log.content_len_, log.thread_);
         log.content_[log.content_len_] = '\0';
         return &log;
     }
