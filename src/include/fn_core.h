@@ -146,7 +146,7 @@ namespace FNLog
             Channel& channel = logger.channels_[channel_id];
             std::thread& thd = logger.syncs_[channel_id].log_thread_;
             static_assert(LogData::MAX_LOG_SIZE > Device::MAX_PATH_SYS_LEN*2+100, "");
-            LogData* log = AllocLogData(logger, channel_id, LOG_LEVEL_ALARM, 0);
+            LogData* log = AllocLogData(logger, channel_id, LOG_LEVEL_ALARM, 0, true);
 
             memcpy(log->content_ + log->content_len_, "channel [", sizeof("channel [") - 1);
             log->content_len_ += sizeof("channel [") - 1;

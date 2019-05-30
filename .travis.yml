@@ -24,6 +24,7 @@ script:
   - ./stress_test
   - ./multi-thread_test
   - ./multi-thread_write_file_test
+  - ./benchmark
   - cd ..
   - sh merge_header.sh
   - rm src/include/*

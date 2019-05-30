@@ -132,7 +132,7 @@ R"----(
 
         explicit LogStream(Logger& logger, int channel_id, int filter_level, int filter_cls, 
             const char * const file_name, int file_name_len, int line,
-            const char * const func_name, int func_name_len)
+            const char * const func_name, int func_name_len, bool prefix)
         {
             logger_ = nullptr;
             log_data_ = nullptr;
@@ -141,7 +141,11 @@ R"----(
                 return;
             }
             logger_ = &logger;
-            log_data_ = AllocLogData(logger, channel_id, filter_level, filter_cls);
+            log_data_ = AllocLogData(logger, channel_id, filter_level, filter_cls, prefix);
+            if (!prefix)
+            {
+                return;
+            }
             write_char_unsafe(' ');
             if (file_name && file_name_len > 0)
             {
@@ -394,7 +398,7 @@ R"----(
 #define LOG_STREAM_IMPL(logger, channel, level, cls) \
 FNLog::LogStream(logger, channel, level, cls, \
 __FILE__, sizeof(__FILE__) - 1, \
-__LINE__, __FUNCTION__, sizeof(__FUNCTION__) -1)
+__LINE__, __FUNCTION__, sizeof(__FUNCTION__) -1, true)
 
 #define LOG_STREAM(channel_id, filter_level, cls_id) LOG_STREAM_IMPL(FNLog::GetDefaultLogger(), channel_id, filter_level, cls_id)
 

@@ -115,7 +115,7 @@ namespace FNLog
         return plog;
     }
 
-    inline LogData* AllocLogData(Logger& logger, int channel_id, int filter_level, int filter_cls)
+    inline LogData* AllocLogData(Logger& logger, int channel_id, int filter_level, int filter_cls, bool prefix)
     {
         LogData* plog = AllocLogDataImpl(logger, channel_id);
         LogData& log = *plog;
@@ -124,6 +124,8 @@ namespace FNLog
         log.filter_cls_ = filter_cls;
         log.log_type_ = LOG_TYPE_NULL;
         log.content_len_ = 0;
+        log.content_[log.content_len_] = '\0';
+
 #ifdef WIN32
         FILETIME ft;
         GetSystemTimeAsFileTime(&ft);
@@ -142,7 +144,11 @@ namespace FNLog
         log.precise_ = tm.tv_usec / 1000;
 #endif
         log.thread_ = 0;
-        
+        if (!prefix)
+        {
+            return plog;
+        }
+
 #ifdef WIN32
         static thread_local unsigned int therad_id = GetCurrentThreadId();
         log.thread_ = therad_id;
