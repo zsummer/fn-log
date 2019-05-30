@@ -114,7 +114,6 @@ yaml file
 code   
 ```  C++ 
 #include "fn_log.h"
-#include "fn_load.h"
 
 int main(int argc, char* argv[])
 {
