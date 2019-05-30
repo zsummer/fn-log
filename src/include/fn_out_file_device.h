@@ -1,4 +1,4 @@
-﻿/*
+/*
  *
  * MIT License
  *
@@ -186,7 +186,7 @@ namespace FNLog
             return;
         }
 
-        long long create_day = log.timestamp_;
+        long long create_day = 0;
         tm t = FileHandler::time_to_tm(log.timestamp_);
         if (true) //process day time   
         {

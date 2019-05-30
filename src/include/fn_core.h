@@ -87,7 +87,7 @@ namespace FNLog
         int ret = PushLogToChannel(logger, plog);
         if (ret != 0)
         {
-            FreeLogData(logger, log.channel_id_, plog);
+            FreeLogData(logger, plog->channel_id_, plog);
             return ret;
         }
         return 0;

@@ -256,7 +256,6 @@ namespace FNLog
             LogQueue& local_que = channel.red_black_queue_[channel.write_red_];
             if (local_que.log_count_ >= LogQueue::MAX_LOG_QUEUE_LEN)
             {
-                FreeLogData(logger, log.channel_id_, plog);
                 return -3;
             }
             local_que.log_queue_[local_que.log_count_++] = plog;

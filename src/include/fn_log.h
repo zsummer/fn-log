@@ -52,7 +52,6 @@ namespace FNLog
 
     inline Logger& GetDefaultLogger()
     {
-        static std::once_flag once;
         static Logger logger;
         static GuardLogger gl(logger);
         return logger;
