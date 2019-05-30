@@ -249,7 +249,7 @@ R"----(
                     {
                         break;
                     }
-                    log_data_->content_len_ += FNLog::write_integer_unsafe<16, 2>(log_data_->content_ + log_data_->content_len_,
+                    log_data_->content_len_ += FNLog::write_hex_unsafe<2>(log_data_->content_ + log_data_->content_len_,
                         (unsigned long long)(unsigned char)dst[j]);
                     write_buffer(" ", sizeof(" ") - 1);
                 }
@@ -301,7 +301,7 @@ R"----(
         {
             if (log_data_ && log_data_->content_len_ + 30 <= LogData::MAX_LOG_SIZE)
             {
-                log_data_->content_len_ += write_integer_unsafe<10, 0>(log_data_->content_ + log_data_->content_len_, (long long)integer);
+                log_data_->content_len_ += write_dec_unsafe<0>(log_data_->content_ + log_data_->content_len_, (long long)integer);
             }
             return *this;
         }
@@ -310,7 +310,7 @@ R"----(
         {
             if (log_data_ && log_data_->content_len_ + 30 <= LogData::MAX_LOG_SIZE)
             {
-                log_data_->content_len_ += write_integer_unsafe<10, 0>(log_data_->content_ + log_data_->content_len_, (unsigned long long)integer);
+                log_data_->content_len_ += write_dec_unsafe<0>(log_data_->content_ + log_data_->content_len_, (unsigned long long)integer);
             }
             return *this;
         }

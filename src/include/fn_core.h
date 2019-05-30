@@ -151,7 +151,7 @@ namespace FNLog
             memcpy(log->content_ + log->content_len_, "channel [", sizeof("channel [") - 1);
             log->content_len_ += sizeof("channel [") - 1;
 
-            log->content_len_ += write_integer_unsafe<10, 0>(log->content_ + log->content_len_, (long long)channel_id);
+            log->content_len_ += write_dec_unsafe<0>(log->content_ + log->content_len_, (long long)channel_id);
             memcpy(log->content_ + log->content_len_, "] start.", sizeof("] start.") - 1);
             log->content_len_ += sizeof("] start.") - 1;  
             log->content_[log->content_len_] = '\0';

@@ -48,7 +48,7 @@
 namespace FNLog
 {
 
-    inline void EnterProcOutUDPDevice(Logger& logger, int channel_id, int device_id, bool loop_end, LogData& log)
+    inline void EnterProcOutUDPDevice(Logger& logger, int channel_id, int device_id, LogData& log)
     {
         auto& udp = logger.udp_handles_[channel_id * device_id];
         if (!udp.is_open())

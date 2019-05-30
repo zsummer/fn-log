@@ -52,27 +52,27 @@
 namespace FNLog
 {
     
-    inline void EnterProcDevice(Logger& logger, int channel_id, int device_id, bool loop_end, LogData & log)
+    inline void EnterProcDevice(Logger& logger, int channel_id, int device_id, LogData & log)
     {
         Channel& channel = logger.channels_[channel_id];
         Device& device = channel.devices_[device_id];
         switch (device.out_type_)
         {
         case DEVICE_OUT_FILE:
-            EnterProcOutFileDevice(logger, channel_id, device_id, loop_end, log);
+            EnterProcOutFileDevice(logger, channel_id, device_id, log);
             break;
         case DEVICE_OUT_SCREEN:
-            EnterProcOutScreenDevice(logger, channel_id, device_id, loop_end, log);
+            EnterProcOutScreenDevice(logger, channel_id, device_id, log);
             break;
         case DEVICE_OUT_UDP:
-            EnterProcOutUDPDevice(logger, channel_id, device_id, loop_end, log);
+            EnterProcOutUDPDevice(logger, channel_id, device_id, log);
             break;
         default:
             break;
         }
     }
     
-    inline void DispatchLog(Logger & logger, Channel& channel, bool loop_end, LogData& log)
+    inline void DispatchLog(Logger & logger, Channel& channel, LogData& log)
     {
         for (int device_id = 0; device_id < channel.device_size_; device_id++)
         {
@@ -93,7 +93,7 @@ namespace FNLog
                     continue;
                 }
             }
-            EnterProcDevice(logger, channel.channel_id_, device_id, loop_end, log);
+            EnterProcDevice(logger, channel.channel_id_, device_id, log);
         }
     }
     
@@ -104,7 +104,7 @@ namespace FNLog
 
         do
         {
-            if (channel.red_black_queue_[channel.write_red_].log_count_ > 0)
+            if (channel.red_black_queue_[channel.write_red_].log_count_)
             {
                 int revert_color = (channel.write_red_ + 1) % 2;
 
@@ -120,7 +120,7 @@ namespace FNLog
                 {
                     auto& cur_log = local_que.log_queue_[cur_log_id];
                     LogData& log = *cur_log;
-                    DispatchLog(logger, channel, cur_log_id +1 == local_que.log_count_, log);
+                    DispatchLog(logger, channel, log);
                     FreeLogData(logger, channel_id, cur_log);
                     channel.log_fields_[CHANNEL_LOG_PROCESSED].num_++;
                 }
@@ -130,8 +130,19 @@ namespace FNLog
             {
                 channel.actived_ = true;
             }
-            HotUpdateLogger(logger, channel.channel_id_);
-            std::this_thread::sleep_for(std::chrono::milliseconds(20));
+
+            if (!channel.red_black_queue_[channel.write_red_].log_count_)
+            {
+                for (int i = 0; i < channel.device_size_; i++)
+                {
+                    if (channel.devices_[i].out_type_ == DEVICE_OUT_FILE)
+                    {
+                        logger.file_handles_[channel_id + channel_id * i].flush();
+                    }
+                }
+                HotUpdateLogger(logger, channel.channel_id_);
+                std::this_thread::sleep_for(std::chrono::milliseconds(10));
+            }
         } while (channel.actived_ || channel.red_black_queue_[channel.write_red_].log_count_);
         return true;
     }
@@ -149,13 +160,19 @@ namespace FNLog
             {
                 auto& cur_log = local_que.log_queue_[cur_log_id];
                 LogData& log = *cur_log;
-                DispatchLog(logger, channel, cur_log_id +1 == local_que.log_count_, log);
+                DispatchLog(logger, channel, log);
                 FreeLogData(logger, channel_id, cur_log);
                 channel.log_fields_[CHANNEL_LOG_PROCESSED].num_++;
             }
             local_que.log_count_ = 0;
         }
-        
+        for (int i = 0; i < channel.device_size_; i++)
+        {
+            if (channel.devices_[i].out_type_ == DEVICE_OUT_FILE)
+            {
+                logger.file_handles_[channel_id + channel_id * i].flush();
+            }
+        }
         HotUpdateLogger(logger, channel.channel_id_);
         return true;
     }
@@ -171,7 +188,7 @@ namespace FNLog
                 auto& cur_log = local_que.log_queue_[local_que.read_count_];
                 LogQueue::SizeType next_read = (local_que.read_count_ + 1) % LogQueue::MAX_LOG_QUEUE_LEN;
                 LogData& log = *cur_log;
-                DispatchLog(logger, channel, (next_read == local_que.read_count_), log);
+                DispatchLog(logger, channel, log);
                 FreeLogData(logger, channel_id, cur_log);
                 local_que.read_count_ = next_read;
                 channel.log_fields_[CHANNEL_LOG_PROCESSED].num_++;
@@ -181,8 +198,19 @@ namespace FNLog
             {
                 channel.actived_ = true;
             }
-            HotUpdateLogger(logger, channel.channel_id_);
-            std::this_thread::sleep_for(std::chrono::milliseconds(20));
+
+            if (local_que.write_count_ == local_que.read_count_)
+            {
+                for (int i = 0; i < channel.device_size_; i++)
+                {
+                    if (channel.devices_[i].out_type_ == DEVICE_OUT_FILE)
+                    {
+                        logger.file_handles_[channel_id + channel_id * i].flush();
+                    }
+                }
+                HotUpdateLogger(logger, channel.channel_id_);
+                std::this_thread::sleep_for(std::chrono::milliseconds(10));
+            }
         } while (channel.actived_ || local_que.write_count_ != local_que.read_count_);
         return true;
     }

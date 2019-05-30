@@ -91,31 +91,39 @@ namespace FNLog
     static_assert(sizeof(LEVEL_RENDER) / sizeof(LevelRender) == LOG_LEVEL_MAX, "");
 
     
-    template<int DEC, int WIDE>
-    int write_integer_unsafe(char* dst, unsigned long long number);
-    
-    template<int DEC, int WIDE>
-    int write_integer_unsafe(char* dst, long long number)
+    template<int WIDE>
+    int write_bin_unsafe(char* dst, unsigned long long number);
+    template<int WIDE>
+    int write_dec_unsafe(char* dst, unsigned long long number);
+    template<int WIDE>
+    int write_hex_unsafe(char* dst, unsigned long long number);
+
+    template<int WIDE>
+    int write_bin_unsafe(char* dst, long long number)
+    {
+        return write_bin_unsafe<WIDE>(dst, (unsigned long long) number);
+    }
+    template<int WIDE>
+    int write_hex_unsafe(char* dst, long long number)
+    {
+        return write_hex_unsafe<WIDE>(dst, (unsigned long long) number);
+    }
+    template<int WIDE>
+    int write_dec_unsafe(char* dst, long long number)
     {
         if (number < 0)
         {
             *dst = '-';
             number = -number;
-            return 1 + write_integer_unsafe<DEC, WIDE <= 0 ? 0 : WIDE - 1>(dst + 1, (unsigned long long) number);
+            return 1 + write_dec_unsafe<WIDE - 1>(dst + 1, (unsigned long long) number);
         }
-        return write_integer_unsafe<DEC, WIDE>(dst, (unsigned long long) number);
+        return write_dec_unsafe<WIDE>(dst, (unsigned long long) number);
     }
 
-    template<int DEC, int WIDE>
-    int write_integer_unsafe(char* dst, unsigned long long number)
+
+    template<int WIDE>
+    int write_dec_unsafe(char* dst, unsigned long long number)
     {
-        static_assert(DEC == 2 || DEC == 10 || DEC == 16, "");
-        static_assert(WIDE >= 0, "");
-
-
-        static const char* lut =
-            "0123456789abcdefghijk";
-
         static const char* dec_lut =
             "00010203040506070809"
             "10111213141516171819"
@@ -128,6 +136,36 @@ namespace FNLog
             "80818283848586878889"
             "90919293949596979899";
 
+        static const int buf_len = 30;
+        char buf[buf_len];
+        int write_index = buf_len;
+        do
+        {
+            const unsigned long long m2 = (unsigned long long)((number % 100) * 2);
+            number /= 100;
+            *(buf + write_index - 1) = dec_lut[m2 + 1];
+            *(buf + write_index - 2) = dec_lut[m2];
+            write_index -= 2;
+        } while (number);
+        if (buf[write_index] == '0')
+        {
+            write_index++;
+        }
+        while (buf_len - write_index < WIDE)
+        {
+            write_index--;
+            buf[write_index] = '0';
+        }
+        memcpy(dst, buf + write_index, buf_len - write_index);
+        return buf_len - write_index;
+    }
+
+
+    template<int WIDE>
+    int write_hex_unsafe(char* dst, unsigned long long number)
+    {
+        static const char* lut =
+            "0123456789abcdefghijk";
         static const char* hex_lut =
             "000102030405060708090A0B0C0D0E0F"
             "101112131415161718191A1B1C1D1E1F"
@@ -146,127 +184,89 @@ namespace FNLog
             "E0E1E2E3E4E5E6E7E8E9EAEBECEDEEEF"
             "F0F1F2F3F4F5F6F7F8F9FAFBFCFDFEFF";
 
-        if (number == 0)
-        {
-            if /*constexpr*/ (WIDE > 1)
-            {
-                for (size_t i = 0; i < WIDE; i++)
-                {
-                    *dst++ = '0';
-                }
-                return WIDE;
-            }
-            *dst = '0';
-            return 1;
-        }
 
 
-
-        if /*constexpr*/ (DEC == 10)
-        {
-            static const int buf_len = 30;
-            char buf[buf_len];
-            int write_index = buf_len;
-            do
-            {
-                const unsigned long long m2 = (unsigned long long)((number % 100) * 2);
-                number /= 100;
-                *(buf + write_index - 1) = dec_lut[m2 + 1];
-                *(buf + write_index - 2) = dec_lut[m2];
-                write_index -= 2;
-            } while (number);
-            if (buf[write_index] == '0')
-            {
-                write_index++;
-            }
-            while (buf_len - write_index < WIDE)
-            {
-                write_index--;
-                buf[write_index] = '0';
-            }
-            memcpy(dst, buf + write_index, buf_len - write_index);
-            return buf_len - write_index;
-        }
-        else if (DEC == 16)
-        {
-            int real_wide = 0;
+        int real_wide = 0;
 #ifndef WIN32
-            real_wide = sizeof(number) * 8 - __builtin_clzll(number);
+        real_wide = sizeof(number) * 8 - __builtin_clzll(number);
 #else
-            unsigned long win_index = 0;
-            _BitScanReverse64(&win_index, number);
-            real_wide = (int)win_index + 1;
+        unsigned long win_index = 0;
+        _BitScanReverse64(&win_index, number);
+        real_wide = (int)win_index + 1;
 #endif 
-            switch (real_wide)
-            {
-            case  1:case  2:case  3:case  4:real_wide = 1; break;
-            case  5:case  6:case  7:case  8:real_wide = 2; break;
-            case 9: case 10:case 11:case 12:real_wide = 3; break;
-            case 13:case 14:case 15:case 16:real_wide = 4; break;
-            case 17:case 18:case 19:case 20:real_wide = 5; break;
-            case 21:case 22:case 23:case 24:real_wide = 6; break;
-            case 25:case 26:case 27:case 28:real_wide = 7; break;
-            case 29:case 30:case 31:case 32:real_wide = 8; break;
-            case 33:case 34:case 35:case 36:real_wide = 9; break;
-            case 37:case 38:case 39:case 40:real_wide = 10; break;
-            case 41:case 42:case 43:case 44:real_wide = 11; break;
-            case 45:case 46:case 47:case 48:real_wide = 12; break;
-            case 49:case 50:case 51:case 52:real_wide = 13; break;
-            case 53:case 54:case 55:case 56:real_wide = 14; break;
-            case 57:case 58:case 59:case 60:real_wide = 15; break;
-            case 61:case 62:case 63:case 64:real_wide = 16; break;
-            }
-            if (real_wide < WIDE)
-            {
-                real_wide = WIDE;
-            }
-            unsigned long long cur_wide = real_wide;
-            while (number && cur_wide >= 2)
-            {
-                const unsigned long long m2 = (unsigned long long)((number % 256) * 2);
-                number /= 256;
-                *(dst + cur_wide - 1) = hex_lut[m2 + 1];
-                *(dst + cur_wide - 2) = hex_lut[m2];
-                cur_wide -= 2;
-            } 
-            if (number)
-            {
-                *dst = lut[number % 16];
-                cur_wide --;
-            }
-            while (cur_wide-- != 0)
-            {
-                *(dst + cur_wide) = '0';
-            }
-            return real_wide;
-        }
-        else if (DEC == 2)
+        switch (real_wide)
         {
-            int real_wide = 0;
-#ifndef WIN32
-            real_wide = sizeof(number) * 8 - __builtin_clzll(number);
-#else
-            unsigned long win_index = 0;
-            _BitScanReverse64(&win_index, number);
-            real_wide = (int)win_index + 1;
-#endif 
-            if (real_wide < WIDE)
-            {
-                real_wide = WIDE;
-            }
-            unsigned long long cur_wide = real_wide;
-            do
-            {
-                const unsigned long long m2 = number & 1;
-                number >>= 1;
-                *(dst + cur_wide - 1) = lut[m2];
-                cur_wide--;
-            } while (number);
-            return real_wide;
+        case  1:case  2:case  3:case  4:real_wide = 1; break;
+        case  5:case  6:case  7:case  8:real_wide = 2; break;
+        case 9: case 10:case 11:case 12:real_wide = 3; break;
+        case 13:case 14:case 15:case 16:real_wide = 4; break;
+        case 17:case 18:case 19:case 20:real_wide = 5; break;
+        case 21:case 22:case 23:case 24:real_wide = 6; break;
+        case 25:case 26:case 27:case 28:real_wide = 7; break;
+        case 29:case 30:case 31:case 32:real_wide = 8; break;
+        case 33:case 34:case 35:case 36:real_wide = 9; break;
+        case 37:case 38:case 39:case 40:real_wide = 10; break;
+        case 41:case 42:case 43:case 44:real_wide = 11; break;
+        case 45:case 46:case 47:case 48:real_wide = 12; break;
+        case 49:case 50:case 51:case 52:real_wide = 13; break;
+        case 53:case 54:case 55:case 56:real_wide = 14; break;
+        case 57:case 58:case 59:case 60:real_wide = 15; break;
+        case 61:case 62:case 63:case 64:real_wide = 16; break;
         }
-        return 0;
+        if (real_wide < WIDE)
+        {
+            real_wide = WIDE;
+        }
+        unsigned long long cur_wide = real_wide;
+        while (number && cur_wide >= 2)
+        {
+            const unsigned long long m2 = (unsigned long long)((number % 256) * 2);
+            number /= 256;
+            *(dst + cur_wide - 1) = hex_lut[m2 + 1];
+            *(dst + cur_wide - 2) = hex_lut[m2];
+            cur_wide -= 2;
+        } 
+        if (number)
+        {
+            *dst = lut[number % 16];
+            cur_wide --;
+        }
+        while (cur_wide-- != 0)
+        {
+            *(dst + cur_wide) = '0';
+        }
+        return real_wide;
     }
 
+
+    template<int WIDE>
+    int write_bin_unsafe(char* dst, unsigned long long number)
+    {
+        static const char* lut =
+            "0123456789abcdefghijk";
+
+        int real_wide = 0;
+#ifndef WIN32
+        real_wide = sizeof(number) * 8 - __builtin_clzll(number);
+#else
+        unsigned long win_index = 0;
+        _BitScanReverse64(&win_index, number);
+        real_wide = (int)win_index + 1;
+#endif 
+        if (real_wide < WIDE)
+        {
+            real_wide = WIDE;
+        }
+        unsigned long long cur_wide = real_wide;
+        do
+        {
+            const unsigned long long m2 = number & 1;
+            number >>= 1;
+            *(dst + cur_wide - 1) = lut[m2];
+            cur_wide--;
+        } while (number);
+        return real_wide;
+    }
 
     inline int write_double_unsafe(char* dst, double number)
     {
@@ -297,18 +297,18 @@ namespace FNLog
             double intpart = 0;
             unsigned long long fractpart = (unsigned long long)(modf(fabst, &intpart) * 10000);
             *dst = '-';
-            int writed_len = 1 + write_integer_unsafe<10, 0>(dst + 1, (unsigned long long)intpart);
+            int writed_len = 1 + write_dec_unsafe<0>(dst + 1, (unsigned long long)intpart);
             if (fractpart > 0)
             {
                 *(dst + writed_len) = '.';
-                return writed_len + 1 + write_integer_unsafe<10, 4>(dst + writed_len + 1, (unsigned long long)fractpart);
+                return writed_len + 1 + write_dec_unsafe<4>(dst + writed_len + 1, (unsigned long long)fractpart);
             }
             return writed_len;
         }
 
         double intpart = 0;
         unsigned long long fractpart = (unsigned long long)(modf(fabst, &intpart) * 10000);
-        int writed_len = write_integer_unsafe<10, 0>(dst, (unsigned long long)intpart);
+        int writed_len = write_dec_unsafe<0>(dst, (unsigned long long)intpart);
         if (fractpart > 0)
         {
             *(dst + writed_len) = '.';
@@ -377,18 +377,18 @@ namespace FNLog
             double intpart = 0;
             unsigned long long fractpart = (unsigned long long)(modf(fabst, &intpart) * 10000);
             *dst = '-';
-            int writed_len = 1 + write_integer_unsafe<10, 0>(dst + 1, (unsigned long long)intpart);
+            int writed_len = 1 + write_dec_unsafe<0>(dst + 1, (unsigned long long)intpart);
             if (fractpart > 0)
             {
                 *(dst + writed_len) = '.';
-                return writed_len + 1 + write_integer_unsafe<10, 4>(dst + writed_len + 1, (unsigned long long)fractpart);
+                return writed_len + 1 + write_dec_unsafe<4>(dst + writed_len + 1, (unsigned long long)fractpart);
             }
             return writed_len;
         }
 
         double intpart = 0;
         unsigned long long fractpart = (unsigned long long)(modf(fabst, &intpart) * 10000);
-        int writed_len = write_integer_unsafe<10, 0>(dst, (unsigned long long)intpart);
+        int writed_len = write_dec_unsafe<0>(dst, (unsigned long long)intpart);
         if (fractpart > 0)
         {
             *(dst + writed_len) = '.';
@@ -449,26 +449,26 @@ namespace FNLog
 
         *(dst + write_bytes++) = '[';
 
-        write_bytes += write_integer_unsafe<10, 4>(dst + write_bytes, (unsigned long long)cache_date.tm_year + 1900);
-        write_bytes += write_integer_unsafe<10, 2>(dst + write_bytes, (unsigned long long)cache_date.tm_mon + 1);
-        write_bytes += write_integer_unsafe<10, 2>(dst + write_bytes, (unsigned long long)cache_date.tm_mday);
+        write_bytes += write_dec_unsafe<4>(dst + write_bytes, (unsigned long long)cache_date.tm_year + 1900);
+        write_bytes += write_dec_unsafe<2>(dst + write_bytes, (unsigned long long)cache_date.tm_mon + 1);
+        write_bytes += write_dec_unsafe<2>(dst + write_bytes, (unsigned long long)cache_date.tm_mday);
 
         *(dst + write_bytes++) = ' ';
 
-        write_bytes += write_integer_unsafe<10, 2>(dst + write_bytes, (unsigned long long)day_second/3600);
+        write_bytes += write_dec_unsafe<2>(dst + write_bytes, (unsigned long long)day_second/3600);
         *(dst + write_bytes++) = ':';
         day_second %= 3600;
-        write_bytes += write_integer_unsafe<10, 2>(dst + write_bytes, (unsigned long long)day_second / 60);
+        write_bytes += write_dec_unsafe<2>(dst + write_bytes, (unsigned long long)day_second / 60);
         *(dst + write_bytes++) = ':';
         day_second %= 60;
-        write_bytes += write_integer_unsafe<10, 2>(dst + write_bytes, (unsigned long long)day_second);
+        write_bytes += write_dec_unsafe<2>(dst + write_bytes, (unsigned long long)day_second);
 
         *(dst + write_bytes++) = '.';
         if (precise >= 1000)
         {
             precise = 999;
         }
-        write_bytes += write_integer_unsafe<10, 3>(dst + write_bytes, (unsigned long long)precise);
+        write_bytes += write_dec_unsafe<3>(dst + write_bytes, (unsigned long long)precise);
 
         *(dst + write_bytes++) = ']';
 
@@ -494,7 +494,7 @@ namespace FNLog
         write_bytes++;
         *(dst + write_bytes) = '[';
         write_bytes++;
-        write_bytes += write_integer_unsafe<10, 0>(dst + write_bytes, (unsigned long long) thread_id);
+        write_bytes += write_dec_unsafe<0>(dst + write_bytes, (unsigned long long) thread_id);
         *(dst + write_bytes) = ']';
         write_bytes++;
         return write_bytes;
@@ -509,7 +509,7 @@ namespace FNLog
         }
         int write_bytes = 2;
         memcpy(dst, "0x", 2);
-        write_bytes += write_integer_unsafe<16, 0>(dst + write_bytes, (unsigned long long) ptr);
+        write_bytes += write_hex_unsafe<0>(dst + write_bytes, (unsigned long long) ptr);
         return write_bytes;
     }
 

@@ -245,7 +245,7 @@ namespace FNLog
 
 
 
-    inline void EnterProcOutFileDevice(Logger& logger, int channel_id, int device_id, bool loop_end, LogData& log)
+    inline void EnterProcOutFileDevice(Logger& logger, int channel_id, int device_id, LogData& log)
     {
         Channel& channel = logger.channels_[channel_id];
         Device& device = channel.devices_[device_id];
@@ -264,10 +264,6 @@ namespace FNLog
         device.log_fields_[DEVICE_LOG_TOTAL_WRITE_LINE].num_++;
         device.log_fields_[DEVICE_LOG_TOTAL_WRITE_BYTE].num_ += log.content_len_;
         device.log_fields_[DEVICE_LOG_CUR_FILE_SIZE].num_ += log.content_len_;
-        if (loop_end)
-        {
-            writer.flush();
-        }
     }
 
 
