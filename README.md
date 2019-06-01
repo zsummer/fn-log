@@ -1,4 +1,4 @@
-Welcome to the fn_log wiki!  
+
 # Introduction:  
 [![Build Status](https://travis-ci.org/zsummer/fn-log.svg?branch=master)](https://travis-ci.org/zsummer/fn-log)  
 fn-log is an open source C++ lightweight & cross platform log library. It's a iteration version from log4z.   
@@ -48,7 +48,7 @@ fn-log是一款开源的轻量级高性能的跨平台日志库, 从log4z迭代�
 [20190514 16:47:20.548][ALARM] [15868] fn-log\tests\simple_test.cpp:<46> main finish
 ```
 
-### FAST USE EXAMPLE WITH OUT YAML FILE  
+### Fast Use Example With Out Yaml File    
 ``` C++
 #include "fn_log.h"
 
@@ -70,7 +70,7 @@ int main(int argc, char* argv[])
 }
 ```
 
-### Read Config Code Example 
+### Fast Use Example With Yaml File    
 yaml file    
 ``` yaml
 # 配表文件  
@@ -171,13 +171,13 @@ cd ../bin
 ```
 
 
-# CONFIG MANUAL
-### GLOBAL OPTION:  
+# Yaml Manual  
+### Global Option:  
 - [x] hot_update
   > option: true false  
   > default: false  
   > desc: moniter yaml file modify and update logger option.  
-### CHANNEL OPTION: (channel.)   
+### Channel Option: (channel.)   
 - [x] sync
   > option: async syncring  
   > default: async  
@@ -193,7 +193,7 @@ cd ../bin
   > option:  
   > default: 0, invalid value.  
   > desc: log will reserve when cls id in set [filter_cls_begin, filter_cls_begin+1), and other not.   
-### DEVICE OPTION: (channel.device.)  
+### Device Option: (channel.device.)  
 - [x] disable  
   > option: true, false  
   > default: true  
