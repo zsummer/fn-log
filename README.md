@@ -1,10 +1,10 @@
 Welcome to the fn_log wiki!  
 # Introduction:  
-[![Build Status](https://travis-ci.org/zsummer/fn_log.svg?branch=master)](https://travis-ci.org/zsummer/fn_log)  
-fn_log is an open source C++ lightweight & cross platform log library. It's a iteration version from log4z.   
+[![Build Status](https://travis-ci.org/zsummer/fn-log.svg?branch=master)](https://travis-ci.org/zsummer/fn-log)  
+fn-log is an open source C++ lightweight & cross platform log library. It's a iteration version from log4z.   
 It provides in a C++ application log and trace debug function for 7\*24h service program.    
 Support 64/32 of windows/linux/mac/android/iOS.    
-fn_log是一款开源的轻量级高性能的跨平台日志库, 从log4z迭代而来, 主要针对7\*24小时服务器程序的日志输出与跟踪调试,   
+fn-log是一款开源的轻量级高性能的跨平台日志库, 从log4z迭代而来, 主要针对7\*24小时服务器程序的日志输出与跟踪调试,   
 支持64/32位的windows/linux/mac/android/iOS等操作系统.   
 
 # Feature:  
@@ -37,15 +37,15 @@ fn_log是一款开源的轻量级高性能的跨平台日志库, 从log4z迭代�
 ```
 [20190514 16:47:20.536][ALARM] [15868]channel [0] start.
 
-[20190514 16:47:20.548][DEBUG] [15868] fn_log\tests\simple_test.cpp:<40> main log init success
-[20190514 16:47:20.548][DEBUG] [15868] fn_log\tests\simple_test.cpp:<42> main now time:1557823640;
-[20190514 16:47:20.548][DEBUG] [15868] fn_log\tests\simple_test.cpp:<44> main hex text:
+[20190514 16:47:20.548][DEBUG] [15868] fn-log\tests\simple_test.cpp:<40> main log init success
+[20190514 16:47:20.548][DEBUG] [15868] fn-log\tests\simple_test.cpp:<42> main now time:1557823640;
+[20190514 16:47:20.548][DEBUG] [15868] fn-log\tests\simple_test.cpp:<44> main hex text:
 	[
 	[0x7FF67B00B4B4:  f  n  l  o  g  . 
 	[0x7FF67B00B4B4: 66 6E 6C 6F 67 00 
 	]
 	
-[20190514 16:47:20.548][ALARM] [15868] fn_log\tests\simple_test.cpp:<46> main finish
+[20190514 16:47:20.548][ALARM] [15868] fn-log\tests\simple_test.cpp:<46> main finish
 ```
 
 ### FAST USE EXAMPLE WITH OUT YAML FILE  
@@ -143,11 +143,10 @@ int main(int argc, char* argv[])
 
 # How To Use  
 ### multi header file  
-cp src/include/*.h to dst project.   
-
+cp src/include/\*.h to dst project.   
 ### single header file  
 cp fn_log.h.only to dst project and remove suffix ".only"   
-> the file fn_log.h.only merge from src/include/*.h  
+> the file fn_log.h.only merge from src/include/\*.h  
 
 ### Supported Compilers  
 * GCC >= 4.8  
@@ -249,5 +248,5 @@ cd ../bin
 Author: YaweiZhang  
 Mail: yawei.zhang@foxmail.com  
 QQGROUP: 524700770  
-GitHub: https://github.com/zsummer/fn_log  
+GitHub: https://github.com/zsummer/fn-log  
 
