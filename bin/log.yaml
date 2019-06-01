@@ -1,0 +1,36 @@
+# 配表文件  
+
+ hot_update: true
+ # 0通道为多线程文件输出和一个CLS筛选的屏显输出
+ - channel: 0  
+    filter_level: trace
+    filter_cls_begin: 0
+    filter_cls_count: 0
+    -device: 0
+        disable: false
+        out_type: file
+        filter_level: trace
+        filter_cls_begin: 0
+        filter_cls_count: 0
+        path: "./log/"
+        file: "$PNAME_$YEAR$MON$DAY"
+        rollback: 4
+        limit_size: 1000 m #only support M byte
+    -device: 1
+        disable: false
+        out_type: screen
+        filter_cls_begin: 0
+        filter_cls_count: 0
+ # 1通道为多线程不挂任何输出端
+ - channel: 1
+
+ # 2通道为单线程同步写文件
+ - channel: 2
+    sync_write: 1 #only support single thread
+    -device: 0
+        disable: false
+        out_type: file
+
+ # 3通道为单线程无输出端
+ - channel: 3
+    sync_write: 1 #only support single thread
