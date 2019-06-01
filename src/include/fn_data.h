@@ -47,7 +47,7 @@
 
 namespace FNLog
 {
-    enum ENUM_LOG_LEVEL
+    enum LOG_LEVEL
     {
         LOG_LEVEL_TRACE = 0,
         LOG_LEVEL_DEBUG,
@@ -58,7 +58,16 @@ namespace FNLog
         LOG_LEVEL_FATAL,
         LOG_LEVEL_MAX
     };
-    
+    enum LOG_PREFIX
+    {
+        LOG_PREFIX_NULL = 0x0,
+        LOG_PREFIX_TIMESTAMP = 0x1,
+        LOG_PREFIX_LEVEL = 0x2,
+        LOG_PREFIX_THREAD = 0x4,
+        LOG_PREFIX_FILE = 0x8,
+        LOG_PREFIX_FUNCTION = 0x10,
+        LOG_PREFIX_ALL = 0xff
+    };
 
     union AnyVal
     {
@@ -78,7 +87,6 @@ namespace FNLog
         static const int MAX_LOG_SIZE = 2000;
     public:
         int    channel_id_;
-        int    log_type_;
         int    filter_level_;
         int    filter_cls_;
         long long timestamp_;        //create timestamp

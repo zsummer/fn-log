@@ -148,7 +148,7 @@ namespace FNLog
         return RK_NULL;
     }
 
-    inline ENUM_LOG_LEVEL ParseLogLevel(const char* begin, const char* end)
+    inline LOG_LEVEL ParseLogLevel(const char* begin, const char* end)
     {
         if (end <= begin)
         {

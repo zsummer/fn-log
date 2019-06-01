@@ -115,14 +115,13 @@ namespace FNLog
         return plog;
     }
 
-    inline LogData* AllocLogData(Logger& logger, int channel_id, int filter_level, int filter_cls, bool prefix)
+    inline LogData* AllocLogData(Logger& logger, int channel_id, int filter_level, int filter_cls, unsigned int prefix)
     {
         LogData* plog = AllocLogDataImpl(logger, channel_id);
         LogData& log = *plog;
         log.channel_id_ = channel_id;
         log.filter_level_ = filter_level;
         log.filter_cls_ = filter_cls;
-        log.log_type_ = LOG_TYPE_NULL;
         log.content_len_ = 0;
         log.content_[log.content_len_] = '\0';
 
@@ -144,7 +143,7 @@ namespace FNLog
         log.precise_ = tm.tv_usec / 1000;
 #endif
         log.thread_ = 0;
-        if (!prefix)
+        if (prefix == LOG_PREFIX_NULL)
         {
             return plog;
         }
@@ -160,10 +159,18 @@ namespace FNLog
         static thread_local unsigned int therad_id = (unsigned int)syscall(SYS_gettid);
         log.thread_ = therad_id;
 #endif
-
-        log.content_len_ += write_date_unsafe(log.content_+ log.content_len_, log.timestamp_, log.precise_);
-        log.content_len_ += write_log_level_unsafe(log.content_ + log.content_len_, log.filter_level_);
-        log.content_len_ += write_log_thread_unsafe(log.content_ + log.content_len_, log.thread_);
+        if (prefix & LOG_PREFIX_TIMESTAMP)
+        {
+            log.content_len_ += write_date_unsafe(log.content_ + log.content_len_, log.timestamp_, log.precise_);
+        }
+        if (prefix & LOG_PREFIX_LEVEL)
+        {
+            log.content_len_ += write_log_level_unsafe(log.content_ + log.content_len_, log.filter_level_);
+        }
+        if (prefix & LOG_PREFIX_THREAD)
+        {
+            log.content_len_ += write_log_thread_unsafe(log.content_ + log.content_len_, log.thread_);
+        }
         log.content_[log.content_len_] = '\0';
         return &log;
     }

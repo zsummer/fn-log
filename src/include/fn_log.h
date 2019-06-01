@@ -116,6 +116,28 @@ R"----(
         return FastStartDefaultLogger(default_config_text);
     }
 
+    inline int FastStartSimpleLogger()
+    {
+        static const std::string default_config_text =
+            R"----(
+ # default is mult-thread - async write channel.  
+ # the first device is write rollback file  
+ # the second device is print to screen.  
+ - channel: 0
+    sync: null
+    -device: 0
+        disable: false
+        out_type: file
+        file: "$PNAME"
+        rollback: 1
+        limit_size: 100 m #only support M byte
+    -device:1
+        disable: false
+        out_type: screen
+        filter_level: info
+)----";
+        return FastStartDefaultLogger(default_config_text);
+    }
 
     class LogStream
     {
@@ -132,7 +154,7 @@ R"----(
 
         explicit LogStream(Logger& logger, int channel_id, int filter_level, int filter_cls, 
             const char * const file_name, int file_name_len, int line,
-            const char * const func_name, int func_name_len, bool prefix)
+            const char * const func_name, int func_name_len, unsigned int prefix)
         {
             logger_ = nullptr;
             log_data_ = nullptr;
@@ -142,35 +164,40 @@ R"----(
             }
             logger_ = &logger;
             log_data_ = AllocLogData(logger, channel_id, filter_level, filter_cls, prefix);
-            if (!prefix)
+            if (prefix == LOG_PREFIX_NULL)
             {
                 return;
             }
-            write_char_unsafe(' ');
-            if (file_name && file_name_len > 0)
+            if (prefix & LOG_PREFIX_FILE)
             {
-                int jump_bytes = short_path(file_name, file_name_len);
-                write_buffer_unsafe(file_name + jump_bytes, file_name_len - jump_bytes);
+                write_char_unsafe(' ');
+                if (file_name && file_name_len > 0)
+                {
+                    int jump_bytes = short_path(file_name, file_name_len);
+                    write_buffer_unsafe(file_name + jump_bytes, file_name_len - jump_bytes);
+                }
+                else
+                {
+                    write_buffer_unsafe("nofile", 6);
+                }
+                write_char_unsafe(':');
+                write_char_unsafe('<');
+                *this << (unsigned long long)line;
+                write_char_unsafe('>');
+                write_char_unsafe(' ');
             }
-            else
+            if (prefix & LOG_PREFIX_FUNCTION)
             {
-                write_buffer_unsafe("nofile", 6);
+                if (func_name && func_name_len > 0)
+                {
+                    write_buffer_unsafe(func_name, func_name_len);
+                }
+                else
+                {
+                    write_buffer_unsafe("null", 4);
+                }
+                write_char_unsafe(' ');
             }
-            write_char_unsafe(':');
-            write_char_unsafe('<');
-            *this << (unsigned long long)line;
-            write_char_unsafe('>');
-            write_char_unsafe(' ');
-
-            if (func_name && func_name_len > 0)
-            {
-                write_buffer_unsafe(func_name, func_name_len);
-            }
-            else
-            {
-                write_buffer_unsafe("null", 4);
-            }
-            write_char_unsafe(' ');
         }
         
         ~LogStream()
@@ -390,17 +417,16 @@ R"----(
     };
 }
 
-#ifdef USE_LOG4Z_FORMAT
 
-
-#else
-
-#define LOG_STREAM_IMPL(logger, channel, level, cls) \
+#define LOG_STREAM_IMPL(logger, channel, level, cls, prefix) \
 FNLog::LogStream(logger, channel, level, cls, \
 __FILE__, sizeof(__FILE__) - 1, \
-__LINE__, __FUNCTION__, sizeof(__FUNCTION__) -1, true)
+__LINE__, __FUNCTION__, sizeof(__FUNCTION__) -1, prefix)
 
-#define LOG_STREAM(channel_id, filter_level, cls_id) LOG_STREAM_IMPL(FNLog::GetDefaultLogger(), channel_id, filter_level, cls_id)
+
+#ifndef USE_LOG4Z_FORMAT
+
+#define LOG_STREAM(channel_id, filter_level, cls_id) LOG_STREAM_IMPL(FNLog::GetDefaultLogger(), channel_id, filter_level, cls_id, FNLog::LOG_PREFIX_ALL)
 
 #define LOGCT(channel_id, cls_id) LOG_STREAM(channel_id, FNLog::LOG_LEVEL_TRACE, cls_id)
 #define LOGCD(channel_id, cls_id) LOG_STREAM(channel_id, FNLog::LOG_LEVEL_DEBUG, cls_id)
@@ -418,6 +444,29 @@ __LINE__, __FUNCTION__, sizeof(__FUNCTION__) -1, true)
 #define LOGA() LOGCA(0,0)
 #define LOGF() LOGCF(0,0)
 
+#else
+
+#define LOG_STREAM(channel_id, filter_level, cls_id, prefix, log) \
+    LOG_STREAM_IMPL(FNLog::GetDefaultLogger(), channel_id, filter_level, cls_id, prefix) << log
+//! fast macro
+#define LOG_TRACE(channel_id, log) LOG_STREAM(channel_id, FNLog::LOG_LEVEL_TRACE, 0, FNLog::LOG_PREFIX_ALL, log)
+#define LOG_DEBUG(channel_id, log) LOG_STREAM(channel_id, FNLog::LOG_LEVEL_DEBUG, 0, FNLog::LOG_PREFIX_ALL, log)
+#define LOG_INFO (channel_id, log) LOG_STREAM(channel_id, FNLog::LOG_LEVEL_INFO,  0, FNLog::LOG_PREFIX_ALL, log)
+#define LOG_WARN (channel_id, log) LOG_STREAM(channel_id, FNLog::LOG_LEVEL_WARN,  0, FNLog::LOG_PREFIX_ALL, log)
+#define LOG_ERROR(channel_id, log) LOG_STREAM(channel_id, FNLog::LOG_LEVEL_ERROR, 0, FNLog::LOG_PREFIX_ALL, log)
+#define LOG_ALARM(channel_id, log) LOG_STREAM(channel_id, FNLog::LOG_LEVEL_ALARM, 0, FNLog::LOG_PREFIX_ALL, log)
+#define LOG_FATAL(channel_id, log) LOG_STREAM(channel_id, FNLog::LOG_LEVEL_FATAL, 0, FNLog::LOG_PREFIX_ALL, log)
+
+//! super macro.
+#define LOGT( log ) LOG_TRACE(0, log )
+#define LOGD( log ) LOG_DEBUG(0, log )
+#define LOGI( log ) LOG_INFO (0, log )
+#define LOGW( log ) LOG_WARN (0, log )
+#define LOGE( log ) LOG_ERROR(0, log )
+#define LOGA( log ) LOG_ALARM(0, log )
+#define LOGF( log ) LOG_FATAL(0, log )
+
 #endif
+
 
 #endif

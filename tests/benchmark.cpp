@@ -90,7 +90,7 @@ int main(int argc, char *argv[])
         total_count = 0;
         do
         {
-            FNLog::LogStream(logger, i, 0, 0, nullptr, 0, 0, nullptr, 0, false)
+            LOG_STREAM_IMPL(logger, i, FNLog::LOG_LEVEL_DEBUG, 0, FNLog::LOG_PREFIX_NULL)
                 .write_buffer("rrrrrrrrrrrrrrrrrrrradfads33333333333333rrd",
                     sizeof("rrrrrrrrrrrrrrrrrrrradfads33333333333333rrd") - 1);
 
