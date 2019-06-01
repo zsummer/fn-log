@@ -82,6 +82,8 @@ int main(int argc, char* argv[])
                 return -1;
             }
         }
+        (void) rd;
+        (void) last_len;
 
     }
     LOGA() << "finish";
