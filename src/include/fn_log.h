@@ -448,7 +448,7 @@ __LINE__, __FUNCTION__, sizeof(__FUNCTION__) -1, prefix)
 
 #define LOG_STREAM(channel_id, filter_level, cls_id, prefix, log) \
     LOG_STREAM_IMPL(FNLog::GetDefaultLogger(), channel_id, filter_level, cls_id, prefix) << log
-//! fast macro
+
 #define LOG_TRACE(channel_id, log) LOG_STREAM(channel_id, FNLog::LOG_LEVEL_TRACE, 0, FNLog::LOG_PREFIX_ALL, log)
 #define LOG_DEBUG(channel_id, log) LOG_STREAM(channel_id, FNLog::LOG_LEVEL_DEBUG, 0, FNLog::LOG_PREFIX_ALL, log)
 #define LOG_INFO (channel_id, log) LOG_STREAM(channel_id, FNLog::LOG_LEVEL_INFO,  0, FNLog::LOG_PREFIX_ALL, log)
@@ -457,11 +457,11 @@ __LINE__, __FUNCTION__, sizeof(__FUNCTION__) -1, prefix)
 #define LOG_ALARM(channel_id, log) LOG_STREAM(channel_id, FNLog::LOG_LEVEL_ALARM, 0, FNLog::LOG_PREFIX_ALL, log)
 #define LOG_FATAL(channel_id, log) LOG_STREAM(channel_id, FNLog::LOG_LEVEL_FATAL, 0, FNLog::LOG_PREFIX_ALL, log)
 
-//! super macro.
+
 #define LOGT( log ) LOG_TRACE(0, log )
 #define LOGD( log ) LOG_DEBUG(0, log )
-#define LOGI( log ) LOG_INFO (0, log )
-#define LOGW( log ) LOG_WARN (0, log )
+#define LOGI( log ) LOG_INFO(0, log )
+#define LOGW( log ) LOG_WARN(0, log )
 #define LOGE( log ) LOG_ERROR(0, log )
 #define LOGA( log ) LOG_ALARM(0, log )
 #define LOGF( log ) LOG_FATAL(0, log )
