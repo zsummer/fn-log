@@ -12,6 +12,8 @@ int main(int argc, char* argv[])
     LOGA("log init success");
 
     LOGD("now time:" << time(nullptr) << ";");
+
+    LOGFMTD("test:<%d>", 100);
     
     LOGA("finish");
 

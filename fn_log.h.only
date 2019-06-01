@@ -3892,6 +3892,53 @@ __LINE__, __FUNCTION__, sizeof(__FUNCTION__) -1, prefix)
 #define LOGA( log ) LOG_ALARM(0, log )
 #define LOGF( log ) LOG_FATAL(0, log )
 
+#ifdef WIN32
+#define LOG_FORMAT(channel_id, filter_level, filter_cls, prefix, logformat, ...) \
+do{ \
+    if (CanPushLog(FNLog::GetDefaultLogger(), channel_id, filter_level, filter_cls) == 0) \
+    {\
+        FNLog::LogStream __log_stream(LOG_STREAM_IMPL(FNLog::GetDefaultLogger(), channel_id, filter_level, filter_cls, prefix));\
+        if (__log_stream.log_data_)\
+        {\
+            int __log_len = _snprintf_s(__log_stream.log_data_ ->content_ + __log_stream.log_data_ ->content_len_, FNLog::LogData::MAX_LOG_SIZE - __log_stream.log_data_ ->content_len_, _TRUNCATE, logformat, ##__VA_ARGS__); \
+            if (__log_len < 0) __log_len = 0; \
+            __log_stream.log_data_ ->content_len_ += __log_len; \
+        }\
+    }\
+} while (0)
+#else
+#define LOG_FORMAT(channel_id, filter_level, filter_cls, prefix, logformat, ...) \
+do{ \
+    if (CanPushLog(FNLog::GetDefaultLogger(), channel_id, filter_level, filter_cls) == 0) \
+    {\
+        FNLog::LogStream __log_stream(LOG_STREAM_IMPL(FNLog::GetDefaultLogger(), channel_id, filter_level, filter_cls, prefix));\
+        if (__log_stream.log_data_)\
+        {\
+            int __log_len = snprintf(__log_stream.log_data_ ->content_ + __log_stream.log_data_ ->content_len_, FNLog::LogData::MAX_LOG_SIZE - __log_stream.log_data_ ->content_len_, logformat, ##__VA_ARGS__); \
+            if (__log_len < 0) __log_len = 0; \
+            __log_stream.log_data_ ->content_len_ += __log_len; \
+        }\
+    }\
+} while (0)
+#endif
+//!format string
+#define LOGFMT_TRACE(channel_id, fmt, ...)  LOG_FORMAT(channel_id, FNLog::LOG_LEVEL_TRACE, 0, FNLog::LOG_PREFIX_ALL, fmt, ##__VA_ARGS__)
+#define LOGFMT_DEBUG(channel_id, fmt, ...)  LOG_FORMAT(channel_id, FNLog::LOG_LEVEL_DEBUG, 0, FNLog::LOG_PREFIX_ALL, fmt, ##__VA_ARGS__)
+#define LOGFMT_INFO(channel_id, fmt, ...)  LOG_FORMAT(channel_id, FNLog::LOG_LEVEL_INFO,  0, FNLog::LOG_PREFIX_ALL, fmt, ##__VA_ARGS__)
+#define LOGFMT_WARN(channel_id, fmt, ...)  LOG_FORMAT(channel_id, FNLog::LOG_LEVEL_WARN,  0, FNLog::LOG_PREFIX_ALL, fmt, ##__VA_ARGS__)
+#define LOGFMT_ERROR(channel_id, fmt, ...)  LOG_FORMAT(channel_id, FNLog::LOG_LEVEL_ERROR, 0, FNLog::LOG_PREFIX_ALL, fmt, ##__VA_ARGS__)
+#define LOGFMT_ALARM(channel_id, fmt, ...)  LOG_FORMAT(channel_id, FNLog::LOG_LEVEL_ALARM, 0, FNLog::LOG_PREFIX_ALL, fmt, ##__VA_ARGS__)
+#define LOGFMT_FATAL(channel_id, fmt, ...)  LOG_FORMAT(channel_id, FNLog::LOG_LEVEL_FATAL, 0, FNLog::LOG_PREFIX_ALL, fmt, ##__VA_ARGS__)
+#define LOGFMTT( fmt, ...) LOGFMT_TRACE(0, fmt,  ##__VA_ARGS__)
+#define LOGFMTD( fmt, ...) LOGFMT_DEBUG(0, fmt,  ##__VA_ARGS__)
+#define LOGFMTI( fmt, ...) LOGFMT_INFO (0, fmt,  ##__VA_ARGS__)
+#define LOGFMTW( fmt, ...) LOGFMT_WARN (0, fmt,  ##__VA_ARGS__)
+#define LOGFMTE( fmt, ...) LOGFMT_ERROR(0, fmt,  ##__VA_ARGS__)
+#define LOGFMTA( fmt, ...) LOGFMT_ALARM(0, fmt,  ##__VA_ARGS__)
+#define LOGFMTF( fmt, ...) LOGFMT_FATAL(0, fmt,  ##__VA_ARGS__)
+
+
+
 #endif
 
 
