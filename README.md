@@ -33,7 +33,7 @@ fn-log是一款开源的轻量级高性能的跨平台日志库, 从log4z迭代�
 
 #  Example  
 
-### log format  example 
+### Log Format   
 ```
 [20190514 16:47:20.536][ALARM] [15868]channel [0] start.
 
