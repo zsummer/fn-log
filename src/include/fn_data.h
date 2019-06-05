@@ -44,6 +44,18 @@
 
 #include "fn_file.h"
 
+#ifndef FN_LOG_MAX_CHANNEL_SIZE
+#define FN_LOG_MAX_CHANNEL_SIZE 6
+#endif
+#ifndef FN_LOG_MAX_LOG_SIZE
+#define FN_LOG_MAX_LOG_SIZE 20000
+#endif
+#ifndef FN_LOG_MAX_LOG_QUEUE_SIZE
+#define FN_LOG_MAX_LOG_QUEUE_SIZE 20000
+#endif
+#ifndef FN_LOG_MAX_LOG_QUEUE_CACHE_SIZE
+#define FN_LOG_MAX_LOG_QUEUE_CACHE_SIZE FN_LOG_MAX_LOG_QUEUE_SIZE
+#endif
 
 namespace FNLog
 {
@@ -84,7 +96,7 @@ namespace FNLog
     struct LogData
     {
     public:
-        static const int MAX_LOG_SIZE = 2000;
+        static const int MAX_LOG_SIZE = FN_LOG_MAX_LOG_SIZE;
     public:
         int    channel_id_;
         int    filter_level_;
@@ -161,7 +173,7 @@ namespace FNLog
     public:
         using LogDataPtr = LogData *;
         using SizeType = unsigned int;
-        static const int MAX_LOG_QUEUE_LEN = 80000;
+        static const int MAX_LOG_QUEUE_LEN = FN_LOG_MAX_LOG_QUEUE_SIZE;
     public:
         char chunk_1_[CHUNK_SIZE];
         long long log_count_;
@@ -208,7 +220,7 @@ namespace FNLog
         using ConfigFields = std::array<AnyVal, CHANNEL_CFG_MAX_ID>;
         using LogFields = std::array<AnyVal, CHANNEL_LOG_MAX_ID>;
         static const int MAX_DEVICE_SIZE = 20;
-        static const int MAX_FREE_POOL_SIZE = 4000;
+        static const int MAX_FREE_POOL_SIZE = FN_LOG_MAX_LOG_QUEUE_CACHE_SIZE;
         static_assert(MAX_FREE_POOL_SIZE <= LogQueue::MAX_LOG_QUEUE_LEN, "");
     public:
         char chunk_1_[CHUNK_SIZE];
@@ -245,7 +257,7 @@ namespace FNLog
     class Logger
     {
     public:
-        static const int MAX_CHANNEL_SIZE = 6;
+        static const int MAX_CHANNEL_SIZE = FN_LOG_MAX_CHANNEL_SIZE;
         using Channels = std::array<Channel, MAX_CHANNEL_SIZE>;
         using SyncGroups = std::array<SyncGroup, MAX_CHANNEL_SIZE>;
         using Locks = std::array<std::mutex, MAX_CHANNEL_SIZE>;

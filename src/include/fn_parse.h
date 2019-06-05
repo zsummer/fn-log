@@ -615,7 +615,7 @@ namespace FNLog
                 else
                 {
                     int channel_id = atoi(ls.line_.val_begin_);
-                    if (ls.channel_size_ > Logger::MAX_CHANNEL_SIZE || ls.channel_size_ != channel_id)
+                    if (ls.channel_size_ >= Logger::MAX_CHANNEL_SIZE || ls.channel_size_ != channel_id)
                     {
                         ls.line_.line_type_ = LINE_ERROR;
                         return ls.line_.line_type_;
