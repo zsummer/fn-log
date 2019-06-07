@@ -81,14 +81,14 @@ namespace FNLog
             {
                 continue;
             }
-            if (log.filter_level_ < device.config_fields_[DEVICE_CFG_FILTER_LEVEL].num_)
+            if (log.priority_ < device.config_fields_[DEVICE_CFG_PRIORITY].num_)
             {
                 continue;
             }
-            if (device.config_fields_[DEVICE_CFG_VALID_CLS_BEGIN].num_ > 0)
+            if (device.config_fields_[DEVICE_CFG_CATEGORY].num_ > 0)
             {
-                if (log.filter_cls_ < device.config_fields_[DEVICE_CFG_VALID_CLS_BEGIN].num_
-                    || log.filter_cls_ >= device.config_fields_[DEVICE_CFG_VALID_CLS_BEGIN].num_ + device.config_fields_[DEVICE_CFG_VALID_CLS_COUNT].num_)
+                if (log.category_ < device.config_fields_[DEVICE_CFG_CATEGORY].num_
+                    || log.category_ >= device.config_fields_[DEVICE_CFG_CATEGORY].num_ + device.config_fields_[DEVICE_CFG_CATEGORY_EXTEND].num_)
                 {
                     continue;
                 }

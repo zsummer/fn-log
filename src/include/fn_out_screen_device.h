@@ -51,18 +51,18 @@ namespace FNLog
     inline void EnterProcOutScreenDevice(Logger& logger, int channel_id, int device_id, LogData& log)
     {
         std::lock_guard<std::mutex> l(logger.screen_.write_lock_);
-        int filter_level = log.filter_level_;
-        if (log.filter_level_ < LOG_LEVEL_INFO)
+        int priority = log.priority_;
+        if (log.priority_ < PRIORITY_INFO)
         {
             printf("%s", log.content_);
             return;
         }
-        if (filter_level >= LOG_LEVEL_MAX)
+        if (priority >= PRIORITY_MAX)
         {
-            filter_level = LOG_LEVEL_ALARM;
+            priority = PRIORITY_ALARM;
         }
 #ifndef WIN32
-        printf("%s%s\e[0m", LEVEL_RENDER[filter_level].scolor_, log.content_);
+        printf("%s%s\e[0m", PRIORITY_RENDER[priority].scolor_, log.content_);
 #else
 
         HANDLE sc_handle = ::GetStdHandle(STD_OUTPUT_HANDLE);
@@ -75,7 +75,7 @@ namespace FNLog
         }
         else
         {
-            SetConsoleTextAttribute(sc_handle, LEVEL_RENDER[filter_level].color_);
+            SetConsoleTextAttribute(sc_handle, PRIORITY_RENDER[priority].color_);
             printf("%s", log.content_);
             SetConsoleTextAttribute(sc_handle, old_info.wAttributes);
         }

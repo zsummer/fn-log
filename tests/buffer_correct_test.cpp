@@ -6,11 +6,11 @@ using namespace FNLog;
 { \
     if (expr) \
     { \
-        LOGI() << "test " << prefix << " success."; \
+        LogInfo() << "test " << prefix << " success."; \
     } \
     else \
     {   \
-        LOGE() << "test " << prefix << " failed."; \
+        LogError() << "test " << prefix << " failed."; \
         return __LINE__ * -1; \
     } \
 }

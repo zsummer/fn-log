@@ -5,13 +5,13 @@
 
 static const std::string example_config_text =
 R"----(
- # info and high level log print to screen  
+ # info and high priority log print to screen  
  - channel: 0
     sync: null
     -device:0
         disable: false
         out_type: screen
-        filter_level: info
+        priority: info
         
  - channel: 1
 
@@ -30,12 +30,12 @@ State state = WRITE;
 
 void thread_proc(int index)
 {
-    LOGI() << "thread:<" << index << "> begin.";
+    LogInfo() << "thread:<" << index << "> begin.";
     while (state != END)
     {
         if (state == WRITE)
         {
-            LOGD().write_buffer("rrrrrrrrrrrrrrrrrrrradfads33333333333333rrd",
+            LogDebug().write_buffer("rrrrrrrrrrrrrrrrrrrradfads33333333333333rrd",
                 sizeof("rrrrrrrrrrrrrrrrrrrradfads33333333333333rrd") - 1)
                 << -23 << ": " << 32.2223 << (void*) nullptr;
         }
@@ -44,7 +44,7 @@ void thread_proc(int index)
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
         }
     }
-    LOGI() << "thread:<" << index << "> end.";
+    LogInfo() << "thread:<" << index << "> end.";
 }
 
 const int WRITE_THREAD_COUNT = 6;
@@ -69,20 +69,20 @@ int main(int argc, char* argv[])
         long long last_writed = logger.channels_[0].log_fields_[FNLog::CHANNEL_LOG_PROCESSED].num_;
         std::this_thread::sleep_for(std::chrono::milliseconds(1000));
         long long now_writed = logger.channels_[0].log_fields_[FNLog::CHANNEL_LOG_PROCESSED].num_;
-        LOGI() << "now thread:" << thread_id+1 << ": writed:" << now_writed - last_writed << ", cache hit:"
+        LogInfo() << "now thread:" << thread_id+1 << ": writed:" << now_writed - last_writed << ", cache hit:"
             << (double)logger.channels_[0].log_fields_[FNLog::CHANNEL_LOG_ALLOC_CACHE].num_
             / logger.channels_[0].log_fields_[FNLog::CHANNEL_LOG_ALLOC_CALL].num_ * 100.0;
         
         if (limit_second/3 > thread_id && thread_id+1 < WRITE_THREAD_COUNT)
         {
             thread_id++;
-            LOGI() << "add new thread:" << thread_id;
+            LogInfo() << "add new thread:" << thread_id;
             g_multi_proc[thread_id] = std::thread(thread_proc, thread_id);
         }
         limit_second++;
     } while (limit_second < 12);
 
-    LOGA() << "finish";
+    LogAlarm() << "finish";
     state = END;
     for (int i = 0; i <= thread_id; i++)
     {

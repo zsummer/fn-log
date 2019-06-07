@@ -14,18 +14,18 @@
 static const std::string example_config_text =
 R"----(
  # 压测配表  
- # 0通道为多线程文件输出和一个CLS筛选的屏显输出 
+ # 0通道为多线程文件输出和一个CATEGORY筛选的屏显输出 
  - channel: 0
     sync: null
-    filter_level: trace
-    filter_cls_begin: 0
-    filter_cls_count: 0
+    priority: trace
+    category: 0
+    category_extend: 0
     -device: 0
         disable: false
         out_type: file
-        filter_level: trace
-        filter_cls_begin: 0
-        filter_cls_count: 0
+        priority: trace
+        category: 0
+        category_extend: 0
         path: "./log/"
         file: "$PNAME_$YEAR$MON$DAY"
         rollback: 4
@@ -33,8 +33,8 @@ R"----(
     -device:1
         disable: false
         out_type: screen
-        filter_cls_begin: 1
-        filter_cls_count: 1
+        category: 1
+        category_extend: 1
  # 1通道为多线程不挂任何输出端 
  - channel: 1
 
@@ -98,7 +98,7 @@ int main(int argc, char *argv[])
         total_count = 0;
         do
         {
-            LOG_STREAM_IMPL(logger, i, FNLog::LOG_LEVEL_DEBUG, 0, FNLog::LOG_PREFIX_NULL)
+            LOG_STREAM_DEFAULT_LOGGER(i, FNLog::PRIORITY_DEBUG, 0, FNLog::LOG_PREFIX_NULL)
                 .write_buffer("rrrrrrrrrrrrrrrrrrrradfads33333333333333rrd",
                     sizeof("rrrrrrrrrrrrrrrrrrrradfads33333333333333rrd") - 1);
 
@@ -108,7 +108,7 @@ int main(int argc, char *argv[])
                 long long now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
                 if (total_count > 0)
                 {
-                    LOGCI(0, 1) << "channel:<" << (long long)i << "> "
+                    LogInfoStream(0, 1) << "channel:<" << (long long)i << "> "
                         << ChannelDesc(logger.channels_[i].channel_type_) << " has write file:<"
                         << logger.channels_[i].device_size_ << "> test " << 1000000*1000 / (now - last) << " line/sec. cache hit:"
                         << (double)logger.channels_[i].log_fields_[FNLog::CHANNEL_LOG_ALLOC_CACHE].num_ 
@@ -120,7 +120,7 @@ int main(int argc, char *argv[])
         } while (++total_count);
     }
 
-    LOGCA(0, 1) << "finish";
+    LogAlarmStream(0, 1) << "finish";
     return 0;
 }
 

@@ -46,7 +46,7 @@
 
 namespace FNLog
 {
-    inline int CanPushLog(Logger& logger, int channel_id, int filter_level, int filter_cls)
+    inline int CanPushLog(Logger& logger, int channel_id, int priority, int category)
     {
         if (channel_id >= logger.channel_size_ || channel_id < 0)
         {
@@ -54,14 +54,14 @@ namespace FNLog
         }
         Channel& channel = logger.channels_[channel_id];
 
-        if (filter_level < channel.config_fields_[CHANNEL_CFG_FILTER_LEVEL].num_)
+        if (priority < channel.config_fields_[CHANNEL_CFG_PRIORITY].num_)
         {
             return 1;
         }
-        if (channel.config_fields_[CHANNEL_CFG_VALID_CLS_BEGIN].num_ > 0)
+        if (channel.config_fields_[CHANNEL_CFG_CATEGORY].num_ > 0)
         {
-            if (filter_cls < channel.config_fields_[CHANNEL_CFG_VALID_CLS_BEGIN].num_
-                || filter_cls >= channel.config_fields_[CHANNEL_CFG_VALID_CLS_BEGIN].num_ + channel.config_fields_[CHANNEL_CFG_VALID_CLS_COUNT].num_)
+            if (category < channel.config_fields_[CHANNEL_CFG_CATEGORY].num_
+                || category >= channel.config_fields_[CHANNEL_CFG_CATEGORY].num_ + channel.config_fields_[CHANNEL_CFG_CATEGORY_EXTEND].num_)
             {
                 return 2;
             }
@@ -146,7 +146,7 @@ namespace FNLog
             Channel& channel = logger.channels_[channel_id];
             std::thread& thd = logger.syncs_[channel_id].log_thread_;
             static_assert(LogData::MAX_LOG_SIZE > Device::MAX_PATH_SYS_LEN*2+100, "");
-            LogData* log = AllocLogData(logger, channel_id, LOG_LEVEL_ALARM, 0, true);
+            LogData* log = AllocLogData(logger, channel_id, PRIORITY_ALARM, 0, true);
 
             memcpy(log->content_ + log->content_len_, "channel [", sizeof("channel [") - 1);
             log->content_len_ += sizeof("channel [") - 1;

@@ -8,11 +8,11 @@ int main(int argc, char* argv[])
         return ret;
     }
 
-    LOGA() << "log init success";
+    LogAlarm() << "log init success";
 
-    LOGD() << "now time:" << time(nullptr) << ";";
+    LogDebug() << "now time:" << time(nullptr) << ";";
     
-    LOGA() << "finish";
+    LogAlarm() << "finish";
 
 
     return 0;

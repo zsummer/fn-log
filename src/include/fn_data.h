@@ -47,6 +47,7 @@
 #ifndef FN_LOG_MAX_CHANNEL_SIZE
 #define FN_LOG_MAX_CHANNEL_SIZE 6
 #endif
+
 #ifndef FN_LOG_MAX_LOG_SIZE
 #define FN_LOG_MAX_LOG_SIZE 1000
 #endif
@@ -59,22 +60,22 @@
 
 namespace FNLog
 {
-    enum LOG_LEVEL
+    enum LogPriority
     {
-        LOG_LEVEL_TRACE = 0,
-        LOG_LEVEL_DEBUG,
-        LOG_LEVEL_INFO,
-        LOG_LEVEL_WARN,
-        LOG_LEVEL_ERROR,
-        LOG_LEVEL_ALARM,
-        LOG_LEVEL_FATAL,
-        LOG_LEVEL_MAX
+        PRIORITY_TRACE = 0,
+        PRIORITY_DEBUG,
+        PRIORITY_INFO,
+        PRIORITY_WARN,
+        PRIORITY_ERROR,
+        PRIORITY_ALARM,
+        PRIORITY_FATAL,
+        PRIORITY_MAX
     };
-    enum LOG_PREFIX
+    enum LogPrefix
     {
         LOG_PREFIX_NULL = 0x0,
         LOG_PREFIX_TIMESTAMP = 0x1,
-        LOG_PREFIX_LEVEL = 0x2,
+        LOG_PREFIX_PRIORITY = 0x2,
         LOG_PREFIX_THREAD = 0x4,
         LOG_PREFIX_FILE = 0x8,
         LOG_PREFIX_FUNCTION = 0x10,
@@ -99,8 +100,8 @@ namespace FNLog
         static const int MAX_LOG_SIZE = FN_LOG_MAX_LOG_SIZE;
     public:
         int    channel_id_;
-        int    filter_level_;
-        int    filter_cls_;
+        int    priority_;
+        int    category_;
         long long timestamp_;        //create timestamp
         int precise_; //create time millionsecond suffix
         unsigned int thread_;
@@ -121,9 +122,9 @@ namespace FNLog
     enum DeviceConfigEnum
     {
         DEVICE_CFG_ABLE, 
-        DEVICE_CFG_FILTER_LEVEL,  
-        DEVICE_CFG_VALID_CLS_BEGIN,  
-        DEVICE_CFG_VALID_CLS_COUNT, 
+        DEVICE_CFG_PRIORITY,  
+        DEVICE_CFG_CATEGORY,  
+        DEVICE_CFG_CATEGORY_EXTEND, 
         DEVICE_CFG_FILE_LIMIT_SIZE, 
         DEVICE_CFG_FILE_ROLLBACK, 
         DEVICE_CFG_UDP_IP,
@@ -154,7 +155,7 @@ namespace FNLog
         static const int MAX_ROLLBACK_LEN = 4;
         static const int MAX_ROLLBACK_PATHS = 5;
         static_assert(MAX_PATH_LEN + MAX_NAME_LEN + MAX_ROLLBACK_LEN < MAX_PATH_SYS_LEN, "");
-        static_assert(LogData::MAX_LOG_SIZE > MAX_PATH_SYS_LEN*2, ""); // promise format length: date, time, source file path, function length.
+        static_assert(LogData::MAX_LOG_SIZE > MAX_PATH_SYS_LEN*2, "unsafe size"); // promise format length: date, time, source file path, function length.
         static_assert(MAX_ROLLBACK_PATHS < 10, "");
         using ConfigFields = std::array<AnyVal, DEVICE_CFG_MAX_ID>;
         using LogFields = std::array<AnyVal, DEVICE_LOG_MAX_ID>;
@@ -194,9 +195,9 @@ namespace FNLog
 
     enum ChannelConfigEnum
     {
-        CHANNEL_CFG_FILTER_LEVEL, 
-        CHANNEL_CFG_VALID_CLS_BEGIN,  
-        CHANNEL_CFG_VALID_CLS_COUNT, 
+        CHANNEL_CFG_PRIORITY, 
+        CHANNEL_CFG_CATEGORY,  
+        CHANNEL_CFG_CATEGORY_EXTEND, 
         CHANNEL_CFG_MAX_ID
     };
 

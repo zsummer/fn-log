@@ -8,7 +8,7 @@ R"----(
     -device: 0
         disable: false
         out_type: file
-        filter_level: trace
+        priority: trace
         path: "./log/"
         file: "$PNAME_$YEAR$MON$DAY"
         rollback: 4
@@ -16,7 +16,7 @@ R"----(
     -device:1
         disable: false
         out_type: screen
-        filter_level: info
+        priority: info
 
 )----";
 
@@ -28,11 +28,11 @@ int main(int argc, char* argv[])
         return ret ;
     }
 
-    LOGA() << "log init success";  //sync write
+    LogAlarm() << "log init success";  //sync write
 
     for (int i = 0; i < 1000; i++)
     {
-        auto ls(LOGD());
+        auto ls(LogDebug());
         ls << "log begin test buffer";
         int rd = 0;
         int last_len = 0;
@@ -78,7 +78,7 @@ int main(int argc, char* argv[])
             int length = ls.log_data_->content_len_;
             if (length > FNLog::LogData::MAX_LOG_SIZE)
             {
-                LOGF() << "error len:" << length;
+                LogFatal() << "error len:" << length;
                 return -1;
             }
         }
@@ -86,7 +86,7 @@ int main(int argc, char* argv[])
         (void) last_len;
 
     }
-    LOGA() << "finish";
+    LogAlarm() << "finish";
 
     return 0;
 }

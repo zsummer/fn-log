@@ -7,9 +7,9 @@ R"----(
  # desc
  - channel: 0
     sync: null
-    filter_level: trace
-    filter_cls_begin: 0
-    filter_cls_count: 0
+    priority: trace
+    category: 0
+    category_extend: 0
     -device: 0
         disable: false
         out_type: screen
@@ -39,14 +39,14 @@ int main(int argc, char* argv[])
         return ret;
     }
 
-    LOGD() << "log init success";
+    LogDebug() << "log init success";
     while (true)
     {
         std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-        LOGD() << "now time:" << (long long)time(nullptr) << ";";
+        LogDebug() << "now time:" << (long long)time(nullptr) << ";";
     }
 
-    LOGCA(0, 1) << "finish";
+    LogAlarmStream(0, 1) << "finish";
 
     return 0;
 }

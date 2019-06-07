@@ -115,13 +115,13 @@ namespace FNLog
         return plog;
     }
 
-    inline LogData* AllocLogData(Logger& logger, int channel_id, int filter_level, int filter_cls, unsigned int prefix)
+    inline LogData* AllocLogData(Logger& logger, int channel_id, int priority, int category, unsigned int prefix)
     {
         LogData* plog = AllocLogDataImpl(logger, channel_id);
         LogData& log = *plog;
         log.channel_id_ = channel_id;
-        log.filter_level_ = filter_level;
-        log.filter_cls_ = filter_cls;
+        log.priority_ = priority;
+        log.category_ = category;
         log.content_len_ = 0;
         log.content_[log.content_len_] = '\0';
 
@@ -163,9 +163,9 @@ namespace FNLog
         {
             log.content_len_ += write_date_unsafe(log.content_ + log.content_len_, log.timestamp_, log.precise_);
         }
-        if (prefix & LOG_PREFIX_LEVEL)
+        if (prefix & LOG_PREFIX_PRIORITY)
         {
-            log.content_len_ += write_log_level_unsafe(log.content_ + log.content_len_, log.filter_level_);
+            log.content_len_ += write_log_priority_unsafe(log.content_ + log.content_len_, log.priority_);
         }
         if (prefix & LOG_PREFIX_THREAD)
         {

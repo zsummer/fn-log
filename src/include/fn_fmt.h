@@ -50,13 +50,13 @@ namespace FNLog
 
 
 #ifndef WIN32
-    struct LevelRender
+    struct PriorityRender
     {
-        const char* const level_name_;
-        int level_len_;
+        const char* const priority_name_;
+        int priority_len_;
         const char* const scolor_;
     };
-    static const LevelRender LEVEL_RENDER[] =
+    static const PriorityRender PRIORITY_RENDER[] =
     {
         {"[TRACE]", sizeof("[TRACE]") - 1, "\e[0m",                     },
         {"[DEBUG]", sizeof("[DEBUG]") - 1, "\e[0m",                     },
@@ -67,13 +67,13 @@ namespace FNLog
         {"[FATAL]", sizeof("[FATAL]") - 1, "\e[35m",                    },
     };
 #else
-    struct LevelRender
+    struct PriorityRender
     {
-        const char* const level_name_;
-        int level_len_;
+        const char* const priority_name_;
+        int priority_len_;
         const WORD color_;
     };
-    static const LevelRender LEVEL_RENDER[] =
+    static const PriorityRender PRIORITY_RENDER[] =
     {
         {"[TRACE]", sizeof("[TRACE]") - 1,  FOREGROUND_INTENSITY,               },
         {"[DEBUG]", sizeof("[DEBUG]") - 1,  FOREGROUND_INTENSITY,               },
@@ -87,8 +87,8 @@ namespace FNLog
 
 
 
-    static_assert(LOG_LEVEL_TRACE == 0, "");
-    static_assert(sizeof(LEVEL_RENDER) / sizeof(LevelRender) == LOG_LEVEL_MAX, "");
+    static_assert(PRIORITY_TRACE == 0, "");
+    static_assert(sizeof(PRIORITY_RENDER) / sizeof(PriorityRender) == PRIORITY_MAX, "");
 
     
     template<int WIDE>
@@ -480,11 +480,11 @@ namespace FNLog
         return write_bytes;
     }
 
-    inline int write_log_level_unsafe(char* dst, int level)
+    inline int write_log_priority_unsafe(char* dst, int priority)
     {
-        level = level % LOG_LEVEL_MAX;
-        memcpy(dst, LEVEL_RENDER[level].level_name_, LEVEL_RENDER[level].level_len_);
-        return LEVEL_RENDER[level].level_len_;
+        priority = priority % PRIORITY_MAX;
+        memcpy(dst, PRIORITY_RENDER[priority].priority_name_, PRIORITY_RENDER[priority].priority_len_);
+        return PRIORITY_RENDER[priority].priority_len_;
     }
 
     inline int write_log_thread_unsafe(char* dst, unsigned int thread_id)

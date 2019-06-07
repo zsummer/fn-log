@@ -73,9 +73,9 @@ namespace FNLog
         RK_SYNC,
         RK_DISABLE,
         RK_HOT_UPDATE,
-        RK_FILTER_LEVEL,
-        RK_FILTER_CLS_BEGIN,
-        RK_FILTER_CLS_COUNT,
+        RK_PRIORITY,
+        RK_CATEGORY,
+        RK_CATEGORY_EXTEND,
         RK_OUT_TYPE,
         RK_FILE,
         RK_PATH,
@@ -96,6 +96,17 @@ namespace FNLog
             {
                 return RK_CHANNEL;
             }
+            else if (*(begin + 1) == 'a')
+            {
+                if (end - begin > sizeof("category") - 1)
+                {
+                    return RK_CATEGORY_EXTEND;
+                }
+                else
+                {
+                    return RK_CATEGORY;
+                }
+            }
             break;
         case 'd':
             if (*(begin+1) == 'e')
@@ -108,32 +119,21 @@ namespace FNLog
             }
             break;
         case  'f':
-            if (end - begin >= 12)
-            {
-                if (*(begin + 11) == 'l')
-                {
-                    return RK_FILTER_LEVEL;
-                }
-                else if (*(begin + 11) == 'b')
-                {
-                    return RK_FILTER_CLS_BEGIN;
-                }
-                else if (*(begin + 11) == 'c')
-                {
-                    return RK_FILTER_CLS_COUNT;
-                }
-            }
-            else if (*(begin + 1) == 'i' && end-begin == 4)
-            {
-                return RK_FILE;
-            }
-            break;
+            return RK_FILE;
         case 'h':
             return RK_HOT_UPDATE;
         case 'l':
             return RK_LIMIT_SIZE;
         case 'p':
-            return RK_PATH;
+            if (*(begin + 1) == 'r')
+            {
+                return RK_PRIORITY;
+            }
+            else if (*(begin + 1) == 'a')
+            {
+                return RK_PATH;
+            }
+            break;
         case 'r':
             return RK_ROLLBACK;
         case 'o':
@@ -148,30 +148,30 @@ namespace FNLog
         return RK_NULL;
     }
 
-    inline LOG_LEVEL ParseLogLevel(const char* begin, const char* end)
+    inline LogPriority ParsePriority(const char* begin, const char* end)
     {
         if (end <= begin)
         {
-            return LOG_LEVEL_TRACE;
+            return PRIORITY_TRACE;
         }
         switch (*begin)
         {
         case 't':case 'T':
-            return LOG_LEVEL_TRACE;
+            return PRIORITY_TRACE;
         case 'd':case 'D':
-            return LOG_LEVEL_DEBUG;
+            return PRIORITY_DEBUG;
         case 'i':case 'I':
-            return LOG_LEVEL_INFO;
+            return PRIORITY_INFO;
         case 'w':case 'W':
-            return LOG_LEVEL_WARN;
+            return PRIORITY_WARN;
         case 'e':case 'E':
-            return LOG_LEVEL_ERROR;
+            return PRIORITY_ERROR;
         case 'a':case 'A':
-            return LOG_LEVEL_ALARM;
+            return PRIORITY_ALARM;
         case 'f':case 'F':
-            return LOG_LEVEL_FATAL;
+            return PRIORITY_FATAL;
         }
-        return LOG_LEVEL_TRACE;
+        return PRIORITY_TRACE;
     }
 
     inline bool ParseBool(const char* begin, const char* end)
@@ -458,14 +458,14 @@ namespace FNLog
             case RK_DISABLE:
                 device.config_fields_[DEVICE_CFG_ABLE].num_ = !ParseBool(ls.line_.val_begin_, ls.line_.val_end_); //"disable"
                 break;
-            case RK_FILTER_LEVEL:
-                device.config_fields_[DEVICE_CFG_FILTER_LEVEL].num_ = ParseLogLevel(ls.line_.val_begin_, ls.line_.val_end_);
+            case RK_PRIORITY:
+                device.config_fields_[DEVICE_CFG_PRIORITY].num_ = ParsePriority(ls.line_.val_begin_, ls.line_.val_end_);
                 break;
-            case RK_FILTER_CLS_BEGIN:
-                device.config_fields_[DEVICE_CFG_VALID_CLS_BEGIN].num_ = atoi(ls.line_.val_begin_);
+            case RK_CATEGORY:
+                device.config_fields_[DEVICE_CFG_CATEGORY].num_ = atoi(ls.line_.val_begin_);
                 break;
-            case RK_FILTER_CLS_COUNT:
-                device.config_fields_[DEVICE_CFG_VALID_CLS_COUNT].num_ = atoi(ls.line_.val_begin_);
+            case RK_CATEGORY_EXTEND:
+                device.config_fields_[DEVICE_CFG_CATEGORY_EXTEND].num_ = atoi(ls.line_.val_begin_);
                 break;
             case RK_LIMIT_SIZE:
                 device.config_fields_[DEVICE_CFG_FILE_LIMIT_SIZE].num_ = atoi(ls.line_.val_begin_) * 1000*1000;
@@ -527,14 +527,14 @@ namespace FNLog
             case RK_SYNC:
                 channel.channel_type_ = ParseChannelType(ls.line_.val_begin_, ls.line_.val_end_);
                 break;
-            case RK_FILTER_LEVEL:
-                channel.config_fields_[CHANNEL_CFG_FILTER_LEVEL].num_ = ParseLogLevel(ls.line_.val_begin_, ls.line_.val_end_);
+            case RK_PRIORITY:
+                channel.config_fields_[CHANNEL_CFG_PRIORITY].num_ = ParsePriority(ls.line_.val_begin_, ls.line_.val_end_);
                 break;
-            case RK_FILTER_CLS_BEGIN:
-                channel.config_fields_[CHANNEL_CFG_VALID_CLS_BEGIN].num_ = atoi(ls.line_.val_begin_);
+            case RK_CATEGORY:
+                channel.config_fields_[CHANNEL_CFG_CATEGORY].num_ = atoi(ls.line_.val_begin_);
                 break;            
-            case RK_FILTER_CLS_COUNT:
-                channel.config_fields_[CHANNEL_CFG_VALID_CLS_COUNT].num_ = atoi(ls.line_.val_begin_);
+            case RK_CATEGORY_EXTEND:
+                channel.config_fields_[CHANNEL_CFG_CATEGORY_EXTEND].num_ = atoi(ls.line_.val_begin_);
                 break;
             case RK_DEVICE:
                 if (ls.line_.line_type_ != LINE_ARRAY)
