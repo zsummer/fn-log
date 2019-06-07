@@ -270,6 +270,7 @@ R"----(
             {
                 PushLog(*logger_, log_data_);
                 log_data_ = nullptr;
+                logger_ = nullptr;
             }
         }
         
@@ -514,24 +515,25 @@ __LINE__, __FUNCTION__, sizeof(__FUNCTION__) -1, prefix)
 
 
 //--------------------CPP TEMPLATE STYLE FORMAT ---------------------------
-inline FNLog::LogStream& LogTemplatePack(FNLog::LogStream& ls)
+inline FNLog::LogStream& LogTemplatePack(FNLog::LogStream&& ls)
 {
     return ls;
 }
-template <typename ... Args>
-FNLog::LogStream& LogTemplatePack(FNLog::LogStream& ls, Args&& ... args)
+template<typename ... Args>
+FNLog::LogStream& LogTemplatePack(FNLog::LogStream&& ls, Args&& ... args)
 {
-    char buff[] = { (ls << args, 0) ... };
+    char buff[] = { (ls << args, '\0') ... };
+    (void)buff;
     return ls;
 }
 
-#define LogTracePack(channel_id, category, ...)  LogTemplatePack(LOG_STREAM_DEFAULT_LOGGER(channel_id, FNLog::PRIORITY_TRACE, category, FNLog::LOG_PREFIX_ALL), ##__VA_ARGS__)
-#define LogDebugPack(channel_id, category, ...)  LogTemplatePack(LOG_STREAM_DEFAULT_LOGGER(channel_id, FNLog::PRIORITY_DEBUG, category, FNLog::LOG_PREFIX_ALL), ##__VA_ARGS__)
-#define LogInfoPack(channel_id,  category, ...)  LogTemplatePack(LOG_STREAM_DEFAULT_LOGGER(channel_id, FNLog::PRIORITY_INFO,  category, FNLog::LOG_PREFIX_ALL), ##__VA_ARGS__)
-#define LogWarnPack(channel_id,  category, ...)  LogTemplatePack(LOG_STREAM_DEFAULT_LOGGER(channel_id, FNLog::PRIORITY_WARN,  category, FNLog::LOG_PREFIX_ALL), ##__VA_ARGS__)
-#define LogErrorPack(channel_id, category, ...)  LogTemplatePack(LOG_STREAM_DEFAULT_LOGGER(channel_id, FNLog::PRIORITY_ERROR, category, FNLog::LOG_PREFIX_ALL), ##__VA_ARGS__)
-#define LogAlarmPack(channel_id, category, ...)  LogTemplatePack(LOG_STREAM_DEFAULT_LOGGER(channel_id, FNLog::PRIORITY_ALARM, category, FNLog::LOG_PREFIX_ALL), ##__VA_ARGS__)
-#define LogFatalPack(channel_id, category, ...)  LogTemplatePack(LOG_STREAM_DEFAULT_LOGGER(channel_id, FNLog::PRIORITY_FATAL, category, FNLog::LOG_PREFIX_ALL), ##__VA_ARGS__)
+#define LogTracePack(channel_id, category, ...)  LogTemplatePack(LOG_STREAM_DEFAULT_LOGGER_WITH_PREFIX(channel_id, FNLog::PRIORITY_TRACE, category), ##__VA_ARGS__)
+#define LogDebugPack(channel_id, category, ...)  LogTemplatePack(LOG_STREAM_DEFAULT_LOGGER_WITH_PREFIX(channel_id, FNLog::PRIORITY_DEBUG, category), ##__VA_ARGS__)
+#define LogInfoPack(channel_id,  category, ...)  LogTemplatePack(LOG_STREAM_DEFAULT_LOGGER_WITH_PREFIX(channel_id, FNLog::PRIORITY_INFO,  category), ##__VA_ARGS__)
+#define LogWarnPack(channel_id,  category, ...)  LogTemplatePack(LOG_STREAM_DEFAULT_LOGGER_WITH_PREFIX(channel_id, FNLog::PRIORITY_WARN,  category), ##__VA_ARGS__)
+#define LogErrorPack(channel_id, category, ...)  LogTemplatePack(LOG_STREAM_DEFAULT_LOGGER_WITH_PREFIX(channel_id, FNLog::PRIORITY_ERROR, category), ##__VA_ARGS__)
+#define LogAlarmPack(channel_id, category, ...)  LogTemplatePack(LOG_STREAM_DEFAULT_LOGGER_WITH_PREFIX(channel_id, FNLog::PRIORITY_ALARM, category), ##__VA_ARGS__)
+#define LogFatalPack(channel_id, category, ...)  LogTemplatePack(LOG_STREAM_DEFAULT_LOGGER_WITH_PREFIX(channel_id, FNLog::PRIORITY_FATAL, category), ##__VA_ARGS__)
 
 
 

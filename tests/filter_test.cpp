@@ -160,13 +160,13 @@ int main(int argc, char* argv[])
     LogAlarmPack(0, 0, "aa:", -2.3f, "int:", 3);
     LogFatalPack(0, 0, "aa:", -2.3f, "int:", 3);
 
-    LOGT("dd" << 3.0);
-    LOGD("dd" << 3.0);
-    LOGI("dd" << 3.0);
-    LOGW("dd" << 3.0);
-    LOGE("dd" << 3.0);
-    LOGA("dd" << 3.0);
-    LOGF("dd" << 3.0);
+    LOGT("dd" << 3.0 << nullptr);
+    LOGD("dd" << 3.0 << nullptr);
+    LOGI("dd" << 3.0 << nullptr);
+    LOGW("dd" << 3.0 << nullptr);
+    LOGE("dd" << 3.0 << nullptr);
+    LOGA("dd" << 3.0 << nullptr);
+    LOGF("dd" << 3.0 << nullptr);
 
     LOGFMTT("dd:%s, ch:<%c>", "ee", 'c');
     LOGFMTD("dd:%s, ch:<%c>", "ee", 'c');

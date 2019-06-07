@@ -98,7 +98,7 @@ namespace FNLog
             }
             else if (*(begin + 1) == 'a')
             {
-                if (end - begin > sizeof("category") - 1)
+                if (end - begin > (int)sizeof("category") - 1)
                 {
                     return RK_CATEGORY_EXTEND;
                 }

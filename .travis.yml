@@ -26,6 +26,7 @@ script:
   - ./multi-thread_write_file_test
   - ./benchmark
   - ./log4z_test
+  - ./filter_test
   - cd ..
   - sh merge_header.sh
   - rm src/include/*
@@ -40,6 +41,7 @@ script:
   - ./buffer_correct_test
   - ./simple_test
   - ./log4z_test
+  - ./filter_test
   
 
 
