@@ -139,10 +139,14 @@ namespace FNLog
         static const int buf_len = 30;
         char buf[buf_len];
         int write_index = buf_len;
+        unsigned long long m1 = 0;
+        unsigned long long m2 = 0;
         do
         {
-            const unsigned long long m2 = (unsigned long long)((number % 100) * 2);
-            number /= 100;
+            m1 = number / 100;
+            m2 = number % 100;
+            m2 += m2;
+            number = m1;
             *(buf + write_index - 1) = dec_lut[m2 + 1];
             *(buf + write_index - 2) = dec_lut[m2];
             write_index -= 2;
