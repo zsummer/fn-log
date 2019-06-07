@@ -60,11 +60,11 @@ int main(int argc, char* argv[])
         return ret;
     }
 
-    LOGA() << "log init success";
+    LogAlarm() << "log init success";
 
-    LOGD() << "now time:" << time(nullptr) << ";";
+    LogDebug() << "now time:" << time(nullptr) << ";";
     
-    LOGA() << "finish";
+    LogAlarm() << "finish";
 
     return 0;
 }
@@ -76,17 +76,17 @@ yaml file
 # 配表文件  
 
  hot_update: true
- # 0通道为多线程文件输出和一个CLS筛选的屏显输出
+# 0通道为多线程带文件和屏显输出
  - channel: 0  
-    filter_level: trace
-    filter_cls_begin: 0
-    filter_cls_count: 0
+    priority: trace
+    category: 0
+    category_extend: 0
     -device: 0
         disable: false
         out_type: file
-        filter_level: trace
-        filter_cls_begin: 0
-        filter_cls_count: 0
+        priority: trace
+        category: 0
+        category_extend: 0
         path: "./log/"
         file: "$PNAME_$YEAR$MON$DAY"
         rollback: 4
@@ -94,8 +94,8 @@ yaml file
     -device: 1
         disable: false
         out_type: screen
-        filter_cls_begin: 0
-        filter_cls_count: 0
+        category: 0
+        category_extend: 0
  # 1通道为多线程不挂任何输出端
  - channel: 1
 
@@ -109,6 +109,7 @@ yaml file
  # 3通道为单线程无输出端
  - channel: 3
     sync_write: 1 #only support single thread
+
 
 ```
 code   
@@ -126,16 +127,16 @@ int main(int argc, char* argv[])
     int limit_second = 50;
     while (limit_second > 0)
     {
-        LOGD() << "default channel.";
-        LOGCD(1, 0) << "channel:1, cls:0.";
-        LOGCD(2, 0) << "channel:2, cls:0.";
-        LOGCD(3, 0) << "channel:3, cls:0.";
+        LogDebug() << "default channel.";
+        LogDebugStream(1, 0) << "channel:1, category:0.";
+        LogDebugStream(2, 0) << "channel:2, category:0.";
+        LogDebugStream(3, 0) << "channel:3, category:0.";
         std::this_thread::sleep_for(std::chrono::milliseconds(1000));
         limit_second--;
     }
 
 
-    LOGA() << "finish";
+    LogAlarm() << "finish";
     return 0;
 }
 
@@ -208,15 +209,15 @@ cd ../bin
   > desc: async support multi-thread write, other not.  
   > desc: sync is sync write file and flush file every write op.  
   > desc: ring is async write file but only support single thread write, it's ring-buffer channel impl.  
-- [x] filter_level  
+- [x] priority  
   > option: trace debug info warn error alarm fatal   
   > default: trace  
-  > desc: log will discard when log level less than filter level.  
-- [x] filter_cls_begin
-- [x] filter_cls_count
+  > desc: log will discard when log priority less than filter priority.  
+- [x] category
+- [x] category_extend
   > option:  
   > default: 0, invalid value.  
-  > desc: log will reserve when cls id in set [filter_cls_begin, filter_cls_begin+1), and other not.   
+  > desc: log will reserve when category in set [category, category+category_extend], and other not.   
 ### Device Option: (channel.device.)  
 - [x] disable  
   > option: true, false  
@@ -226,15 +227,15 @@ cd ../bin
   > option: null, file, udp, screen  
   > default: null  
   > desc: as the option name.  
-- [x] filter_level  
+- [x] priority  
   > option: trace debug info warn error alarm fatal   
   > default: trace  
-  > desc: log will not process when log level less than filter level.  
-- [x] filter_cls_begin
-- [x] filter_cls_count
+  > desc: log will not process when log priority less than filter priority.  
+- [x] category
+- [x] category_extend
   > option:  
   > default: 0, invalid value.  
-  > desc: log will process when cls id in set [filter_cls_begin, filter_cls_begin+1), and other not.   
+  > desc: log will process when category in set [category, category+category_extend], and other not.   
 - [x] udp_addr  
   > option:  
   > default:  
