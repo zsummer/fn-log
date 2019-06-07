@@ -51,6 +51,10 @@ namespace FNLog
     inline void EnterProcOutScreenDevice(Logger& logger, int channel_id, int device_id, LogData& log)
     {
         std::lock_guard<std::mutex> l(logger.screen_.write_lock_);
+        Device& device = logger.channels_[channel_id].devices_[device_id];
+        device.log_fields_[DEVICE_LOG_TOTAL_WRITE_LINE].num_++;
+        device.log_fields_[DEVICE_LOG_TOTAL_WRITE_BYTE].num_ += log.content_len_;
+
         int priority = log.priority_;
         if (log.priority_ < PRIORITY_INFO)
         {

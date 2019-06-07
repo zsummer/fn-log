@@ -97,7 +97,7 @@ namespace FNLog
     {
         static const std::string default_config_text =
 R"----(
- # default is mult-thread - async write channel.  
+ # default is mult-thread async write channel.  
  # the first device is write rollback file  
  # the second device is print to screen.  
  - channel: 0
@@ -120,7 +120,7 @@ R"----(
     {
         static const std::string default_config_text =
             R"----(
- # default is mult-thread - async write channel.  
+ # default is mult-thread async write channel.  
  # the first device is write rollback file  
  # the second device is print to screen.  
  - channel: 0
@@ -138,6 +138,70 @@ R"----(
 )----";
         return FastStartDefaultLogger(default_config_text);
     }
+    inline long long GetChannelLog(Logger& logger, int channel_id, ChannelLogEnum field)
+    {
+        if (logger.channel_size_ <= channel_id || channel_id < 0)
+        {
+            return 0;
+        }
+        Channel& channel = logger.channels_[channel_id];
+        if (field >= CHANNEL_LOG_MAX_ID)
+        {
+            return 0;
+        }
+        return channel.log_fields_[field].num_;
+    }
+    inline void UnsafeChangeChannelConfig(Logger& logger, int channel_id, ChannelConfigEnum field, long long val)
+    {
+        if (logger.channel_size_ <= channel_id || channel_id < 0)
+        {
+            return;
+        }
+        Channel& channel = logger.channels_[channel_id];
+        if (field >= CHANNEL_CFG_MAX_ID)
+        {
+            return;
+        }
+        channel.config_fields_[field].num_ = val;
+    }
+
+    inline long long GetDeviceLog(Logger& logger, int channel_id, int device_id, DeviceLogEnum field)
+    {
+        if (logger.channel_size_ <= channel_id || channel_id < 0)
+        {
+            return 0;
+        }
+        Channel& channel = logger.channels_[channel_id];
+        if (field >= DEVICE_LOG_MAX_ID)
+        {
+            return 0;
+        }
+        if (channel.device_size_ <= device_id || device_id < 0)
+        {
+            return 0;
+        }
+        return channel.devices_[device_id].log_fields_[field].num_;
+    }
+
+    inline void UnsafeChangeDeviceConfig(Logger& logger, int channel_id, int device_id, DeviceConfigEnum field, long long val)
+    {
+        if (logger.channel_size_ <= channel_id || channel_id < 0)
+        {
+            return;
+        }
+        if (field >= DEVICE_CFG_MAX_ID)
+        {
+            return;
+        }
+        Channel& channel = logger.channels_[channel_id];
+        if (channel.device_size_ <= device_id || device_id < 0)
+        {
+            return;
+        }
+        channel.devices_[device_id].config_fields_[field].num_ = val;
+    }
+    
+
 
     class LogStream
     {
@@ -450,7 +514,7 @@ __LINE__, __FUNCTION__, sizeof(__FUNCTION__) -1, prefix)
 
 
 //--------------------CPP TEMPLATE STYLE FORMAT ---------------------------
-inline FNLog::LogStream& TLOG_TEMPLATE(FNLog::LogStream& ls)
+inline FNLog::LogStream& LogTemplatePack(FNLog::LogStream& ls)
 {
     return ls;
 }
@@ -461,13 +525,13 @@ FNLog::LogStream& LogTemplatePack(FNLog::LogStream& ls, Args&& ... args)
     return ls;
 }
 
-#define LogTracePack(channel_id, category, ...)  LogTemplatePack(LOG_STREAM_DEFAULT_LOGGER(channel_id, FNLog::PRIORITY_TRACE, category, FNLog::LOG_PREFIX_ALL, ##__VA_ARGS__)
-#define LogDebugPack(channel_id, category, ...)  LogTemplatePack(LOG_STREAM_DEFAULT_LOGGER(channel_id, FNLog::PRIORITY_DEBUG, category, FNLog::LOG_PREFIX_ALL, ##__VA_ARGS__)
-#define LogInfoPack(channel_id,  category, ...)  LogTemplatePack(LOG_STREAM_DEFAULT_LOGGER(channel_id, FNLog::PRIORITY_INFO,  category, FNLog::LOG_PREFIX_ALL, ##__VA_ARGS__)
-#define LogWarnPack(channel_id,  category, ...)  LogTemplatePack(LOG_STREAM_DEFAULT_LOGGER(channel_id, FNLog::PRIORITY_WARN,  category, FNLog::LOG_PREFIX_ALL, ##__VA_ARGS__)
-#define LogErrorPack(channel_id, category, ...)  LogTemplatePack(LOG_STREAM_DEFAULT_LOGGER(channel_id, FNLog::PRIORITY_ERROR, category, FNLog::LOG_PREFIX_ALL, ##__VA_ARGS__)
-#define LogAlarmPack(channel_id, category, ...)  LogTemplatePack(LOG_STREAM_DEFAULT_LOGGER(channel_id, FNLog::PRIORITY_ALARM, category, FNLog::LOG_PREFIX_ALL, ##__VA_ARGS__)
-#define LogFatalPack(channel_id, category, ...)  LogTemplatePack(LOG_STREAM_DEFAULT_LOGGER(channel_id, FNLog::PRIORITY_FATAL, category, FNLog::LOG_PREFIX_ALL, ##__VA_ARGS__)
+#define LogTracePack(channel_id, category, ...)  LogTemplatePack(LOG_STREAM_DEFAULT_LOGGER(channel_id, FNLog::PRIORITY_TRACE, category, FNLog::LOG_PREFIX_ALL), ##__VA_ARGS__)
+#define LogDebugPack(channel_id, category, ...)  LogTemplatePack(LOG_STREAM_DEFAULT_LOGGER(channel_id, FNLog::PRIORITY_DEBUG, category, FNLog::LOG_PREFIX_ALL), ##__VA_ARGS__)
+#define LogInfoPack(channel_id,  category, ...)  LogTemplatePack(LOG_STREAM_DEFAULT_LOGGER(channel_id, FNLog::PRIORITY_INFO,  category, FNLog::LOG_PREFIX_ALL), ##__VA_ARGS__)
+#define LogWarnPack(channel_id,  category, ...)  LogTemplatePack(LOG_STREAM_DEFAULT_LOGGER(channel_id, FNLog::PRIORITY_WARN,  category, FNLog::LOG_PREFIX_ALL), ##__VA_ARGS__)
+#define LogErrorPack(channel_id, category, ...)  LogTemplatePack(LOG_STREAM_DEFAULT_LOGGER(channel_id, FNLog::PRIORITY_ERROR, category, FNLog::LOG_PREFIX_ALL), ##__VA_ARGS__)
+#define LogAlarmPack(channel_id, category, ...)  LogTemplatePack(LOG_STREAM_DEFAULT_LOGGER(channel_id, FNLog::PRIORITY_ALARM, category, FNLog::LOG_PREFIX_ALL), ##__VA_ARGS__)
+#define LogFatalPack(channel_id, category, ...)  LogTemplatePack(LOG_STREAM_DEFAULT_LOGGER(channel_id, FNLog::PRIORITY_FATAL, category, FNLog::LOG_PREFIX_ALL), ##__VA_ARGS__)
 
 
 

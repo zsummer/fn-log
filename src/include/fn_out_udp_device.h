@@ -59,9 +59,12 @@ namespace FNLog
         {
             return;
         }
-        long long ip = logger.channels_[channel_id].devices_[device_id].config_fields_[DEVICE_CFG_UDP_IP].num_;
-        long long port = logger.channels_[channel_id].devices_[device_id].config_fields_[DEVICE_CFG_UDP_PORT].num_;
+        Device& device = logger.channels_[channel_id].devices_[device_id];
+        long long ip = device.config_fields_[DEVICE_CFG_UDP_IP].num_;
+        long long port = device.config_fields_[DEVICE_CFG_UDP_PORT].num_;
         udp.write((unsigned long)ip, (unsigned short)port, log.content_, log.content_len_);
+        device.log_fields_[DEVICE_LOG_TOTAL_WRITE_LINE].num_++;
+        device.log_fields_[DEVICE_LOG_TOTAL_WRITE_BYTE].num_ += log.content_len_;
     }
 }
 

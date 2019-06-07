@@ -3,7 +3,6 @@
 int main(int argc, char* argv[])
 {
     int ret = FNLog::FastStartSimpleLogger();
-    //FNLog::GetDefaultLogger().channels_[0].devices_[1].config_fields_[FNLog::DEVICE_CFG_PRIORITY].num_ = FNLog::PRIORITY_TRACE;
     if (ret != 0)
     {
         return ret;

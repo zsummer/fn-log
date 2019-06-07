@@ -88,7 +88,7 @@ namespace FNLog
             if (device.config_fields_[DEVICE_CFG_CATEGORY].num_ > 0)
             {
                 if (log.category_ < device.config_fields_[DEVICE_CFG_CATEGORY].num_
-                    || log.category_ >= device.config_fields_[DEVICE_CFG_CATEGORY].num_ + device.config_fields_[DEVICE_CFG_CATEGORY_EXTEND].num_)
+                    || log.category_ > device.config_fields_[DEVICE_CFG_CATEGORY].num_ + device.config_fields_[DEVICE_CFG_CATEGORY_EXTEND].num_)
                 {
                     continue;
                 }

@@ -61,7 +61,7 @@ namespace FNLog
         if (channel.config_fields_[CHANNEL_CFG_CATEGORY].num_ > 0)
         {
             if (category < channel.config_fields_[CHANNEL_CFG_CATEGORY].num_
-                || category >= channel.config_fields_[CHANNEL_CFG_CATEGORY].num_ + channel.config_fields_[CHANNEL_CFG_CATEGORY_EXTEND].num_)
+                || category > channel.config_fields_[CHANNEL_CFG_CATEGORY].num_ + channel.config_fields_[CHANNEL_CFG_CATEGORY_EXTEND].num_)
             {
                 return 2;
             }
