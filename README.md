@@ -63,6 +63,8 @@ int main(int argc, char* argv[])
     LogAlarm() << "log init success";
 
     LogDebug() << "now time:" << time(nullptr) << ";";
+    LOGD("now time:" << time(nullptr) << ";");
+    LogDebugPack(0, 0, "now time:", time(nullptr), ";");
     
     LogAlarm() << "finish";
 
