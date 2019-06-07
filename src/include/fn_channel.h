@@ -186,7 +186,7 @@ namespace FNLog
             while (local_que.write_count_ != local_que.read_count_)
             {
                 auto& cur_log = local_que.log_queue_[local_que.read_count_];
-                LogQueue::SizeType next_read = (local_que.read_count_ + 1) % LogQueue::MAX_LOG_QUEUE_LEN;
+                LogQueue::SizeType next_read = (local_que.read_count_ + 1) % LogQueue::MAX_LOG_QUEUE_SIZE;
                 LogData& log = *cur_log;
                 DispatchLog(logger, channel, log);
                 FreeLogData(logger, channel_id, cur_log);
@@ -249,7 +249,7 @@ namespace FNLog
                 state++;
                 std::lock_guard<std::mutex> l(logger.syncs_[log.channel_id_].write_lock_);
                 LogQueue& local_que = channel.red_black_queue_[channel.write_red_];
-                if (local_que.log_count_ >= LogQueue::MAX_LOG_QUEUE_LEN)
+                if (local_que.log_count_ >= LogQueue::MAX_LOG_QUEUE_SIZE)
                 {
                     continue;
                 }
@@ -269,7 +269,7 @@ namespace FNLog
                 }
                 state++;
                 LogQueue& local_que = channel.red_black_queue_[channel.write_red_];
-                LogQueue::SizeType next_write = (local_que.write_count_ + 1) % LogQueue::MAX_LOG_QUEUE_LEN;
+                LogQueue::SizeType next_write = (local_que.write_count_ + 1) % LogQueue::MAX_LOG_QUEUE_SIZE;
                 if (next_write != local_que.read_count_)
                 {
                     local_que.log_queue_[local_que.write_count_] = plog;
@@ -282,7 +282,7 @@ namespace FNLog
         case CHANNEL_SYNC:
         {
             LogQueue& local_que = channel.red_black_queue_[channel.write_red_];
-            if (local_que.log_count_ >= LogQueue::MAX_LOG_QUEUE_LEN)
+            if (local_que.log_count_ >= LogQueue::MAX_LOG_QUEUE_SIZE)
             {
                 return -3;
             }

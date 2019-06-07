@@ -90,7 +90,7 @@ namespace FNLog
                 {
                     plog = channel.log_pool_.log_queue_[channel.log_pool_.read_count_];
                     channel.log_pool_.log_queue_[channel.log_pool_.read_count_] = nullptr;
-                    channel.log_pool_.read_count_ = (channel.log_pool_.read_count_ + 1) % Channel::MAX_FREE_POOL_SIZE;
+                    channel.log_pool_.read_count_ = (channel.log_pool_.read_count_ + 1) % LogQueue::MAX_LOG_QUEUE_CACHE_SIZE;
                     channel.log_fields_[CHANNEL_LOG_ALLOC_CACHE].num_++;
                     break;
                 }
@@ -193,10 +193,10 @@ namespace FNLog
         switch (channel.channel_type_)
         {
         case CHANNEL_MULTI:
-            if (channel.log_pool_.log_count_ < Channel::MAX_FREE_POOL_SIZE)
+            if (channel.log_pool_.log_count_ < LogQueue::MAX_LOG_QUEUE_CACHE_SIZE)
             {
                 std::lock_guard<std::mutex> l(logger.syncs_[channel_id].pool_lock_);
-                if (channel.log_pool_.log_count_ < Channel::MAX_FREE_POOL_SIZE)
+                if (channel.log_pool_.log_count_ < LogQueue::MAX_LOG_QUEUE_CACHE_SIZE)
                 {
                     channel.log_pool_.log_queue_[channel.log_pool_.log_count_++] = plog;
                     plog = nullptr;
@@ -206,7 +206,7 @@ namespace FNLog
             }
             break;
         case CHANNEL_SYNC:
-            if (channel.log_pool_.log_count_ < Channel::MAX_FREE_POOL_SIZE)
+            if (channel.log_pool_.log_count_ < LogQueue::MAX_LOG_QUEUE_CACHE_SIZE)
             {
                 channel.log_pool_.log_queue_[channel.log_pool_.log_count_++] = plog;
                 plog = nullptr;
@@ -216,7 +216,7 @@ namespace FNLog
             break;
         case CHANNEL_RING:
         {
-            LogQueue::SizeType next_write = (channel.log_pool_.write_count_ + 1) % Channel::MAX_FREE_POOL_SIZE;
+            LogQueue::SizeType next_write = (channel.log_pool_.write_count_ + 1) % LogQueue::MAX_LOG_QUEUE_CACHE_SIZE;
             if (next_write != channel.log_pool_.read_count_)
             {
                 channel.log_pool_.log_queue_[channel.log_pool_.write_count_] = plog;

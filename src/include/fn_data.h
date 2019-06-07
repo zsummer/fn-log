@@ -174,7 +174,10 @@ namespace FNLog
     public:
         using LogDataPtr = LogData *;
         using SizeType = unsigned int;
-        static const int MAX_LOG_QUEUE_LEN = FN_LOG_MAX_LOG_QUEUE_SIZE;
+        static const int MAX_LOG_QUEUE_SIZE = FN_LOG_MAX_LOG_QUEUE_SIZE;
+        static const int MAX_LOG_QUEUE_CACHE_SIZE = FN_LOG_MAX_LOG_QUEUE_CACHE_SIZE;
+        static const int MAX_LOG_QUEUE_REAL_SIZE = MAX_LOG_QUEUE_SIZE > MAX_LOG_QUEUE_CACHE_SIZE ? MAX_LOG_QUEUE_SIZE : MAX_LOG_QUEUE_CACHE_SIZE;
+
     public:
         char chunk_1_[CHUNK_SIZE];
         long long log_count_;
@@ -183,7 +186,7 @@ namespace FNLog
         char chunk_3_[CHUNK_SIZE];
         volatile SizeType read_count_;
         char chunk_4_[CHUNK_SIZE];
-        LogDataPtr log_queue_[MAX_LOG_QUEUE_LEN];
+        LogDataPtr log_queue_[MAX_LOG_QUEUE_REAL_SIZE];
     };
    
     enum ChannelType
@@ -221,8 +224,6 @@ namespace FNLog
         using ConfigFields = std::array<AnyVal, CHANNEL_CFG_MAX_ID>;
         using LogFields = std::array<AnyVal, CHANNEL_LOG_MAX_ID>;
         static const int MAX_DEVICE_SIZE = 20;
-        static const int MAX_FREE_POOL_SIZE = FN_LOG_MAX_LOG_QUEUE_CACHE_SIZE;
-        static_assert(MAX_FREE_POOL_SIZE <= LogQueue::MAX_LOG_QUEUE_LEN, "");
     public:
         char chunk_1_[CHUNK_SIZE];
 

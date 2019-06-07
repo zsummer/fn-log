@@ -229,7 +229,7 @@ namespace FNLog
             while (channel.red_black_queue_[channel.write_red_].write_count_ != channel.red_black_queue_[channel.write_red_].read_count_)
             {
                 FreeLogData(logger, channel_id, channel.red_black_queue_[channel.write_red_].log_queue_[channel.red_black_queue_[channel.write_red_].read_count_]);
-                channel.red_black_queue_[channel.write_red_].read_count_ = (channel.red_black_queue_[channel.write_red_].read_count_ + 1) % LogQueue::MAX_LOG_QUEUE_LEN;
+                channel.red_black_queue_[channel.write_red_].read_count_ = (channel.red_black_queue_[channel.write_red_].read_count_ + 1) % LogQueue::MAX_LOG_QUEUE_SIZE;
             }
             channel.red_black_queue_[channel.write_red_].write_count_ = 0;
             channel.red_black_queue_[channel.write_red_].read_count_ = 0;
@@ -256,7 +256,7 @@ namespace FNLog
                     delete channel.log_pool_.log_queue_[channel.log_pool_.read_count_];
                     channel.log_pool_.log_queue_[channel.log_pool_.read_count_] = nullptr;
                 }
-                channel.log_pool_.read_count_ = (channel.log_pool_.read_count_ + 1) % Channel::MAX_FREE_POOL_SIZE;
+                channel.log_pool_.read_count_ = (channel.log_pool_.read_count_ + 1) % LogQueue::MAX_LOG_QUEUE_CACHE_SIZE;
             }
             channel.log_pool_.write_count_ = 0;
             channel.log_pool_.read_count_ = 0;
