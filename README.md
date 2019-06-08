@@ -34,7 +34,7 @@ fn-log是一款开源的轻量级高性能的跨平台日志库, 从log4z迭代�
 #  Example  
 
 ### Log Format   
-```
+``` c
 [20190514 16:47:20.536][ALARM] [15868]channel [0] start.
 
 [20190514 16:47:20.548][DEBUG] [15868] fn-log\tests\simple_test.cpp:<40> main log init success
@@ -49,7 +49,7 @@ fn-log是一款开源的轻量级高性能的跨平台日志库, 从log4z迭代�
 ```
 
 ### Fast Use Example With Out Yaml File    
-``` C++
+``` cpp
 #include "fn_log.h"
 
 int main(int argc, char* argv[])
@@ -115,7 +115,7 @@ yaml file
 
 ```
 code   
-```  C++ 
+```  cpp 
 #include "fn_log.h"
 
 int main(int argc, char* argv[])

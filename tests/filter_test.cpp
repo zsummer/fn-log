@@ -181,5 +181,8 @@ int main(int argc, char* argv[])
 
     LogInfoStream(1, 0) << "log filter test success";
 
+    LogInfoStream(1, 0).write_binary("fn-log", sizeof("fn-log") - 1);
+
+
     return 0;
 }
