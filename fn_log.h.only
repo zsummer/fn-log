@@ -67,7 +67,7 @@
 #include <unordered_set>
 #include <memory>
 
-#ifdef WIN32
+#ifdef _WIN32
 #include <WinSock2.h>
 #include <Windows.h>
 #include <io.h>
@@ -163,7 +163,7 @@ namespace FNLog
     {
         if (file_ != nullptr)
         {
-#if !defined(__APPLE__) && !defined(WIN32) 
+#if !defined(__APPLE__) && !defined(_WIN32) 
             if (file_ != nullptr)
             {
                 int fd = fileno(file_);
@@ -239,7 +239,7 @@ namespace FNLog
 
     bool FileHandler::is_dir(const std::string& path)
     {
-#ifdef WIN32
+#ifdef _WIN32
         return PathIsDirectoryA(path.c_str()) ? true : false;
 #else
         DIR* pdir = opendir(path.c_str());
@@ -258,7 +258,7 @@ namespace FNLog
 
     bool FileHandler::is_file(const std::string& path)
     {
-#ifdef WIN32
+#ifdef _WIN32
         return ::_access(path.c_str(), 0) == 0;
 #else
         return ::access(path.c_str(), F_OK) == 0;
@@ -280,7 +280,7 @@ namespace FNLog
             if (cur.length() > 0 && !is_dir(cur))
             {
                 bool ret = false;
-#ifdef WIN32
+#ifdef _WIN32
                 ret = CreateDirectoryA(cur.c_str(), nullptr) ? true : false;
 #else
                 ret = (mkdir(cur.c_str(), S_IRWXU | S_IRWXG | S_IRWXO) == 0);
@@ -301,7 +301,7 @@ namespace FNLog
     {
         std::string pid = "0";
         char buf[260] = { 0 };
-#ifdef WIN32
+#ifdef _WIN32
         DWORD winPID = GetCurrentProcessId();
         sprintf(buf, "%06u", winPID);
         pid = buf;
@@ -316,7 +316,7 @@ namespace FNLog
     {
         std::string name = "process";
         char buf[260] = { 0 };
-#ifdef WIN32
+#ifdef _WIN32
         if (GetModuleFileNameA(nullptr, buf, 259) > 0)
         {
             name = buf;
@@ -365,7 +365,7 @@ namespace FNLog
 
     struct tm FileHandler::time_to_tm(time_t t)
     {
-#ifdef WIN32
+#ifdef _WIN32
 #if _MSC_VER < 1400 //VS2003
         return *localtime(&t);
 #else //vs2005->vs2013->
@@ -435,7 +435,7 @@ namespace FNLog
 class UDPHandler
 {
 public:
-#ifndef WIN32
+#ifndef _WIN32
     using SOCKET = int;
     static const int INVALID_SOCKET = -1;
 #endif 
@@ -467,7 +467,7 @@ public:
     {
         if (handler_ != INVALID_SOCKET)
         {
-#ifndef WIN32
+#ifndef _WIN32
             ::close(handler_);
 #else
             closesocket(handler_);
@@ -673,7 +673,10 @@ namespace FNLog
     public:
         using LogDataPtr = LogData *;
         using SizeType = unsigned int;
-        static const int MAX_LOG_QUEUE_LEN = FN_LOG_MAX_LOG_QUEUE_SIZE;
+        static const int MAX_LOG_QUEUE_SIZE = FN_LOG_MAX_LOG_QUEUE_SIZE;
+        static const int MAX_LOG_QUEUE_CACHE_SIZE = FN_LOG_MAX_LOG_QUEUE_CACHE_SIZE;
+        static const int MAX_LOG_QUEUE_REAL_SIZE = MAX_LOG_QUEUE_SIZE > MAX_LOG_QUEUE_CACHE_SIZE ? MAX_LOG_QUEUE_SIZE : MAX_LOG_QUEUE_CACHE_SIZE;
+
     public:
         char chunk_1_[CHUNK_SIZE];
         long long log_count_;
@@ -682,7 +685,7 @@ namespace FNLog
         char chunk_3_[CHUNK_SIZE];
         volatile SizeType read_count_;
         char chunk_4_[CHUNK_SIZE];
-        LogDataPtr log_queue_[MAX_LOG_QUEUE_LEN];
+        LogDataPtr log_queue_[MAX_LOG_QUEUE_REAL_SIZE];
     };
    
     enum ChannelType
@@ -720,8 +723,6 @@ namespace FNLog
         using ConfigFields = std::array<AnyVal, CHANNEL_CFG_MAX_ID>;
         using LogFields = std::array<AnyVal, CHANNEL_LOG_MAX_ID>;
         static const int MAX_DEVICE_SIZE = 20;
-        static const int MAX_FREE_POOL_SIZE = FN_LOG_MAX_LOG_QUEUE_CACHE_SIZE;
-        static_assert(MAX_FREE_POOL_SIZE <= LogQueue::MAX_LOG_QUEUE_LEN, "");
     public:
         char chunk_1_[CHUNK_SIZE];
 
@@ -1100,30 +1101,31 @@ namespace FNLog
             {
                 continue;
             }
+
             //preprocess
-            switch (ch)
+            if (ls.line_.block_type_ == BLOCK_KEY && (ch < 'a' || ch > 'z') && ch != '_')
             {
-            case '\0': case ' ': case '\f': case '\t': case '\v':case '\n':case '\r':case ':': case '#': case '\"':
-                if (ls.line_.block_type_ == BLOCK_KEY)
+                ls.line_.block_type_ = BLOCK_PRE_SEP;
+                ls.line_.key_end_ = &ch;
+                ls.line_.key_ = ParseReserve(ls.line_.key_begin_, ls.line_.key_end_);
+                if (ls.line_.key_ == RK_NULL)
                 {
-                    ls.line_.block_type_ = BLOCK_PRE_SEP;
-                    ls.line_.key_end_ = &ch;
-                    ls.line_.key_ = ParseReserve(ls.line_.key_begin_, ls.line_.key_end_);
-                    if (ls.line_.key_ == RK_NULL)
-                    {
-                        ls.line_.line_type_ = LINE_ERROR;
-                        return ls.line_.line_type_;
-                    }
+                    ls.line_.line_type_ = LINE_ERROR;
+                    return ls.line_.line_type_;
                 }
-                if (ls.line_.block_type_ == BLOCK_VAL)
+            }
+            if (ls.line_.block_type_ == BLOCK_VAL)
+            {
+                switch (ch)
                 {
+                case '\0': case'\n':case '\r': case '#': case '\"':
                     ls.line_.block_type_ = BLOCK_CLEAN;
                     ls.line_.val_end_ = &ch;
+                    break;
                 }
-                break;
             }
 
-            //back line check
+            //end of line check
             switch (ch)
             {
             case '\0': case '\n':case '\r': case '#':
@@ -1176,21 +1178,29 @@ namespace FNLog
                     ls.line_.line_type_ = LINE_ARRAY;
                     break;
                 }
-                ls.line_.line_type_ = LINE_ERROR;
-                return ls.line_.line_type_;
+                else if (ls.line_.block_type_ != BLOCK_VAL)
+                {
+                    ls.line_.line_type_ = LINE_ERROR;
+                    return ls.line_.line_type_;
+                }
+                break;
             case ':':
                 if (ls.line_.block_type_ == BLOCK_PRE_SEP)
                 {
                     ls.line_.block_type_ = BLOCK_PRE_VAL;
                     break;
                 }
-                ls.line_.line_type_ = LINE_ERROR;
-                return ls.line_.line_type_;
+                else if (ls.line_.block_type_ != BLOCK_VAL)
+                {
+                    ls.line_.line_type_ = LINE_ERROR;
+                    return ls.line_.line_type_;
+                }
+                break;
             default:
                 if ((ch >= 'a' && ch <= 'z')
                     || (ch >= 'A' && ch <= 'Z')
                     || (ch >= '0' && ch <= '9')
-                    || ch == '_' || ch == '/' || ch == '.' || ch == '$')
+                    || ch == '_' || ch == '-' || ch == ':' || ch == '/' || ch == '.' || ch == '$' || ch == '~')
                 {
                     switch (ls.line_.block_type_)
                     {
@@ -1491,7 +1501,7 @@ namespace FNLog
 {
 
 
-#ifndef WIN32
+#ifndef _WIN32
     struct PriorityRender
     {
         const char* const priority_name_;
@@ -1581,10 +1591,14 @@ namespace FNLog
         static const int buf_len = 30;
         char buf[buf_len];
         int write_index = buf_len;
+        unsigned long long m1 = 0;
+        unsigned long long m2 = 0;
         do
         {
-            const unsigned long long m2 = (unsigned long long)((number % 100) * 2);
-            number /= 100;
+            m1 = number / 100;
+            m2 = number % 100;
+            m2 += m2;
+            number = m1;
             *(buf + write_index - 1) = dec_lut[m2 + 1];
             *(buf + write_index - 2) = dec_lut[m2];
             write_index -= 2;
@@ -1629,7 +1643,7 @@ namespace FNLog
 
 
         int real_wide = 0;
-#ifndef WIN32
+#ifndef _WIN32
         real_wide = sizeof(number) * 8 - __builtin_clzll(number);
 #else
         unsigned long win_index = 0;
@@ -1688,7 +1702,7 @@ namespace FNLog
             "0123456789abcdefghijk";
 
         int real_wide = 0;
-#ifndef WIN32
+#ifndef _WIN32
         real_wide = sizeof(number) * 8 - __builtin_clzll(number);
 #else
         unsigned long win_index = 0;
@@ -2025,7 +2039,7 @@ namespace FNLog
                 }
                 os.write(ls->current_, limit);
             }
-            printf("%s", os.str().c_str());
+            printf("%s\n", os.str().c_str());
             return ret;
         }
 
@@ -2563,7 +2577,7 @@ namespace FNLog
         {
             priority = PRIORITY_ALARM;
         }
-#ifndef WIN32
+#ifndef _WIN32
         printf("%s%s\e[0m", PRIORITY_RENDER[priority].scolor_, log.content_);
 #else
 
@@ -2678,7 +2692,7 @@ namespace FNLog
                 {
                     plog = channel.log_pool_.log_queue_[channel.log_pool_.read_count_];
                     channel.log_pool_.log_queue_[channel.log_pool_.read_count_] = nullptr;
-                    channel.log_pool_.read_count_ = (channel.log_pool_.read_count_ + 1) % Channel::MAX_FREE_POOL_SIZE;
+                    channel.log_pool_.read_count_ = (channel.log_pool_.read_count_ + 1) % LogQueue::MAX_LOG_QUEUE_CACHE_SIZE;
                     channel.log_fields_[CHANNEL_LOG_ALLOC_CACHE].num_++;
                     break;
                 }
@@ -2713,7 +2727,7 @@ namespace FNLog
         log.content_len_ = 0;
         log.content_[log.content_len_] = '\0';
 
-#ifdef WIN32
+#ifdef _WIN32
         FILETIME ft;
         GetSystemTimeAsFileTime(&ft);
         unsigned long long now = ft.dwHighDateTime;
@@ -2736,7 +2750,7 @@ namespace FNLog
             return plog;
         }
 
-#ifdef WIN32
+#ifdef _WIN32
         static thread_local unsigned int therad_id = GetCurrentThreadId();
         log.thread_ = therad_id;
 #elif defined(__APPLE__)
@@ -2781,10 +2795,10 @@ namespace FNLog
         switch (channel.channel_type_)
         {
         case CHANNEL_MULTI:
-            if (channel.log_pool_.log_count_ < Channel::MAX_FREE_POOL_SIZE)
+            if (channel.log_pool_.log_count_ < LogQueue::MAX_LOG_QUEUE_CACHE_SIZE)
             {
                 std::lock_guard<std::mutex> l(logger.syncs_[channel_id].pool_lock_);
-                if (channel.log_pool_.log_count_ < Channel::MAX_FREE_POOL_SIZE)
+                if (channel.log_pool_.log_count_ < LogQueue::MAX_LOG_QUEUE_CACHE_SIZE)
                 {
                     channel.log_pool_.log_queue_[channel.log_pool_.log_count_++] = plog;
                     plog = nullptr;
@@ -2794,7 +2808,7 @@ namespace FNLog
             }
             break;
         case CHANNEL_SYNC:
-            if (channel.log_pool_.log_count_ < Channel::MAX_FREE_POOL_SIZE)
+            if (channel.log_pool_.log_count_ < LogQueue::MAX_LOG_QUEUE_CACHE_SIZE)
             {
                 channel.log_pool_.log_queue_[channel.log_pool_.log_count_++] = plog;
                 plog = nullptr;
@@ -2804,7 +2818,7 @@ namespace FNLog
             break;
         case CHANNEL_RING:
         {
-            LogQueue::SizeType next_write = (channel.log_pool_.write_count_ + 1) % Channel::MAX_FREE_POOL_SIZE;
+            LogQueue::SizeType next_write = (channel.log_pool_.write_count_ + 1) % LogQueue::MAX_LOG_QUEUE_CACHE_SIZE;
             if (next_write != channel.log_pool_.read_count_)
             {
                 channel.log_pool_.log_queue_[channel.log_pool_.write_count_] = plog;
@@ -3021,7 +3035,7 @@ namespace FNLog
             while (local_que.write_count_ != local_que.read_count_)
             {
                 auto& cur_log = local_que.log_queue_[local_que.read_count_];
-                LogQueue::SizeType next_read = (local_que.read_count_ + 1) % LogQueue::MAX_LOG_QUEUE_LEN;
+                LogQueue::SizeType next_read = (local_que.read_count_ + 1) % LogQueue::MAX_LOG_QUEUE_SIZE;
                 LogData& log = *cur_log;
                 DispatchLog(logger, channel, log);
                 FreeLogData(logger, channel_id, cur_log);
@@ -3084,7 +3098,7 @@ namespace FNLog
                 state++;
                 std::lock_guard<std::mutex> l(logger.syncs_[log.channel_id_].write_lock_);
                 LogQueue& local_que = channel.red_black_queue_[channel.write_red_];
-                if (local_que.log_count_ >= LogQueue::MAX_LOG_QUEUE_LEN)
+                if (local_que.log_count_ >= LogQueue::MAX_LOG_QUEUE_SIZE)
                 {
                     continue;
                 }
@@ -3104,7 +3118,7 @@ namespace FNLog
                 }
                 state++;
                 LogQueue& local_que = channel.red_black_queue_[channel.write_red_];
-                LogQueue::SizeType next_write = (local_que.write_count_ + 1) % LogQueue::MAX_LOG_QUEUE_LEN;
+                LogQueue::SizeType next_write = (local_que.write_count_ + 1) % LogQueue::MAX_LOG_QUEUE_SIZE;
                 if (next_write != local_que.read_count_)
                 {
                     local_que.log_queue_[local_que.write_count_] = plog;
@@ -3117,7 +3131,7 @@ namespace FNLog
         case CHANNEL_SYNC:
         {
             LogQueue& local_que = channel.red_black_queue_[channel.write_red_];
-            if (local_que.log_count_ >= LogQueue::MAX_LOG_QUEUE_LEN)
+            if (local_que.log_count_ >= LogQueue::MAX_LOG_QUEUE_SIZE)
             {
                 return -3;
             }
@@ -3363,7 +3377,7 @@ namespace FNLog
             while (channel.red_black_queue_[channel.write_red_].write_count_ != channel.red_black_queue_[channel.write_red_].read_count_)
             {
                 FreeLogData(logger, channel_id, channel.red_black_queue_[channel.write_red_].log_queue_[channel.red_black_queue_[channel.write_red_].read_count_]);
-                channel.red_black_queue_[channel.write_red_].read_count_ = (channel.red_black_queue_[channel.write_red_].read_count_ + 1) % LogQueue::MAX_LOG_QUEUE_LEN;
+                channel.red_black_queue_[channel.write_red_].read_count_ = (channel.red_black_queue_[channel.write_red_].read_count_ + 1) % LogQueue::MAX_LOG_QUEUE_SIZE;
             }
             channel.red_black_queue_[channel.write_red_].write_count_ = 0;
             channel.red_black_queue_[channel.write_red_].read_count_ = 0;
@@ -3390,7 +3404,7 @@ namespace FNLog
                     delete channel.log_pool_.log_queue_[channel.log_pool_.read_count_];
                     channel.log_pool_.log_queue_[channel.log_pool_.read_count_] = nullptr;
                 }
-                channel.log_pool_.read_count_ = (channel.log_pool_.read_count_ + 1) % Channel::MAX_FREE_POOL_SIZE;
+                channel.log_pool_.read_count_ = (channel.log_pool_.read_count_ + 1) % LogQueue::MAX_LOG_QUEUE_CACHE_SIZE;
             }
             channel.log_pool_.write_count_ = 0;
             channel.log_pool_.read_count_ = 0;
@@ -3509,13 +3523,13 @@ namespace FNLog
         int ret = InitFromYMALFile(path, GetDefaultLogger());
         if (ret != 0)
         {
-            printf("init and load default logger error. ret:<%d>.", ret);
+            printf("init and load default logger error. ret:<%d>.\n", ret);
             return ret;
         }
         ret = AutoStartLogger(GetDefaultLogger());
         if (ret != 0)
         {
-            printf("auto start default logger error. ret:<%d>.", ret);
+            printf("auto start default logger error. ret:<%d>.\n", ret);
             return ret;
         }
         return 0;
@@ -3527,13 +3541,13 @@ namespace FNLog
         int ret = InitFromYMAL(config_text, "", GetDefaultLogger());
         if (ret != 0)
         {
-            printf("init default logger error. ret:<%d>.", ret);
+            printf("init default logger error. ret:<%d>.\n", ret);
             return ret;
         }
         ret = AutoStartLogger(GetDefaultLogger());
         if (ret != 0)
         {
-            printf("auto start default logger error. ret:<%d>.", ret);
+            printf("auto start default logger error. ret:<%d>.\n", ret);
             return ret;
         }
         return 0;
@@ -4003,7 +4017,7 @@ FNLog::LogStream& LogTemplatePack(FNLog::LogStream&& ls, Args&& ... args)
 
 
 //--------------------C STYLE FORMAT ---------------------------
-#ifdef WIN32
+#ifdef _WIN32
 #define LOG_FORMAT(channel_id, priority, category, prefix, logformat, ...) \
 do{ \
     FNLog::LogStream __log_stream(LOG_STREAM_DEFAULT_LOGGER(channel_id, priority, category, prefix));\

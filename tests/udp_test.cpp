@@ -23,12 +23,12 @@ R"----(
 
 int main(int argc, char* argv[])
 {
-#ifdef WIN32
+#ifdef _WIN32
 
     WSADATA wsaData;
     if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0)
     {
-        printf("WSAStartup �޷���ʼ����");
+        printf("WSAStartup error.\n");
         return -1;
     }
 #endif

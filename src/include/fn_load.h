@@ -66,7 +66,7 @@ namespace FNLog
                 }
                 os.write(ls->current_, limit);
             }
-            printf("%s", os.str().c_str());
+            printf("%s\n", os.str().c_str());
             return ret;
         }
 

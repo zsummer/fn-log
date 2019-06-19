@@ -305,30 +305,31 @@ namespace FNLog
             {
                 continue;
             }
+
             //preprocess
-            switch (ch)
+            if (ls.line_.block_type_ == BLOCK_KEY && (ch < 'a' || ch > 'z') && ch != '_')
             {
-            case '\0': case ' ': case '\f': case '\t': case '\v':case '\n':case '\r':case ':': case '#': case '\"':
-                if (ls.line_.block_type_ == BLOCK_KEY)
+                ls.line_.block_type_ = BLOCK_PRE_SEP;
+                ls.line_.key_end_ = &ch;
+                ls.line_.key_ = ParseReserve(ls.line_.key_begin_, ls.line_.key_end_);
+                if (ls.line_.key_ == RK_NULL)
                 {
-                    ls.line_.block_type_ = BLOCK_PRE_SEP;
-                    ls.line_.key_end_ = &ch;
-                    ls.line_.key_ = ParseReserve(ls.line_.key_begin_, ls.line_.key_end_);
-                    if (ls.line_.key_ == RK_NULL)
-                    {
-                        ls.line_.line_type_ = LINE_ERROR;
-                        return ls.line_.line_type_;
-                    }
+                    ls.line_.line_type_ = LINE_ERROR;
+                    return ls.line_.line_type_;
                 }
-                if (ls.line_.block_type_ == BLOCK_VAL)
+            }
+            if (ls.line_.block_type_ == BLOCK_VAL)
+            {
+                switch (ch)
                 {
+                case '\0': case'\n':case '\r': case '#': case '\"':
                     ls.line_.block_type_ = BLOCK_CLEAN;
                     ls.line_.val_end_ = &ch;
+                    break;
                 }
-                break;
             }
 
-            //back line check
+            //end of line check
             switch (ch)
             {
             case '\0': case '\n':case '\r': case '#':
@@ -381,21 +382,29 @@ namespace FNLog
                     ls.line_.line_type_ = LINE_ARRAY;
                     break;
                 }
-                ls.line_.line_type_ = LINE_ERROR;
-                return ls.line_.line_type_;
+                else if (ls.line_.block_type_ != BLOCK_VAL)
+                {
+                    ls.line_.line_type_ = LINE_ERROR;
+                    return ls.line_.line_type_;
+                }
+                break;
             case ':':
                 if (ls.line_.block_type_ == BLOCK_PRE_SEP)
                 {
                     ls.line_.block_type_ = BLOCK_PRE_VAL;
                     break;
                 }
-                ls.line_.line_type_ = LINE_ERROR;
-                return ls.line_.line_type_;
+                else if (ls.line_.block_type_ != BLOCK_VAL)
+                {
+                    ls.line_.line_type_ = LINE_ERROR;
+                    return ls.line_.line_type_;
+                }
+                break;
             default:
                 if ((ch >= 'a' && ch <= 'z')
                     || (ch >= 'A' && ch <= 'Z')
                     || (ch >= '0' && ch <= '9')
-                    || ch == '_' || ch == '/' || ch == '.' || ch == '$')
+                    || ch == '_' || ch == '-' || ch == ':' || ch == '/' || ch == '.' || ch == '$' || ch == '~')
                 {
                     switch (ls.line_.block_type_)
                     {

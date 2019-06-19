@@ -63,13 +63,13 @@ namespace FNLog
         int ret = InitFromYMALFile(path, GetDefaultLogger());
         if (ret != 0)
         {
-            printf("init and load default logger error. ret:<%d>.", ret);
+            printf("init and load default logger error. ret:<%d>.\n", ret);
             return ret;
         }
         ret = AutoStartLogger(GetDefaultLogger());
         if (ret != 0)
         {
-            printf("auto start default logger error. ret:<%d>.", ret);
+            printf("auto start default logger error. ret:<%d>.\n", ret);
             return ret;
         }
         return 0;
@@ -81,13 +81,13 @@ namespace FNLog
         int ret = InitFromYMAL(config_text, "", GetDefaultLogger());
         if (ret != 0)
         {
-            printf("init default logger error. ret:<%d>.", ret);
+            printf("init default logger error. ret:<%d>.\n", ret);
             return ret;
         }
         ret = AutoStartLogger(GetDefaultLogger());
         if (ret != 0)
         {
-            printf("auto start default logger error. ret:<%d>.", ret);
+            printf("auto start default logger error. ret:<%d>.\n", ret);
             return ret;
         }
         return 0;
@@ -557,7 +557,7 @@ FNLog::LogStream& LogTemplatePack(FNLog::LogStream&& ls, Args&& ... args)
 
 
 //--------------------C STYLE FORMAT ---------------------------
-#ifdef WIN32
+#ifdef _WIN32
 #define LOG_FORMAT(channel_id, priority, category, prefix, logformat, ...) \
 do{ \
     FNLog::LogStream __log_stream(LOG_STREAM_DEFAULT_LOGGER(channel_id, priority, category, prefix));\

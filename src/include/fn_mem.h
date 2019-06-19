@@ -125,7 +125,7 @@ namespace FNLog
         log.content_len_ = 0;
         log.content_[log.content_len_] = '\0';
 
-#ifdef WIN32
+#ifdef _WIN32
         FILETIME ft;
         GetSystemTimeAsFileTime(&ft);
         unsigned long long now = ft.dwHighDateTime;
@@ -148,7 +148,7 @@ namespace FNLog
             return plog;
         }
 
-#ifdef WIN32
+#ifdef _WIN32
         static thread_local unsigned int therad_id = GetCurrentThreadId();
         log.thread_ = therad_id;
 #elif defined(__APPLE__)
