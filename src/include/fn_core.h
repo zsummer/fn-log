@@ -30,7 +30,7 @@
 
  /*
   * AUTHORS:  YaweiZhang <yawei.zhang@foxmail.com>
-  * VERSION:  0.0.1
+  * VERSION:  1.0.0
   * PURPOSE:  fn-log is a cpp-based logging utility.
   * CREATION: 2019.4.20
   * RELEASED: 2019.6.27
