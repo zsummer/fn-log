@@ -205,7 +205,7 @@ namespace FNLog
     {
         if (file_)
         {
-            //fflush(file_);
+            fflush(file_);
         }
     }
 
@@ -1621,7 +1621,7 @@ namespace FNLog
     int write_hex_unsafe(char* dst, unsigned long long number)
     {
         static const char* lut =
-            "0123456789abcdefghijk";
+            "0123456789ABCDEFGHI";
         static const char* hex_lut =
             "000102030405060708090A0B0C0D0E0F"
             "101112131415161718191A1B1C1D1E1F"
@@ -1647,8 +1647,14 @@ namespace FNLog
         real_wide = sizeof(number) * 8 - __builtin_clzll(number);
 #else
         unsigned long win_index = 0;
-        _BitScanReverse64(&win_index, number);
-        real_wide = (int)win_index + 1;
+        if (_BitScanReverse(&win_index, (unsigned long)(number >> 32)))
+        {
+            real_wide = win_index + 1 + 32;
+        }
+        else if(_BitScanReverse(&win_index, (unsigned long)(number & 0xffffffff)))
+        {
+            real_wide = win_index + 1;
+        }
 #endif 
         switch (real_wide)
         {
