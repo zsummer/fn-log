@@ -43,6 +43,24 @@ int main(int argc, char* argv[])
     FNLOG_ASSERT(buffer[16] == '\0', nullptr);
 
     memset(buffer, 0, sizeof(buffer));
+    FNLOG_ASSERT((write_hex_unsafe<3>(buffer, (unsigned long long)UINT64_MAX/2) == 16), "write integer hex UINT64 HALF");
+    FNLOG_ASSERT(buffer[0] == '7', nullptr);
+    FNLOG_ASSERT(buffer[7] == 'F', nullptr);
+    FNLOG_ASSERT(buffer[16] == '\0', nullptr);
+
+    memset(buffer, 0, sizeof(buffer));
+    FNLOG_ASSERT((write_hex_unsafe<3>(buffer, ~((unsigned long long)0xf0000000 << 32)) == 15), "write integer hex 63 ");
+    FNLOG_ASSERT(buffer[0] == 'F', nullptr);
+    FNLOG_ASSERT(buffer[7] == 'F', nullptr);
+    FNLOG_ASSERT(buffer[15] == '\0', nullptr);
+
+    memset(buffer, 0, sizeof(buffer));
+    FNLOG_ASSERT((write_hex_unsafe<3>(buffer, ~((unsigned long long)0xe0000000 << 32)) == 16), "write integer hex 63 ");
+    FNLOG_ASSERT(buffer[0] == '1', nullptr);
+    FNLOG_ASSERT(buffer[7] == 'F', nullptr);
+    FNLOG_ASSERT(buffer[16] == '\0', nullptr);
+
+    memset(buffer, 0, sizeof(buffer));
     //18446744073709551615
     FNLOG_ASSERT((write_dec_unsafe<0>(buffer, (unsigned long long)UINT64_MAX) == 20), "write integer dec UINT64 MAX");
     FNLOG_ASSERT(buffer[0] == '1', nullptr);
