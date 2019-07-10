@@ -235,6 +235,10 @@ namespace FNLog
     {
         LogData& log = *plog;
         Channel& channel = logger.channels_[log.channel_id_];
+        if (!channel.actived_)
+        {
+            return -1;
+        }
         switch (channel.channel_type_)
         {
         case CHANNEL_MULTI:
@@ -292,7 +296,7 @@ namespace FNLog
         }
         break;
         }
-        return -1;
+        return -2;
     }
 }
 

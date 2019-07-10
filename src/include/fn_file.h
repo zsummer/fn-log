@@ -68,6 +68,12 @@
 #include <memory>
 
 #ifdef _WIN32
+
+#ifndef KEEP_INPUT_QUICK_EDIT
+#define KEEP_INPUT_QUICK_EDIT false
+#endif
+
+#define WIN32_LEAN_AND_MEAN
 #include <WinSock2.h>
 #include <Windows.h>
 #include <io.h>

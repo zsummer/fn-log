@@ -68,6 +68,12 @@
 #include <memory>
 
 #ifdef _WIN32
+
+#ifndef KEEP_INPUT_QUICK_EDIT
+#define KEEP_INPUT_QUICK_EDIT false
+#endif
+
+#define WIN32_LEAN_AND_MEAN
 #include <WinSock2.h>
 #include <Windows.h>
 #include <io.h>
@@ -3090,6 +3096,10 @@ namespace FNLog
     {
         LogData& log = *plog;
         Channel& channel = logger.channels_[log.channel_id_];
+        if (!channel.actived_)
+        {
+            return -1;
+        }
         switch (channel.channel_type_)
         {
         case CHANNEL_MULTI:
@@ -3147,7 +3157,7 @@ namespace FNLog
         }
         break;
         }
-        return -1;
+        return -2;
     }
 }
 
@@ -3207,7 +3217,10 @@ namespace FNLog
             return -2;
         }
         Channel& channel = logger.channels_[channel_id];
-
+        if (!channel.actived_)
+        {
+            return -3;
+        }
         if (priority < channel.config_fields_[CHANNEL_CFG_PRIORITY].num_)
         {
             return 1;
@@ -3254,6 +3267,20 @@ namespace FNLog
         logger.waiting_close_ = false;
         logger.channel_size_ = 0;
         memset(&logger.channels_, 0, sizeof(logger.channels_));
+#if ((defined _WIN32) && !KEEP_INPUT_QUICK_EDIT)
+        HANDLE input_handle = ::GetStdHandle(STD_INPUT_HANDLE);
+        if (input_handle != INVALID_HANDLE_VALUE)
+        {
+            DWORD mode = 0;
+            if (GetConsoleMode(input_handle, &mode))
+            {
+                mode &= ~ENABLE_QUICK_EDIT_MODE;
+                mode &= ~ENABLE_INSERT_MODE;
+                mode &= ~ENABLE_MOUSE_INPUT;
+                SetConsoleMode(input_handle, mode);
+            }
+        }
+#endif
     }
 
     //not thread-safe
@@ -3309,8 +3336,9 @@ namespace FNLog
             memcpy(log->content_ + log->content_len_, "] start.", sizeof("] start.") - 1);
             log->content_len_ += sizeof("] start.") - 1;  
             log->content_[log->content_len_] = '\0';
-
+            channel.actived_ = true;
             PushLog(logger, log);
+            channel.actived_ = false;
             if (logger.last_error_ != 0)
             {
                 break;
@@ -3518,9 +3546,9 @@ namespace FNLog
 
     inline Logger& GetDefaultLogger()
     {
-        static Logger logger;
-        static GuardLogger gl(logger);
-        return logger;
+        static std::unique_ptr<Logger, std::function<void(Logger*)> > logger(new Logger(),
+            [](Logger* logger) {StopAndCleanLogger(*logger); delete logger; });
+        return *logger;
     }
 
     inline int LoadAndStartDefaultLogger(const std::string& path)

@@ -53,7 +53,10 @@ namespace FNLog
             return -2;
         }
         Channel& channel = logger.channels_[channel_id];
-
+        if (!channel.actived_)
+        {
+            return -3;
+        }
         if (priority < channel.config_fields_[CHANNEL_CFG_PRIORITY].num_)
         {
             return 1;
@@ -100,6 +103,20 @@ namespace FNLog
         logger.waiting_close_ = false;
         logger.channel_size_ = 0;
         memset(&logger.channels_, 0, sizeof(logger.channels_));
+#if ((defined _WIN32) && !KEEP_INPUT_QUICK_EDIT)
+        HANDLE input_handle = ::GetStdHandle(STD_INPUT_HANDLE);
+        if (input_handle != INVALID_HANDLE_VALUE)
+        {
+            DWORD mode = 0;
+            if (GetConsoleMode(input_handle, &mode))
+            {
+                mode &= ~ENABLE_QUICK_EDIT_MODE;
+                mode &= ~ENABLE_INSERT_MODE;
+                mode &= ~ENABLE_MOUSE_INPUT;
+                SetConsoleMode(input_handle, mode);
+            }
+        }
+#endif
     }
 
     //not thread-safe
@@ -155,8 +172,9 @@ namespace FNLog
             memcpy(log->content_ + log->content_len_, "] start.", sizeof("] start.") - 1);
             log->content_len_ += sizeof("] start.") - 1;  
             log->content_[log->content_len_] = '\0';
-
+            channel.actived_ = true;
             PushLog(logger, log);
+            channel.actived_ = false;
             if (logger.last_error_ != 0)
             {
                 break;

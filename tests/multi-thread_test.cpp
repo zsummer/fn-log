@@ -1,5 +1,5 @@
 #include "fn_log.h"
-
+#include <signal.h>
 
 
 
@@ -50,8 +50,16 @@ void thread_proc(int index)
 const int WRITE_THREAD_COUNT = 6;
 std::thread g_multi_proc[WRITE_THREAD_COUNT];
 
+void Stop(int signo)
+{
+    printf("oops! stop!!!\n");
+    _exit(0);
+}
+
+
 int main(int argc, char* argv[])
 {
+    signal(SIGINT, Stop);
     int ret = FNLog::FastStartDefaultLogger(example_config_text);
     if (ret != 0)
     {
