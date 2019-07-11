@@ -13,7 +13,7 @@ script:
   - mkdir build
   - cd build
   - cmake ..
-  - make
+  - make -j2
   - ls ../bin/*
   - cd ../bin
   - ./buffer_test
@@ -34,15 +34,22 @@ script:
   - mv fn_log.h.only src/include/fn_log.h
   - cd build
   - rm -fr * 
-  - cmake ..
-  - make
+  - cmake -DCMAKE_BUILD_TYPE=Release ..
+  - make -j2 
   - ls ../bin/*
   - cd ../bin
   - ./buffer_test
   - ./buffer_correct_test
+  - ./load_config_test
   - ./simple_test
+  - ./stress_udp_test
+  - ./stress_test
+  - ./multi-thread_test
+  - ./multi-thread_write_file_test
+  - ./benchmark
   - ./log4z_test
   - ./filter_test
+  - ./multi-thread_reboot_test
   
 
 
