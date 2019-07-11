@@ -66,9 +66,9 @@
 #include <set>
 #include <unordered_set>
 #include <memory>
+#include <atomic>
 
 #ifdef _WIN32
-
 #ifndef KEEP_INPUT_QUICK_EDIT
 #define KEEP_INPUT_QUICK_EDIT false
 #endif

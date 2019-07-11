@@ -86,11 +86,14 @@ namespace FNLog
                 }
                 break;
             case CHANNEL_RING:
+                std::atomic_thread_fence(std::memory_order_acquire);
                 if (channel.log_pool_.write_count_ != channel.log_pool_.read_count_)
                 {
                     plog = channel.log_pool_.log_queue_[channel.log_pool_.read_count_];
                     channel.log_pool_.log_queue_[channel.log_pool_.read_count_] = nullptr;
+                    std::atomic_thread_fence(std::memory_order_release);
                     channel.log_pool_.read_count_ = (channel.log_pool_.read_count_ + 1) % LogQueue::MAX_LOG_QUEUE_CACHE_SIZE;
+                    std::atomic_thread_fence(std::memory_order_release);
                     channel.log_fields_[CHANNEL_LOG_ALLOC_CACHE].num_++;
                     break;
                 }
@@ -216,11 +219,15 @@ namespace FNLog
             break;
         case CHANNEL_RING:
         {
+            std::atomic_thread_fence(std::memory_order_acquire);
             LogQueue::SizeType next_write = (channel.log_pool_.write_count_ + 1) % LogQueue::MAX_LOG_QUEUE_CACHE_SIZE;
-            if (next_write != channel.log_pool_.read_count_)
+            LogQueue::SizeType current_read = channel.log_pool_.read_count_;
+            if (next_write != current_read)
             {
                 channel.log_pool_.log_queue_[channel.log_pool_.write_count_] = plog;
+                std::atomic_thread_fence(std::memory_order_release);
                 channel.log_pool_.write_count_ = next_write;
+                std::atomic_thread_fence(std::memory_order_release);
                 plog = nullptr;
                 channel.log_fields_[CHANNEL_LOG_FREE_CACHE].num_++;
                 return;
