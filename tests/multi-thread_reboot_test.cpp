@@ -60,7 +60,7 @@ void Stop(int signo)
 int main(int argc, char* argv[])
 {
     signal(SIGINT, Stop);
-    int ret = FNLog::FastStartDefaultLogger(example_config_text);
+    int ret = FNLog::FastStartSimpleLogger();
     if (ret != 0)
     {
         return ret;
@@ -68,31 +68,40 @@ int main(int argc, char* argv[])
 
     FNLog::Logger& logger = FNLog::GetDefaultLogger();
 
-    int limit_second = 0;
-    int thread_id = 0;
-    g_multi_proc[thread_id] = std::thread(thread_proc, thread_id);
+    int limit_second = 12;
+    int test_thread = 5;
+    for (int i = 0; i < test_thread; i++)
+    {
+        g_multi_proc[i] = std::thread(thread_proc, i);
+    }
 
-    do
+    for (int i = 0; i < limit_second; i++)
     {
         long long last_writed = logger.channels_[0].log_fields_[FNLog::CHANNEL_LOG_PROCESSED].num_;
         std::this_thread::sleep_for(std::chrono::milliseconds(1000));
         long long now_writed = logger.channels_[0].log_fields_[FNLog::CHANNEL_LOG_PROCESSED].num_;
-        LogInfo() << "now thread:" << thread_id+1 << ": writed:" << now_writed - last_writed << ", cache hit:"
+        LogInfo() << "writed:" << now_writed - last_writed << ", cache hit:"
             << (double)logger.channels_[0].log_fields_[FNLog::CHANNEL_LOG_ALLOC_CACHE].num_
             / logger.channels_[0].log_fields_[FNLog::CHANNEL_LOG_ALLOC_CALL].num_ * 100.0;
-        
-        if (limit_second/3 > thread_id && thread_id+1 < WRITE_THREAD_COUNT)
+
+        if (i%3 == 0)
         {
-            thread_id++;
-            LogInfo() << "add new thread:" << thread_id;
-            g_multi_proc[thread_id] = std::thread(thread_proc, thread_id);
+            int ret = FNLog::StopAndCleanLogger(logger);
+            if (ret != 0)
+            {
+                return -1;
+            }
+            ret = FNLog::FastStartSimpleLogger();
+            if (ret != 0)
+            {
+                return -2;
+            }
         }
-        limit_second++;
-    } while (limit_second < 12);
+    }
 
     LogAlarm() << "finish";
     state = END;
-    for (int i = 0; i <= thread_id; i++)
+    for (int i = 0; i <= test_thread; i++)
     {
         if (g_multi_proc[i].joinable())
         {

@@ -183,6 +183,7 @@ namespace FNLog
         auto & local_que = channel.red_black_queue_[channel.write_red_];
         do
         {
+            std::atomic_thread_fence(std::memory_order_acquire);
             while (local_que.write_count_ != local_que.read_count_)
             {
                 auto& cur_log = local_que.log_queue_[local_que.read_count_];
@@ -190,7 +191,9 @@ namespace FNLog
                 LogData& log = *cur_log;
                 DispatchLog(logger, channel, log);
                 FreeLogData(logger, channel_id, cur_log);
+                std::atomic_thread_fence(std::memory_order_release);
                 local_que.read_count_ = next_read;
+                std::atomic_thread_fence(std::memory_order_release);
                 channel.log_fields_[CHANNEL_LOG_PROCESSED].num_++;
             }
             
@@ -198,7 +201,7 @@ namespace FNLog
             {
                 channel.actived_ = true;
             }
-
+            std::atomic_thread_fence(std::memory_order_acquire);
             if (local_que.write_count_ == local_que.read_count_)
             {
                 for (int i = 0; i < channel.device_size_; i++)
@@ -211,6 +214,7 @@ namespace FNLog
                 HotUpdateLogger(logger, channel.channel_id_);
                 std::this_thread::sleep_for(std::chrono::milliseconds(10));
             }
+            std::atomic_thread_fence(std::memory_order_acquire);
         } while (channel.actived_ || local_que.write_count_ != local_que.read_count_);
         return true;
     }
@@ -235,6 +239,10 @@ namespace FNLog
     {
         LogData& log = *plog;
         Channel& channel = logger.channels_[log.channel_id_];
+        if (!channel.actived_)
+        {
+            return -1;
+        }
         switch (channel.channel_type_)
         {
         case CHANNEL_MULTI:
@@ -269,11 +277,16 @@ namespace FNLog
                 }
                 state++;
                 LogQueue& local_que = channel.red_black_queue_[channel.write_red_];
+
+                std::atomic_thread_fence(std::memory_order_acquire);
                 LogQueue::SizeType next_write = (local_que.write_count_ + 1) % LogQueue::MAX_LOG_QUEUE_SIZE;
-                if (next_write != local_que.read_count_)
+                LogQueue::SizeType current_read = local_que.read_count_;
+                if (next_write != current_read)
                 {
                     local_que.log_queue_[local_que.write_count_] = plog;
+                    std::atomic_thread_fence(std::memory_order_release);
                     local_que.write_count_ = next_write;
+                    std::atomic_thread_fence(std::memory_order_release);
                     return 0;
                 }
             } while (true);
@@ -292,7 +305,7 @@ namespace FNLog
         }
         break;
         }
-        return -1;
+        return -2;
     }
 }
 

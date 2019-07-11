@@ -66,8 +66,14 @@
 #include <set>
 #include <unordered_set>
 #include <memory>
+#include <atomic>
 
 #ifdef _WIN32
+#ifndef KEEP_INPUT_QUICK_EDIT
+#define KEEP_INPUT_QUICK_EDIT false
+#endif
+
+#define WIN32_LEAN_AND_MEAN
 #include <WinSock2.h>
 #include <Windows.h>
 #include <io.h>
@@ -2694,11 +2700,14 @@ namespace FNLog
                 }
                 break;
             case CHANNEL_RING:
+                std::atomic_thread_fence(std::memory_order_acquire);
                 if (channel.log_pool_.write_count_ != channel.log_pool_.read_count_)
                 {
                     plog = channel.log_pool_.log_queue_[channel.log_pool_.read_count_];
                     channel.log_pool_.log_queue_[channel.log_pool_.read_count_] = nullptr;
+                    std::atomic_thread_fence(std::memory_order_release);
                     channel.log_pool_.read_count_ = (channel.log_pool_.read_count_ + 1) % LogQueue::MAX_LOG_QUEUE_CACHE_SIZE;
+                    std::atomic_thread_fence(std::memory_order_release);
                     channel.log_fields_[CHANNEL_LOG_ALLOC_CACHE].num_++;
                     break;
                 }
@@ -2824,11 +2833,15 @@ namespace FNLog
             break;
         case CHANNEL_RING:
         {
+            std::atomic_thread_fence(std::memory_order_acquire);
             LogQueue::SizeType next_write = (channel.log_pool_.write_count_ + 1) % LogQueue::MAX_LOG_QUEUE_CACHE_SIZE;
-            if (next_write != channel.log_pool_.read_count_)
+            LogQueue::SizeType current_read = channel.log_pool_.read_count_;
+            if (next_write != current_read)
             {
                 channel.log_pool_.log_queue_[channel.log_pool_.write_count_] = plog;
+                std::atomic_thread_fence(std::memory_order_release);
                 channel.log_pool_.write_count_ = next_write;
+                std::atomic_thread_fence(std::memory_order_release);
                 plog = nullptr;
                 channel.log_fields_[CHANNEL_LOG_FREE_CACHE].num_++;
                 return;
@@ -3038,6 +3051,7 @@ namespace FNLog
         auto & local_que = channel.red_black_queue_[channel.write_red_];
         do
         {
+            std::atomic_thread_fence(std::memory_order_acquire);
             while (local_que.write_count_ != local_que.read_count_)
             {
                 auto& cur_log = local_que.log_queue_[local_que.read_count_];
@@ -3045,7 +3059,9 @@ namespace FNLog
                 LogData& log = *cur_log;
                 DispatchLog(logger, channel, log);
                 FreeLogData(logger, channel_id, cur_log);
+                std::atomic_thread_fence(std::memory_order_release);
                 local_que.read_count_ = next_read;
+                std::atomic_thread_fence(std::memory_order_release);
                 channel.log_fields_[CHANNEL_LOG_PROCESSED].num_++;
             }
             
@@ -3053,7 +3069,7 @@ namespace FNLog
             {
                 channel.actived_ = true;
             }
-
+            std::atomic_thread_fence(std::memory_order_acquire);
             if (local_que.write_count_ == local_que.read_count_)
             {
                 for (int i = 0; i < channel.device_size_; i++)
@@ -3066,6 +3082,7 @@ namespace FNLog
                 HotUpdateLogger(logger, channel.channel_id_);
                 std::this_thread::sleep_for(std::chrono::milliseconds(10));
             }
+            std::atomic_thread_fence(std::memory_order_acquire);
         } while (channel.actived_ || local_que.write_count_ != local_que.read_count_);
         return true;
     }
@@ -3090,6 +3107,10 @@ namespace FNLog
     {
         LogData& log = *plog;
         Channel& channel = logger.channels_[log.channel_id_];
+        if (!channel.actived_)
+        {
+            return -1;
+        }
         switch (channel.channel_type_)
         {
         case CHANNEL_MULTI:
@@ -3124,11 +3145,16 @@ namespace FNLog
                 }
                 state++;
                 LogQueue& local_que = channel.red_black_queue_[channel.write_red_];
+
+                std::atomic_thread_fence(std::memory_order_acquire);
                 LogQueue::SizeType next_write = (local_que.write_count_ + 1) % LogQueue::MAX_LOG_QUEUE_SIZE;
-                if (next_write != local_que.read_count_)
+                LogQueue::SizeType current_read = local_que.read_count_;
+                if (next_write != current_read)
                 {
                     local_que.log_queue_[local_que.write_count_] = plog;
+                    std::atomic_thread_fence(std::memory_order_release);
                     local_que.write_count_ = next_write;
+                    std::atomic_thread_fence(std::memory_order_release);
                     return 0;
                 }
             } while (true);
@@ -3147,7 +3173,7 @@ namespace FNLog
         }
         break;
         }
-        return -1;
+        return -2;
     }
 }
 
@@ -3207,7 +3233,10 @@ namespace FNLog
             return -2;
         }
         Channel& channel = logger.channels_[channel_id];
-
+        if (!channel.actived_)
+        {
+            return -3;
+        }
         if (priority < channel.config_fields_[CHANNEL_CFG_PRIORITY].num_)
         {
             return 1;
@@ -3254,6 +3283,20 @@ namespace FNLog
         logger.waiting_close_ = false;
         logger.channel_size_ = 0;
         memset(&logger.channels_, 0, sizeof(logger.channels_));
+#if ((defined _WIN32) && !KEEP_INPUT_QUICK_EDIT)
+        HANDLE input_handle = ::GetStdHandle(STD_INPUT_HANDLE);
+        if (input_handle != INVALID_HANDLE_VALUE)
+        {
+            DWORD mode = 0;
+            if (GetConsoleMode(input_handle, &mode))
+            {
+                mode &= ~ENABLE_QUICK_EDIT_MODE;
+                mode &= ~ENABLE_INSERT_MODE;
+                mode &= ~ENABLE_MOUSE_INPUT;
+                SetConsoleMode(input_handle, mode);
+            }
+        }
+#endif
     }
 
     //not thread-safe
@@ -3309,8 +3352,9 @@ namespace FNLog
             memcpy(log->content_ + log->content_len_, "] start.", sizeof("] start.") - 1);
             log->content_len_ += sizeof("] start.") - 1;  
             log->content_[log->content_len_] = '\0';
-
+            channel.actived_ = true;
             PushLog(logger, log);
+            channel.actived_ = false;
             if (logger.last_error_ != 0)
             {
                 break;
@@ -3518,9 +3562,9 @@ namespace FNLog
 
     inline Logger& GetDefaultLogger()
     {
-        static Logger logger;
-        static GuardLogger gl(logger);
-        return logger;
+        static std::unique_ptr<Logger, std::function<void(Logger*)> > logger(new Logger(),
+            [](Logger* logger) {StopAndCleanLogger(*logger); delete logger; });
+        return *logger;
     }
 
     inline int LoadAndStartDefaultLogger(const std::string& path)
