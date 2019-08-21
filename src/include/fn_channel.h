@@ -126,7 +126,7 @@ namespace FNLog
                 }
                 local_que.log_count_ = 0;
             }
-            if (!channel.actived_ && !logger.waiting_close_)
+            if (!channel.actived_ && logger.logger_state_ == LOGGER_STATE_INITING)
             {
                 channel.actived_ = true;
             }
@@ -197,7 +197,7 @@ namespace FNLog
                 channel.log_fields_[CHANNEL_LOG_PROCESSED].num_++;
             }
             
-            if (!channel.actived_ && !logger.waiting_close_)
+            if (!channel.actived_ && logger.logger_state_ == LOGGER_STATE_INITING)
             {
                 channel.actived_ = true;
             }

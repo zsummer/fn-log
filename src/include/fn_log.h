@@ -59,7 +59,6 @@ namespace FNLog
 
     inline int LoadAndStartDefaultLogger(const std::string& path)
     {
-        InitLogger(GetDefaultLogger());
         int ret = InitFromYMALFile(path, GetDefaultLogger());
         if (ret != 0)
         {
@@ -77,7 +76,6 @@ namespace FNLog
 
     inline int FastStartDefaultLogger(const std::string& config_text)
     {
-        InitLogger(GetDefaultLogger());
         int ret = InitFromYMAL(config_text, "", GetDefaultLogger());
         if (ret != 0)
         {

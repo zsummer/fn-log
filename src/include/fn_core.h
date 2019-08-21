@@ -52,6 +52,10 @@ namespace FNLog
         {
             return -2;
         }
+        if (logger.logger_state_ != LOGGER_STATE_RUNNING)
+        {
+            return -3;
+        }
         Channel& channel = logger.channels_[channel_id];
         if (!channel.actived_)
         {
@@ -78,11 +82,16 @@ namespace FNLog
         {
             return -1;
         }
+        if (logger.logger_state_ != LOGGER_STATE_RUNNING)
+        {
+            FreeLogData(logger, plog->channel_id_, plog);
+            return -2;
+        }
         LogData& log = *plog;
         if (log.channel_id_ >= logger.channel_size_ || log.channel_id_ < 0)
         {
             FreeLogData(logger, log.channel_id_, plog);
-            return -2;
+            return -3;
         }
         plog->content_len_ = FN_MIN(plog->content_len_, LogData::MAX_LOG_SIZE - 2);
         plog->content_[plog->content_len_++] = '\n';
@@ -100,7 +109,7 @@ namespace FNLog
     {
         logger.last_error_ = 0;
         logger.hot_update_ = false;
-        logger.waiting_close_ = false;
+        logger.logger_state_ = LOGGER_STATE_UNINIT;
         logger.channel_size_ = 0;
         memset(&logger.channels_, 0, sizeof(logger.channels_));
 #if ((defined _WIN32) && !KEEP_INPUT_QUICK_EDIT)
@@ -118,7 +127,12 @@ namespace FNLog
         }
 #endif
     }
-
+    
+    inline Logger::Logger()
+    {
+        InitLogger(*this);
+    }
+    
     //not thread-safe
     inline Channel* NewChannel(Logger& logger, int channel_type)
     {
@@ -153,11 +167,23 @@ namespace FNLog
 
     inline int StartLogger(Logger& logger)
     {
-        if (logger.channel_size_ > Logger::MAX_CHANNEL_SIZE || logger.channel_size_ <= 0)
+        if (logger.logger_state_ != LOGGER_STATE_UNINIT)
         {
+            printf("start error 1");
             return -1;
         }
-
+        if (logger.channel_size_ > Logger::MAX_CHANNEL_SIZE || logger.channel_size_ <= 0)
+        {
+            printf("start error 2");
+            return -2;
+        }
+        std::lock_guard<std::recursive_mutex> state_locked(logger.logger_state_lock);
+        if (logger.logger_state_ != LOGGER_STATE_UNINIT)
+        {
+            printf("start error 3");
+            return -3;
+        }
+        logger.logger_state_ = LOGGER_STATE_INITING;
         for (int channel_id = 0; channel_id < logger.channel_size_; channel_id++)
         {
             Channel& channel = logger.channels_[channel_id];
@@ -202,19 +228,31 @@ namespace FNLog
                 break;
             }
         }
+        logger.logger_state_ = LOGGER_STATE_RUNNING;
         return logger.last_error_;
     }
 
     inline int StopAndCleanLogger(Logger& logger)
     {
-        logger.last_error_ = 0;
+        
         if (logger.channel_size_ > Logger::MAX_CHANNEL_SIZE || logger.channel_size_ <= 0)
         {
-            logger.last_error_ = -1;
-            return logger.last_error_;
+            printf("stop logger error\n");
+            return -1;
         }
-        logger.waiting_close_ = true;
-
+        if (logger.logger_state_ != LOGGER_STATE_RUNNING)
+        {
+            printf("stop logger error. state not running\n");
+            return -2;
+        }
+        std::lock_guard<std::recursive_mutex> state_locked(logger.logger_state_lock);
+        if (logger.logger_state_ != LOGGER_STATE_RUNNING)
+        {
+            printf("stop logger error. state not running in locked\n");
+            return -3;
+        }
+        logger.logger_state_ = LOGGER_STATE_CLOSING;
+        
         for (int channel_id = 0; channel_id < logger.channel_size_; channel_id++)
         {
             Channel& channel = logger.channels_[channel_id];
@@ -294,8 +332,8 @@ namespace FNLog
                 writer.close();
             }
         }
-        logger.waiting_close_ = false;
         logger.channel_size_ = 0;
+        logger.logger_state_ = LOGGER_STATE_UNINIT;
         return logger.last_error_;
     }
 
