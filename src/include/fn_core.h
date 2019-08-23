@@ -76,13 +76,13 @@ namespace FNLog
         return 0;
     }
 
-    inline int PushLog(Logger& logger, LogData* plog)
+    inline int PushLog(Logger& logger, LogData* plog, bool state_safly_env = false)
     {
         if (plog == nullptr)
         {
             return -1;
         }
-        if (logger.logger_state_ != LOGGER_STATE_RUNNING)
+        if (!state_safly_env && logger.logger_state_ != LOGGER_STATE_RUNNING)
         {
             FreeLogData(logger, plog->channel_id_, plog);
             return -2;
@@ -204,7 +204,7 @@ namespace FNLog
             log->content_len_ += sizeof("] start.") - 1;  
             log->content_[log->content_len_] = '\0';
             channel.actived_ = true;
-            PushLog(logger, log);
+            PushLog(logger, log, true);
             channel.actived_ = false;
             if (logger.last_error_ != 0)
             {
