@@ -27,7 +27,8 @@ script:
   - ./benchmark
   - ./log4z_test
   - ./filter_test
-  - ./multi-thread_reboot_test
+  - ./multi-multi-thread_env_single_reboot_test
+  - ./multi-thread_env_multi_reboot_test
   - cd ..
   - sh merge_header.sh
   - rm src/include/*
@@ -49,7 +50,8 @@ script:
   - ./benchmark
   - ./log4z_test
   - ./filter_test
-  - ./multi-thread_reboot_test
+  - ./multi-multi-thread_env_single_reboot_test
+  - ./multi-thread_env_multi_reboot_test
   
 
 

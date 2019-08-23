@@ -733,7 +733,7 @@ namespace FNLog
         char chunk_1_[CHUNK_SIZE];
 
         int  channel_id_;
-        int channel_type_;
+        int  channel_type_;
         bool actived_;
         time_t yaml_mtime_;
         time_t last_hot_check_;
@@ -761,6 +761,14 @@ namespace FNLog
         std::mutex pool_lock_;
     };
 
+    enum LoggerState
+    {
+        LOGGER_STATE_UNINIT = 0,
+        LOGGER_STATE_INITING,
+        LOGGER_STATE_RUNNING,
+        LOGGER_STATE_CLOSING,
+    };
+    
     class Logger
     {
     public:
@@ -775,13 +783,14 @@ namespace FNLog
         using AllocLogData = std::function<LogData* ()>;
         using FreeLogData = std::function<void(LogData*)>;
     public:
+        Logger();
+        
         std::atomic_int last_error_;
         
         bool hot_update_;
         std::string yaml_path_;
-
-        bool waiting_close_;
-
+        unsigned int logger_state_;
+        std::recursive_mutex logger_state_lock;
         int channel_size_;
         Channels channels_;
         SyncGroups syncs_;
@@ -2035,6 +2044,12 @@ namespace FNLog
 
     inline int InitFromYMAL(const std::string& text, const std::string& path, Logger& logger)
     {
+        std::lock_guard<std::recursive_mutex> state_locked(logger.logger_state_lock);
+        if (logger.logger_state_ != LOGGER_STATE_UNINIT)
+        {
+            printf("init from ymal text error\n");
+            return -1;
+        }
         std::unique_ptr<LexState> ls(new LexState);
         int ret = ParseLogger(*ls, text);
         if (ret != 0)
@@ -2061,6 +2076,12 @@ namespace FNLog
         logger.hot_update_ = ls->hot_update_;
         logger.channel_size_ = ls->channel_size_;
         memcpy(&logger.channels_, &ls->channels_, sizeof(logger.channels_));
+
+        if (logger.channel_size_ > Logger::MAX_CHANNEL_SIZE || logger.channel_size_ <= 0)
+        {
+            printf("start error 2");
+            return -2;
+        }
         return 0;
     }
 
@@ -2075,11 +2096,13 @@ namespace FNLog
         config.open(path.c_str(), "rb", file_stat);
         if (!config.is_open())
         {
+            printf("open ymal error\n");
             return -1;
         }
         int ret = InitFromYMAL(config.read_content(), path, logger);
         if (ret != 0)
         {
+            printf("init from ymal file error\n");
             return ret;
         }
 
@@ -2994,7 +3017,7 @@ namespace FNLog
                 }
                 local_que.log_count_ = 0;
             }
-            if (!channel.actived_ && !logger.waiting_close_)
+            if (!channel.actived_ && logger.logger_state_ == LOGGER_STATE_INITING)
             {
                 channel.actived_ = true;
             }
@@ -3065,7 +3088,7 @@ namespace FNLog
                 channel.log_fields_[CHANNEL_LOG_PROCESSED].num_++;
             }
             
-            if (!channel.actived_ && !logger.waiting_close_)
+            if (!channel.actived_ && logger.logger_state_ == LOGGER_STATE_INITING)
             {
                 channel.actived_ = true;
             }
@@ -3232,6 +3255,10 @@ namespace FNLog
         {
             return -2;
         }
+        if (logger.logger_state_ != LOGGER_STATE_RUNNING)
+        {
+            return -3;
+        }
         Channel& channel = logger.channels_[channel_id];
         if (!channel.actived_)
         {
@@ -3258,11 +3285,16 @@ namespace FNLog
         {
             return -1;
         }
+        if (logger.logger_state_ != LOGGER_STATE_RUNNING)
+        {
+            FreeLogData(logger, plog->channel_id_, plog);
+            return -2;
+        }
         LogData& log = *plog;
         if (log.channel_id_ >= logger.channel_size_ || log.channel_id_ < 0)
         {
             FreeLogData(logger, log.channel_id_, plog);
-            return -2;
+            return -3;
         }
         plog->content_len_ = FN_MIN(plog->content_len_, LogData::MAX_LOG_SIZE - 2);
         plog->content_[plog->content_len_++] = '\n';
@@ -3280,7 +3312,7 @@ namespace FNLog
     {
         logger.last_error_ = 0;
         logger.hot_update_ = false;
-        logger.waiting_close_ = false;
+        logger.logger_state_ = LOGGER_STATE_UNINIT;
         logger.channel_size_ = 0;
         memset(&logger.channels_, 0, sizeof(logger.channels_));
 #if ((defined _WIN32) && !KEEP_INPUT_QUICK_EDIT)
@@ -3298,7 +3330,12 @@ namespace FNLog
         }
 #endif
     }
-
+    
+    inline Logger::Logger()
+    {
+        InitLogger(*this);
+    }
+    
     //not thread-safe
     inline Channel* NewChannel(Logger& logger, int channel_type)
     {
@@ -3333,11 +3370,28 @@ namespace FNLog
 
     inline int StartLogger(Logger& logger)
     {
-        if (logger.channel_size_ > Logger::MAX_CHANNEL_SIZE || logger.channel_size_ <= 0)
+        if (logger.logger_state_ != LOGGER_STATE_UNINIT)
         {
+            printf("start error 1");
             return -1;
         }
-
+        if (logger.channel_size_ > Logger::MAX_CHANNEL_SIZE || logger.channel_size_ <= 0)
+        {
+            printf("start error 2");
+            return -2;
+        }
+        std::lock_guard<std::recursive_mutex> state_locked(logger.logger_state_lock);
+        if (logger.logger_state_ != LOGGER_STATE_UNINIT)
+        {
+            printf("start error 3");
+            return -3;
+        }
+        if (logger.channel_size_ > Logger::MAX_CHANNEL_SIZE || logger.channel_size_ <= 0)
+        {
+            printf("start error 4");
+            return -4;
+        }
+        logger.logger_state_ = LOGGER_STATE_INITING;
         for (int channel_id = 0; channel_id < logger.channel_size_; channel_id++)
         {
             Channel& channel = logger.channels_[channel_id];
@@ -3382,19 +3436,30 @@ namespace FNLog
                 break;
             }
         }
+        logger.logger_state_ = LOGGER_STATE_RUNNING;
         return logger.last_error_;
     }
 
-    inline int StopAndCleanLogger(Logger& logger)
+    inline int TryStopAndCleanLogger(Logger& logger)
     {
-        logger.last_error_ = 0;
         if (logger.channel_size_ > Logger::MAX_CHANNEL_SIZE || logger.channel_size_ <= 0)
         {
-            logger.last_error_ = -1;
-            return logger.last_error_;
+            printf("stop logger error\n");
+            return -1;
         }
-        logger.waiting_close_ = true;
-
+        if (logger.logger_state_ != LOGGER_STATE_RUNNING)
+        {
+            printf("stop logger error. state not running\n");
+            return -2;
+        }
+        std::lock_guard<std::recursive_mutex> state_locked(logger.logger_state_lock);
+        if (logger.logger_state_ != LOGGER_STATE_RUNNING)
+        {
+            printf("stop logger error. state not running in locked\n");
+            return -3;
+        }
+        logger.logger_state_ = LOGGER_STATE_CLOSING;
+        
         for (int channel_id = 0; channel_id < logger.channel_size_; channel_id++)
         {
             Channel& channel = logger.channels_[channel_id];
@@ -3474,22 +3539,38 @@ namespace FNLog
                 writer.close();
             }
         }
-        logger.waiting_close_ = false;
+        if (logger.logger_state_ != LOGGER_STATE_CLOSING)
+        {
+            logger.channel_size_ = 0;
+        }
         logger.channel_size_ = 0;
+        logger.logger_state_ = LOGGER_STATE_UNINIT;
         return logger.last_error_;
     }
 
+    inline int StopAndCleanLogger(Logger& logger)
+    {
+        do
+        {
+            int ret = TryStopAndCleanLogger(logger);
+            if (ret != 0)
+            {
+                std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            }
+        } while (logger.logger_state_ != LOGGER_STATE_UNINIT);
+        return 0;
+    }
     inline int AutoStartLogger(Logger& logger)
     {
         int ret = StartLogger(logger);
         if (ret != 0)
         {
-            StopAndCleanLogger(logger);
+            TryStopAndCleanLogger(logger);
             return ret;
         }
         if (logger.last_error_ != 0)
         {
-            StopAndCleanLogger(logger);
+            TryStopAndCleanLogger(logger);
             return logger.last_error_;
         }
         return 0;
@@ -3569,7 +3650,6 @@ namespace FNLog
 
     inline int LoadAndStartDefaultLogger(const std::string& path)
     {
-        InitLogger(GetDefaultLogger());
         int ret = InitFromYMALFile(path, GetDefaultLogger());
         if (ret != 0)
         {
@@ -3587,7 +3667,6 @@ namespace FNLog
 
     inline int FastStartDefaultLogger(const std::string& config_text)
     {
-        InitLogger(GetDefaultLogger());
         int ret = InitFromYMAL(config_text, "", GetDefaultLogger());
         if (ret != 0)
         {

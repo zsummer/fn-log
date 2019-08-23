@@ -82,6 +82,12 @@ namespace FNLog
         logger.hot_update_ = ls->hot_update_;
         logger.channel_size_ = ls->channel_size_;
         memcpy(&logger.channels_, &ls->channels_, sizeof(logger.channels_));
+
+        if (logger.channel_size_ > Logger::MAX_CHANNEL_SIZE || logger.channel_size_ <= 0)
+        {
+            printf("start error 2");
+            return -2;
+        }
         return 0;
     }
 

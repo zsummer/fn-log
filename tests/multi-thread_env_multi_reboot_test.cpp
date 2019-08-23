@@ -21,9 +21,10 @@ int total_loop_ = 0;
 void thread_proc(int index)
 {
     LogInfo() << "thread:<" << index << "> begin.";
-    while (total_loop_ < 10000000)
+    FNLog::Logger& logger = FNLog::GetDefaultLogger();
+    while (total_loop_ < 1000000)
     {
-        if (FNLog::GetDefaultLogger().logger_state_ == FNLog::LOGGER_STATE_RUNNING)
+        if (logger.logger_state_ == FNLog::LOGGER_STATE_RUNNING)
         {
             total_loop_++;
         }
@@ -32,14 +33,14 @@ void thread_proc(int index)
         if (total_loop_%1000 == 0)
         {
             LogInfo() << "already loop:" << total_loop_;
-            if (FNLog::GetDefaultLogger().logger_state_ == FNLog::LOGGER_STATE_RUNNING)
+            if (logger.logger_state_ == FNLog::LOGGER_STATE_RUNNING)
             {
                 FNLog::StopAndCleanLogger(FNLog::GetDefaultLogger());
             }
-            else
-            {
-                FNLog::FastStartSimpleLogger();
-            }
+        }
+        if (logger.logger_state_ == FNLog::LOGGER_STATE_UNINIT)
+        {
+            FNLog::FastStartSimpleLogger();
         }
     }
     LogInfo() << "thread:<" << index << "> end.";
@@ -72,7 +73,6 @@ int main(int argc, char* argv[])
             g_multi_proc[i].join();
         }
     }
-    FNLog::StopAndCleanLogger(FNLog::GetDefaultLogger());
     return 0;
 }
 

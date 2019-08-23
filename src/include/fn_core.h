@@ -183,6 +183,11 @@ namespace FNLog
             printf("start error 3");
             return -3;
         }
+        if (logger.channel_size_ > Logger::MAX_CHANNEL_SIZE || logger.channel_size_ <= 0)
+        {
+            printf("start error 4");
+            return -4;
+        }
         logger.logger_state_ = LOGGER_STATE_INITING;
         for (int channel_id = 0; channel_id < logger.channel_size_; channel_id++)
         {
@@ -232,9 +237,8 @@ namespace FNLog
         return logger.last_error_;
     }
 
-    inline int StopAndCleanLogger(Logger& logger)
+    inline int TryStopAndCleanLogger(Logger& logger)
     {
-        
         if (logger.channel_size_ > Logger::MAX_CHANNEL_SIZE || logger.channel_size_ <= 0)
         {
             printf("stop logger error\n");
@@ -332,22 +336,38 @@ namespace FNLog
                 writer.close();
             }
         }
+        if (logger.logger_state_ != LOGGER_STATE_CLOSING)
+        {
+            logger.channel_size_ = 0;
+        }
         logger.channel_size_ = 0;
         logger.logger_state_ = LOGGER_STATE_UNINIT;
         return logger.last_error_;
     }
 
+    inline int StopAndCleanLogger(Logger& logger)
+    {
+        do
+        {
+            int ret = TryStopAndCleanLogger(logger);
+            if (ret != 0)
+            {
+                std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            }
+        } while (logger.logger_state_ != LOGGER_STATE_UNINIT);
+        return 0;
+    }
     inline int AutoStartLogger(Logger& logger)
     {
         int ret = StartLogger(logger);
         if (ret != 0)
         {
-            StopAndCleanLogger(logger);
+            TryStopAndCleanLogger(logger);
             return ret;
         }
         if (logger.last_error_ != 0)
         {
-            StopAndCleanLogger(logger);
+            TryStopAndCleanLogger(logger);
             return logger.last_error_;
         }
         return 0;
