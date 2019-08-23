@@ -1282,16 +1282,16 @@ namespace FNLog
                 device.config_fields_[DEVICE_CFG_PRIORITY].num_ = ParsePriority(ls.line_.val_begin_, ls.line_.val_end_);
                 break;
             case RK_CATEGORY:
-                device.config_fields_[DEVICE_CFG_CATEGORY].num_ = atoi(ls.line_.val_begin_);
+                device.config_fields_[DEVICE_CFG_CATEGORY].num_ = atoll(ls.line_.val_begin_);
                 break;
             case RK_CATEGORY_EXTEND:
-                device.config_fields_[DEVICE_CFG_CATEGORY_EXTEND].num_ = atoi(ls.line_.val_begin_);
+                device.config_fields_[DEVICE_CFG_CATEGORY_EXTEND].num_ = atoll(ls.line_.val_begin_);
                 break;
             case RK_LIMIT_SIZE:
-                device.config_fields_[DEVICE_CFG_FILE_LIMIT_SIZE].num_ = atoi(ls.line_.val_begin_) * 1000*1000;
+                device.config_fields_[DEVICE_CFG_FILE_LIMIT_SIZE].num_ = atoll(ls.line_.val_begin_) * 1000*1000;
                 break;
             case RK_ROLLBACK:
-                device.config_fields_[DEVICE_CFG_FILE_ROLLBACK].num_ = atoi(ls.line_.val_begin_);
+                device.config_fields_[DEVICE_CFG_FILE_ROLLBACK].num_ = atoll(ls.line_.val_begin_);
                 break;
             case RK_PATH:
                 if (ls.line_.val_end_ - ls.line_.val_begin_ < Device::MAX_PATH_LEN - 1
