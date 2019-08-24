@@ -26,15 +26,22 @@ int main(int argc, char* argv[])
     LOGA("now time:" << time(nullptr) << ";");
     LOGF("now time:" << time(nullptr) << ";");
 
-    LOGFMTT("now time:<%llu>", (unsigned long long)time(nullptr));
-    LOGFMTD("now time:<%llu>", (unsigned long long)time(nullptr));
-    LOGFMTI("now time:<%llu>", (unsigned long long)time(nullptr));
-    LOGFMTW("now time:<%llu>", (unsigned long long)time(nullptr));
-    LOGFMTE("now time:<%llu>", (unsigned long long)time(nullptr));
-    LOGFMTA("now time:<%llu>", (unsigned long long)time(nullptr));
-    LOGFMTF("now time:<%llu>", (unsigned long long)time(nullptr));
+    LOGFMTT("now time:<%llu>;", (unsigned long long)time(nullptr));
+    LOGFMTD("now time:<%llu>;", (unsigned long long)time(nullptr));
+    LOGFMTI("now time:<%llu>;", (unsigned long long)time(nullptr));
+    LOGFMTW("now time:<%llu>;", (unsigned long long)time(nullptr));
+    LOGFMTE("now time:<%llu>;", (unsigned long long)time(nullptr));
+    LOGFMTA("now time:<%llu>;", (unsigned long long)time(nullptr));
+    LOGFMTF("now time:<%llu>;", (unsigned long long)time(nullptr));
 
-    LogDebugPack(0, 0, "now time:", time(nullptr), ";");
+    PackTrace("now time:", time(nullptr), ";");
+    PackDebug("now time:", time(nullptr), ";");
+    PackInfo("now time:" , time(nullptr), ";");
+    PackWarn("now time:" , time(nullptr), ";");
+    PackError("now time:", time(nullptr), ";");
+    PackAlarm("now time:", time(nullptr), ";");
+    PackFatal("now time:", time(nullptr), ";");
+
     
     LogAlarm() << "finish";
 

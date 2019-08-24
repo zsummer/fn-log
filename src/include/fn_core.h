@@ -410,6 +410,71 @@ namespace FNLog
         return 0;
     }
 
+
+    inline long long GetChannelLog(Logger& logger, int channel_id, ChannelLogEnum field)
+    {
+        if (logger.channel_size_ <= channel_id || channel_id < 0)
+        {
+            return 0;
+        }
+        Channel& channel = logger.channels_[channel_id];
+        if (field >= CHANNEL_LOG_MAX_ID)
+        {
+            return 0;
+        }
+        return channel.log_fields_[field].num_;
+    }
+
+    inline void UnsafeChangeChannelConfig(Logger& logger, int channel_id, ChannelConfigEnum field, long long val)
+    {
+        if (logger.channel_size_ <= channel_id || channel_id < 0)
+        {
+            return;
+        }
+        Channel& channel = logger.channels_[channel_id];
+        if (field >= CHANNEL_CFG_MAX_ID)
+        {
+            return;
+        }
+        channel.config_fields_[field].num_ = val;
+    }
+
+    inline long long GetDeviceLog(Logger& logger, int channel_id, int device_id, DeviceLogEnum field)
+    {
+        if (logger.channel_size_ <= channel_id || channel_id < 0)
+        {
+            return 0;
+        }
+        Channel& channel = logger.channels_[channel_id];
+        if (field >= DEVICE_LOG_MAX_ID)
+        {
+            return 0;
+        }
+        if (channel.device_size_ <= device_id || device_id < 0)
+        {
+            return 0;
+        }
+        return channel.devices_[device_id].log_fields_[field].num_;
+    }
+
+    inline void UnsafeChangeDeviceConfig(Logger& logger, int channel_id, int device_id, DeviceConfigEnum field, long long val)
+    {
+        if (logger.channel_size_ <= channel_id || channel_id < 0)
+        {
+            return;
+        }
+        if (field >= DEVICE_CFG_MAX_ID)
+        {
+            return;
+        }
+        Channel& channel = logger.channels_[channel_id];
+        if (channel.device_size_ <= device_id || device_id < 0)
+        {
+            return;
+        }
+        channel.devices_[device_id].config_fields_[field].num_ = val;
+    }
+
     class GuardLogger
     {
     public:
