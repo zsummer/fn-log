@@ -177,7 +177,7 @@ namespace FNLog
             printf("start error 2");
             return -2;
         }
-        std::lock_guard<std::recursive_mutex> state_locked(logger.logger_state_lock);
+        Logger::StateLockGuard state_guard(logger.state_lock);
         if (logger.logger_state_ != LOGGER_STATE_UNINIT)
         {
             printf("start error 3");
@@ -249,7 +249,7 @@ namespace FNLog
             printf("stop logger error. state not running\n");
             return -2;
         }
-        std::lock_guard<std::recursive_mutex> state_locked(logger.logger_state_lock);
+        Logger::StateLockGuard state_guard(logger.state_lock);
         if (logger.logger_state_ != LOGGER_STATE_RUNNING)
         {
             printf("stop logger error. state not running in locked\n");
@@ -369,6 +369,43 @@ namespace FNLog
         {
             TryStopAndCleanLogger(logger);
             return logger.last_error_;
+        }
+        return 0;
+    }
+
+
+    inline int ParseAndStartLogger(Logger& logger, const std::string& config_content)
+    {
+        Logger::StateLockGuard state_guard(logger.state_lock);
+        int ret = InitFromYMAL(logger, config_content, "");
+        if (ret != 0)
+        {
+            printf("init and load default logger error. ret:<%d>.\n", ret);
+            return ret;
+        }
+        ret = AutoStartLogger(logger);
+        if (ret != 0)
+        {
+            printf("auto start default logger error. ret:<%d>.\n", ret);
+            return ret;
+        }
+        return 0;
+    }
+
+    inline int LoadAndStartLogger(Logger& logger, const std::string& confg_path)
+    {
+        Logger::StateLockGuard state_guard(logger.state_lock);
+        int ret = InitFromYMALFile(logger, confg_path);
+        if (ret != 0)
+        {
+            printf("init and load default logger error. ret:<%d>.\n", ret);
+            return ret;
+        }
+        ret = AutoStartLogger(logger);
+        if (ret != 0)
+        {
+            printf("auto start default logger error. ret:<%d>.\n", ret);
+            return ret;
         }
         return 0;
     }

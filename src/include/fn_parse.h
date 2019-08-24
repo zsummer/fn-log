@@ -157,6 +157,7 @@ namespace FNLog
         switch (*begin)
         {
         case 't':case 'T':
+        case 'n':case 'N':
             return PRIORITY_TRACE;
         case 'd':case 'D':
             return PRIORITY_DEBUG;

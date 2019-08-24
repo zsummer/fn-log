@@ -278,6 +278,9 @@ namespace FNLog
         using AllocLogData = std::function<LogData* ()>;
         using FreeLogData = std::function<void(LogData*)>;
     public:
+        using StateLock = std::recursive_mutex;
+        using StateLockGuard = std::lock_guard<StateLock>;
+    public:
         Logger();
         
         std::atomic_int last_error_;
@@ -285,7 +288,7 @@ namespace FNLog
         bool hot_update_;
         std::string yaml_path_;
         unsigned int logger_state_;
-        std::recursive_mutex logger_state_lock;
+        StateLock state_lock;
         int channel_size_;
         Channels channels_;
         SyncGroups syncs_;

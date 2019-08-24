@@ -57,18 +57,12 @@ namespace FNLog
         return *logger;
     }
 
-    inline int LoadAndStartDefaultLogger(const std::string& path)
+    inline int LoadAndStartDefaultLogger(const std::string& config_path)
     {
-        int ret = InitFromYMALFile(path, GetDefaultLogger());
+        int ret = LoadAndStartLogger(GetDefaultLogger(), config_path);
         if (ret != 0)
         {
-            printf("init and load default logger error. ret:<%d>.\n", ret);
-            return ret;
-        }
-        ret = AutoStartLogger(GetDefaultLogger());
-        if (ret != 0)
-        {
-            printf("auto start default logger error. ret:<%d>.\n", ret);
+            printf("load auto start default logger error. ret:<%d>.\n", ret);
             return ret;
         }
         return 0;
@@ -76,16 +70,10 @@ namespace FNLog
 
     inline int FastStartDefaultLogger(const std::string& config_text)
     {
-        int ret = InitFromYMAL(config_text, "", GetDefaultLogger());
+        int ret = ParseAndStartLogger(GetDefaultLogger(), config_text);
         if (ret != 0)
         {
-            printf("init default logger error. ret:<%d>.\n", ret);
-            return ret;
-        }
-        ret = AutoStartLogger(GetDefaultLogger());
-        if (ret != 0)
-        {
-            printf("auto start default logger error. ret:<%d>.\n", ret);
+            printf("fast start default logger error. ret:<%d>.\n", ret);
             return ret;
         }
         return 0;
@@ -136,6 +124,30 @@ R"----(
 )----";
         return FastStartDefaultLogger(default_config_text);
     }
+
+    inline int FastStartDebugLogger()
+    {
+        static const std::string default_config_text =
+            R"----(
+ # default is sync write channel.  
+ # the first device is write rollback file  
+ # the second device is print to screen.  
+ - channel: 0
+    sync: sync
+    -device: 0
+        disable: false
+        out_type: file
+        file: "$PNAME"
+        rollback: 1
+        limit_size: 100 m #only support M byte
+    -device:1
+        disable: false
+        out_type: screen
+        priority: null
+)----";
+        return FastStartDefaultLogger(default_config_text);
+    }
+
     inline long long GetChannelLog(Logger& logger, int channel_id, ChannelLogEnum field)
     {
         if (logger.channel_size_ <= channel_id || channel_id < 0)
@@ -149,6 +161,7 @@ R"----(
         }
         return channel.log_fields_[field].num_;
     }
+
     inline void UnsafeChangeChannelConfig(Logger& logger, int channel_id, ChannelConfigEnum field, long long val)
     {
         if (logger.channel_size_ <= channel_id || channel_id < 0)

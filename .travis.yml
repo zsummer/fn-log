@@ -16,19 +16,25 @@ script:
   - make -j2
   - ls ../bin/*
   - cd ../bin
+
+  - ./fast_start_debug_test
+  - ./fast_start_default_test
+  - ./fast_start_simple_test
+
   - ./buffer_test
   - ./buffer_correct_test
   - ./load_config_test
-  - ./simple_test
   - ./stress_udp_test
-  - ./stress_test
+  - ./filter_test
+
   - ./multi-thread_test
   - ./multi-thread_write_file_test
-  - ./benchmark
-  - ./log4z_test
-  - ./filter_test
   - ./multi-thread_env_single_reboot_test
   - ./multi-thread_env_multi_reboot_test >/dev/null 2>&1
+
+  - ./stress_test
+  - ./benchmark
+
   - cd ..
   - sh merge_header.sh
   - rm src/include/*
@@ -39,17 +45,19 @@ script:
   - make -j2 
   - ls ../bin/*
   - cd ../bin
+  
+  - ./fast_start_debug_test
+  - ./fast_start_default_test
+  - ./fast_start_simple_test
+
   - ./buffer_test
   - ./buffer_correct_test
   - ./load_config_test
-  - ./simple_test
   - ./stress_udp_test
-  - ./stress_test
+  - ./filter_test
+
   - ./multi-thread_test
   - ./multi-thread_write_file_test
-  - ./benchmark
-  - ./log4z_test
-  - ./filter_test
   - ./multi-thread_env_single_reboot_test
   - ./multi-thread_env_multi_reboot_test >/dev/null 2>&1
   

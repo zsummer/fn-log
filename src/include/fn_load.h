@@ -48,9 +48,9 @@
 namespace FNLog
 {
 
-    inline int InitFromYMAL(const std::string& text, const std::string& path, Logger& logger)
+    inline int InitFromYMAL(Logger& logger, const std::string& text, const std::string& path)
     {
-        std::lock_guard<std::recursive_mutex> state_locked(logger.logger_state_lock);
+        Logger::StateLockGuard state_guard(logger.state_lock);
         if (logger.logger_state_ != LOGGER_STATE_UNINIT)
         {
             printf("init from ymal text error\n");
@@ -91,7 +91,7 @@ namespace FNLog
         return 0;
     }
 
-    inline int InitFromYMALFile(const std::string& path, Logger& logger)
+    inline int InitFromYMALFile(Logger& logger, const std::string& path)
     {
         std::unique_ptr<LexState> ls(new LexState);
         FileHandler config;
@@ -105,7 +105,7 @@ namespace FNLog
             printf("open ymal error\n");
             return -1;
         }
-        int ret = InitFromYMAL(config.read_content(), path, logger);
+        int ret = InitFromYMAL(logger, config.read_content(), path);
         if (ret != 0)
         {
             printf("init from ymal file error\n");
