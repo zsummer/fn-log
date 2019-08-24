@@ -129,11 +129,11 @@ R"----(
     {
         static const std::string default_config_text =
             R"----(
- # default is sync write channel.  
+ # default is async write channel.  
  # the first device is write rollback file  
  # the second device is print to screen.  
  - channel: 0
-    sync: sync
+    sync: null
     -device: 0
         disable: false
         out_type: file
