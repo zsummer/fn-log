@@ -1,7 +1,6 @@
 
 # Introduction:  
-[![Build Status](https://travis-ci.org/zsummer/fn-log.svg?branch=master)](https://travis-ci.org/zsummer/fn-log)  
-[![Coverity Status](https://scan.coverity.com/projects/19065/badge.svg)](https://scan.coverity.com/projects/zsummer-fn-log)  
+[![Build Status](https://travis-ci.org/zsummer/fn-log.svg?branch=master)](https://travis-ci.org/zsummer/fn-log) [![Coverity Status](https://scan.coverity.com/projects/19065/badge.svg)](https://scan.coverity.com/projects/zsummer-fn-log)  
 fn-log is an open source C++ lightweight & cross platform log library. It's a iteration version from log4z.   
 It provides in a C++ application log and trace debug function for 7\*24h service program.    
 Support 64/32 of windows/linux/mac/android/iOS.    
