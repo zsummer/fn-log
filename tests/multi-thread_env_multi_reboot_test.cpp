@@ -35,7 +35,7 @@ void thread_proc(int index)
             LogInfo() << "already loop:" << total_loop_;
             if (logger.logger_state_ == FNLog::LOGGER_STATE_RUNNING)
             {
-                FNLog::StopAndCleanLogger(FNLog::GetDefaultLogger());
+                FNLog::StopLogger(FNLog::GetDefaultLogger());
             }
         }
         if (logger.logger_state_ == FNLog::LOGGER_STATE_UNINIT)
@@ -65,7 +65,7 @@ int main(int argc, char* argv[])
         g_multi_proc[i] = std::thread(thread_proc, i);
     }
 
-    for (int i = 0; i <= WRITE_THREAD_COUNT; i++)
+    for (int i = 0; i < WRITE_THREAD_COUNT; i++)
     {
         if (g_multi_proc[i].joinable())
         {

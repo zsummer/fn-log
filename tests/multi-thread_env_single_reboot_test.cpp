@@ -85,7 +85,7 @@ int main(int argc, char* argv[])
 
         if (i%3 == 0)
         {
-            int ret = FNLog::StopAndCleanLogger(logger);
+            int ret = FNLog::StopLogger(logger);
             if (ret != 0)
             {
                 return -1;
@@ -100,7 +100,7 @@ int main(int argc, char* argv[])
 
     LogAlarm() << "finish";
     state = END;
-    for (int i = 0; i <= WRITE_THREAD_COUNT; i++)
+    for (int i = 0; i < WRITE_THREAD_COUNT; i++)
     {
         if (g_multi_proc[i].joinable())
         {

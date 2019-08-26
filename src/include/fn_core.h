@@ -57,9 +57,9 @@ namespace FNLog
             return -3;
         }
         Channel& channel = logger.channels_[channel_id];
-        if (!channel.actived_)
+        if (channel.channel_state_ != CHANNEL_STATE_RUNNING)
         {
-            return -3;
+            return -4;
         }
         if (priority < channel.config_fields_[CHANNEL_CFG_PRIORITY].num_)
         {
@@ -105,34 +105,8 @@ namespace FNLog
         return 0;
     }
 
-    inline void InitLogger(Logger& logger)
-    {
-        logger.last_error_ = 0;
-        logger.hot_update_ = false;
-        logger.logger_state_ = LOGGER_STATE_UNINIT;
-        logger.channel_size_ = 0;
-        memset(&logger.channels_, 0, sizeof(logger.channels_));
-#if ((defined _WIN32) && !KEEP_INPUT_QUICK_EDIT)
-        HANDLE input_handle = ::GetStdHandle(STD_INPUT_HANDLE);
-        if (input_handle != INVALID_HANDLE_VALUE)
-        {
-            DWORD mode = 0;
-            if (GetConsoleMode(input_handle, &mode))
-            {
-                mode &= ~ENABLE_QUICK_EDIT_MODE;
-                mode &= ~ENABLE_INSERT_MODE;
-                mode &= ~ENABLE_MOUSE_INPUT;
-                SetConsoleMode(input_handle, mode);
-            }
-        }
-#endif
-    }
     
-    inline Logger::Logger()
-    {
-        InitLogger(*this);
-    }
-    
+
     //not thread-safe
     inline Channel* NewChannel(Logger& logger, int channel_type)
     {
@@ -165,6 +139,87 @@ namespace FNLog
         return device;
     }
 
+    inline int StartChannels(Logger& logger)
+    {
+        for (int channel_id = 0; channel_id < logger.channel_size_; channel_id++)
+        {
+            static_assert(LogData::MAX_LOG_SIZE > Device::MAX_PATH_SYS_LEN * 2 + 100, "");
+            Channel& channel = logger.channels_[channel_id];
+            std::thread& thd = logger.syncs_[channel_id].log_thread_;
+            switch (channel.channel_type_)
+            {
+            case CHANNEL_SYNC:
+                channel.channel_state_ = CHANNEL_STATE_RUNNING;
+                break;
+            case CHANNEL_RING:
+            case CHANNEL_MULTI:
+            {
+                thd = std::thread(EnterProcChannel, std::ref(logger), channel_id);
+                if (!thd.joinable())
+                {
+                    printf("%s", "start async log thread has error.\n");
+                    return -1;
+                }
+                int state = 0;
+                while (channel.channel_state_ == CHANNEL_STATE_NULL && state < 100)
+                {
+                    state++;
+                    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+                }
+                if (channel.channel_state_ == CHANNEL_STATE_NULL)
+                {
+                    printf("%s", "start async log thread timeout.\n");
+                    return -2;
+                }
+                if (channel.channel_state_ != CHANNEL_STATE_RUNNING)
+                {
+                    printf("%s", "start async log thread has inner error.\n");
+                    return -3;
+                }
+            }
+            break;
+            default:
+                printf("%s", "unknown channel type");
+                return -10;
+            }
+        }
+        return 0;
+    }
+
+    inline int StopChannels(Logger& logger)
+    {
+        for (int channel_id = 0; channel_id < logger.channel_size_; channel_id++)
+        {
+            static_assert(LogData::MAX_LOG_SIZE > Device::MAX_PATH_SYS_LEN * 2 + 100, "");
+            Channel& channel = logger.channels_[channel_id];
+            std::thread& thd = logger.syncs_[channel_id].log_thread_;
+            switch (channel.channel_type_)
+            {
+            case CHANNEL_SYNC:
+                channel.channel_state_ = CHANNEL_STATE_NULL;
+                break;
+            case CHANNEL_RING:
+            case CHANNEL_MULTI:
+            {
+                if (thd.joinable())
+                {
+                    if (channel.channel_state_ == CHANNEL_STATE_RUNNING)
+                    {
+                        channel.channel_state_ = CHANNEL_STATE_WAITING_FINISH;
+                    }
+                    thd.join();
+                }
+                channel.channel_state_ = CHANNEL_STATE_NULL;
+            }
+            break;
+            default:
+                printf("%s", "unknown channel type");
+                return -10;
+            }
+        }
+        return 0;
+    }
+
     inline int StartLogger(Logger& logger)
     {
         if (logger.logger_state_ != LOGGER_STATE_UNINIT)
@@ -189,88 +244,19 @@ namespace FNLog
             return -4;
         }
         logger.logger_state_ = LOGGER_STATE_INITING;
-        for (int channel_id = 0; channel_id < logger.channel_size_; channel_id++)
+        if (StartChannels(logger) != 0)
         {
-            Channel& channel = logger.channels_[channel_id];
-            std::thread& thd = logger.syncs_[channel_id].log_thread_;
-            static_assert(LogData::MAX_LOG_SIZE > Device::MAX_PATH_SYS_LEN*2+100, "");
-            LogData* log = AllocLogData(logger, channel_id, PRIORITY_ALARM, 0, true);
-
-            memcpy(log->content_ + log->content_len_, "channel [", sizeof("channel [") - 1);
-            log->content_len_ += sizeof("channel [") - 1;
-
-            log->content_len_ += write_dec_unsafe<0>(log->content_ + log->content_len_, (long long)channel_id);
-            memcpy(log->content_ + log->content_len_, "] start.", sizeof("] start.") - 1);
-            log->content_len_ += sizeof("] start.") - 1;  
-            log->content_[log->content_len_] = '\0';
-            channel.actived_ = true;
-            PushLog(logger, log, true);
-            channel.actived_ = false;
-            if (logger.last_error_ != 0)
-            {
-                break;
-            }
-            if (channel.channel_type_ == CHANNEL_SYNC)
-            {
-                channel.actived_ = true;
-            }
-            else
-            {
-                thd = std::thread(EnterProcChannel, std::ref(logger), channel_id);
-                int state = 0;
-                while (!channel.actived_ && logger.last_error_ == 0 && state < 400)
-                {
-                    state++;
-                    std::this_thread::sleep_for(std::chrono::milliseconds(10));
-                }
-                if (!channel.actived_ && logger.last_error_ == 0)
-                {
-                    logger.last_error_ = -4;
-                }
-            }
-            if (logger.last_error_ != 0)
-            {
-                break;
-            }
+            StopChannels(logger);
+            logger.logger_state_ = LOGGER_STATE_UNINIT;
+            return -5;
         }
         logger.logger_state_ = LOGGER_STATE_RUNNING;
-        return logger.last_error_;
+        logger.inner_error_ = 0;
+        return 0;
     }
 
-    inline int TryStopAndCleanLogger(Logger& logger)
+    inline int CleanChannels(Logger& logger)
     {
-        if (logger.channel_size_ > Logger::MAX_CHANNEL_SIZE || logger.channel_size_ <= 0)
-        {
-            printf("try stop error. channel size:<%d> invalid.\n", logger.channel_size_);
-            return -1;
-        }
-        if (logger.logger_state_ != LOGGER_STATE_RUNNING)
-        {
-            printf("try stop logger error. state:<%u> not running:<%u>.\n", logger.logger_state_, LOGGER_STATE_RUNNING);
-            return -2;
-        }
-        Logger::StateLockGuard state_guard(logger.state_lock);
-        if (logger.logger_state_ != LOGGER_STATE_RUNNING)
-        {
-            printf("try stop logger error. state:<%u> not running:<%u>.\n", logger.logger_state_, LOGGER_STATE_RUNNING);
-            return -3;
-        }
-        logger.logger_state_ = LOGGER_STATE_CLOSING;
-        
-        for (int channel_id = 0; channel_id < logger.channel_size_; channel_id++)
-        {
-            Channel& channel = logger.channels_[channel_id];
-            std::thread& thd = logger.syncs_[channel_id].log_thread_;
-            if (channel.channel_type_ != CHANNEL_SYNC  && channel.actived_)
-            {
-                channel.actived_ = false;
-                while (thd.joinable())
-                {
-                    thd.join();
-                }
-            }
-            channel.actived_ = false;
-        }
         for (int channel_id = 0; channel_id < logger.channel_size_; channel_id++)
         {
             Channel& channel = logger.channels_[channel_id];
@@ -279,7 +265,7 @@ namespace FNLog
                 FreeLogData(logger, channel_id, channel.red_black_queue_[channel.write_red_].log_queue_[i]);
             }
             channel.red_black_queue_[channel.write_red_].log_count_ = 0;
-            channel.write_red_ = (channel.write_red_ + 1 ) % 2;
+            channel.write_red_ = (channel.write_red_ + 1) % 2;
             for (int i = 0; i < channel.red_black_queue_[channel.write_red_].log_count_; i++)
             {
                 FreeLogData(logger, channel_id, channel.red_black_queue_[channel.write_red_].log_queue_[i]);
@@ -321,6 +307,31 @@ namespace FNLog
             channel.log_pool_.write_count_ = 0;
             channel.log_pool_.read_count_ = 0;
         }
+        return 0;
+    }
+
+
+    inline int StopLogger(Logger& logger)
+    {
+        if (logger.channel_size_ > Logger::MAX_CHANNEL_SIZE || logger.channel_size_ <= 0)
+        {
+            printf("try stop error. channel size:<%d> invalid.\n", logger.channel_size_);
+            return -1;
+        }
+        if (logger.logger_state_ != LOGGER_STATE_RUNNING)
+        {
+            printf("try stop logger error. state:<%u> not running:<%u>.\n", logger.logger_state_, LOGGER_STATE_RUNNING);
+            return -2;
+        }
+        Logger::StateLockGuard state_guard(logger.state_lock);
+        if (logger.logger_state_ != LOGGER_STATE_RUNNING)
+        {
+            printf("try stop logger error. state:<%u> not running:<%u>.\n", logger.logger_state_, LOGGER_STATE_RUNNING);
+            return -3;
+        }
+        logger.logger_state_ = LOGGER_STATE_CLOSING;
+        StopChannels(logger);
+        CleanChannels(logger);
         
         for (auto& writer : logger.file_handles_)
         {
@@ -336,40 +347,7 @@ namespace FNLog
                 writer.close();
             }
         }
-        if (logger.logger_state_ != LOGGER_STATE_CLOSING)
-        {
-            logger.channel_size_ = 0;
-        }
-        logger.channel_size_ = 0;
         logger.logger_state_ = LOGGER_STATE_UNINIT;
-        return logger.last_error_;
-    }
-
-    inline int StopAndCleanLogger(Logger& logger)
-    {
-        do
-        {
-            int ret = TryStopAndCleanLogger(logger);
-            if (ret != 0)
-            {
-                std::this_thread::sleep_for(std::chrono::milliseconds(100));
-            }
-        } while (logger.logger_state_ != LOGGER_STATE_UNINIT);
-        return 0;
-    }
-    inline int AutoStartLogger(Logger& logger)
-    {
-        int ret = StartLogger(logger);
-        if (ret != 0)
-        {
-            TryStopAndCleanLogger(logger);
-            return ret;
-        }
-        if (logger.last_error_ != 0)
-        {
-            TryStopAndCleanLogger(logger);
-            return logger.last_error_;
-        }
         return 0;
     }
 
@@ -388,10 +366,10 @@ namespace FNLog
             printf("init and load default logger error. ret:<%d>.\n", ret);
             return ret;
         }
-        ret = AutoStartLogger(logger);
+        ret = StartLogger(logger);
         if (ret != 0)
         {
-            printf("auto start default logger error. ret:<%d>.\n", ret);
+            printf("start default logger error. ret:<%d>.\n", ret);
             return ret;
         }
         return 0;
@@ -411,10 +389,10 @@ namespace FNLog
             printf("init and load default logger error. ret:<%d>.\n", ret);
             return ret;
         }
-        ret = AutoStartLogger(logger);
+        ret = StartLogger(logger);
         if (ret != 0)
         {
-            printf("auto start default logger error. ret:<%d>.\n", ret);
+            printf("start default logger error. ret:<%d>.\n", ret);
             return ret;
         }
         return 0;
@@ -485,19 +463,46 @@ namespace FNLog
         channel.devices_[device_id].config_fields_[field].num_ = val;
     }
 
-    class GuardLogger
+    inline void InitLogger(Logger& logger)
     {
-    public:
-        GuardLogger() = delete;
-        explicit GuardLogger(Logger& logger) :logger_(logger) {}
-        ~GuardLogger()
+        logger.inner_error_ = 0;
+        logger.hot_update_ = false;
+        logger.logger_state_ = LOGGER_STATE_UNINIT;
+        logger.channel_size_ = 0;
+        memset(&logger.channels_, 0, sizeof(logger.channels_));
+#if ((defined _WIN32) && !KEEP_INPUT_QUICK_EDIT)
+        HANDLE input_handle = ::GetStdHandle(STD_INPUT_HANDLE);
+        if (input_handle != INVALID_HANDLE_VALUE)
         {
-            StopAndCleanLogger(logger_);
+            DWORD mode = 0;
+            if (GetConsoleMode(input_handle, &mode))
+            {
+                mode &= ~ENABLE_QUICK_EDIT_MODE;
+                mode &= ~ENABLE_INSERT_MODE;
+                mode &= ~ENABLE_MOUSE_INPUT;
+                SetConsoleMode(input_handle, mode);
+            }
         }
-        inline Logger& logger() { return logger_; }
-    private:
-        Logger& logger_;
-    };
+#endif
+    }
+
+    inline Logger::Logger()
+    {
+        InitLogger(*this);
+    }
+
+    inline Logger::~Logger()
+    {
+        do
+        {
+            int ret = StopLogger(*this);
+            if (ret != 0)
+            {
+                std::this_thread::sleep_for(std::chrono::milliseconds(20));
+            }
+        } while (logger_state_ != LOGGER_STATE_UNINIT);
+    }
+
 }
 
 

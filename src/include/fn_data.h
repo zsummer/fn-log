@@ -217,6 +217,13 @@ namespace FNLog
         CHANNEL_LOG_MAX_ID
     };
 
+    enum ChannelState
+    {
+        CHANNEL_STATE_NULL = 0,
+        CHANNEL_STATE_RUNNING,
+        CHANNEL_STATE_WAITING_FINISH,
+        CHANNEL_STATE_FINISH,
+    };
 
     struct Channel
     {
@@ -229,7 +236,7 @@ namespace FNLog
 
         int  channel_id_;
         int  channel_type_;
-        bool actived_;
+        unsigned int channel_state_;
         time_t yaml_mtime_;
         time_t last_hot_check_;
 
@@ -282,9 +289,8 @@ namespace FNLog
         using StateLockGuard = std::lock_guard<StateLock>;
     public:
         Logger();
-        
-        std::atomic_int last_error_;
-        
+        ~Logger();
+        std::atomic_int inner_error_;
         bool hot_update_;
         std::string yaml_path_;
         unsigned int logger_state_;

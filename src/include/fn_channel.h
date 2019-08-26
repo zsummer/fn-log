@@ -126,9 +126,11 @@ namespace FNLog
                 }
                 local_que.log_count_ = 0;
             }
-            if (!channel.actived_ && logger.logger_state_ == LOGGER_STATE_INITING)
+
+
+            if (channel.channel_state_ == CHANNEL_STATE_NULL)
             {
-                channel.actived_ = true;
+                channel.channel_state_ = CHANNEL_STATE_RUNNING;
             }
 
             if (!channel.red_black_queue_[channel.write_red_].log_count_)
@@ -143,7 +145,7 @@ namespace FNLog
                 HotUpdateLogger(logger, channel.channel_id_);
                 std::this_thread::sleep_for(std::chrono::milliseconds(10));
             }
-        } while (channel.actived_ || channel.red_black_queue_[channel.write_red_].log_count_);
+        } while (channel.channel_state_ == CHANNEL_STATE_RUNNING || channel.red_black_queue_[channel.write_red_].log_count_);
         return true;
     }
     
@@ -177,7 +179,7 @@ namespace FNLog
         return true;
     }
     
-    inline bool EnterProcRingChannel(Logger & logger, int channel_id)
+    inline void EnterProcRingChannel(Logger & logger, int channel_id)
     {
         Channel& channel = logger.channels_[channel_id];
         auto & local_que = channel.red_black_queue_[channel.write_red_];
@@ -197,9 +199,9 @@ namespace FNLog
                 channel.log_fields_[CHANNEL_LOG_PROCESSED].num_++;
             }
             
-            if (!channel.actived_ && logger.logger_state_ == LOGGER_STATE_INITING)
+            if (channel.channel_state_ == CHANNEL_STATE_NULL)
             {
-                channel.actived_ = true;
+                channel.channel_state_ = CHANNEL_STATE_RUNNING;
             }
             std::atomic_thread_fence(std::memory_order_acquire);
             if (local_que.write_count_ == local_que.read_count_)
@@ -215,23 +217,27 @@ namespace FNLog
                 std::this_thread::sleep_for(std::chrono::milliseconds(10));
             }
             std::atomic_thread_fence(std::memory_order_acquire);
-        } while (channel.actived_ || local_que.write_count_ != local_que.read_count_);
-        return true;
+        } while (channel.channel_state_ == CHANNEL_STATE_RUNNING || local_que.write_count_ != local_que.read_count_);
     }
     
-    inline bool EnterProcChannel(Logger & logger, int channel_id)
+    inline void EnterProcChannel(Logger & logger, int channel_id)
     {
         Channel& channel = logger.channels_[channel_id];
         switch (channel.channel_type_)
         {
             case CHANNEL_MULTI:
-                return EnterProcAsyncChannel(logger, channel_id);
+                EnterProcAsyncChannel(logger, channel_id);
+                break;
             case CHANNEL_RING:
-                return EnterProcRingChannel(logger, channel_id);
+                EnterProcRingChannel(logger, channel_id);
+                break;
             case CHANNEL_SYNC:
-                return EnterProcSyncChannel(logger, channel_id);
+                EnterProcSyncChannel(logger, channel_id);
+                break;
+            default:
+                break;
         }
-        return false;
+        channel.channel_state_ = CHANNEL_STATE_FINISH;
     }
     
 
@@ -239,7 +245,7 @@ namespace FNLog
     {
         LogData& log = *plog;
         Channel& channel = logger.channels_[log.channel_id_];
-        if (!channel.actived_)
+        if (channel.channel_state_ != CHANNEL_STATE_RUNNING)
         {
             return -1;
         }

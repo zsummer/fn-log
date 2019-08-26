@@ -54,7 +54,6 @@ namespace FNLog
     inline Logger& GetDefaultLogger()
     {
         static Logger logger;
-        static GuardLogger guard(logger);
         return logger;
     }
 

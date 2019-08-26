@@ -76,8 +76,6 @@ namespace FNLog
             return ret;
         }
 
-        
-        logger.last_error_ = 0;
         logger.yaml_path_ = path;
         logger.hot_update_ = ls->hot_update_;
         logger.channel_size_ = ls->channel_size_;
