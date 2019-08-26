@@ -48,6 +48,8 @@ int main(int argc, char* argv[])
     {
         return ret;
     }
+    LogAlarmStream(1, 0) << "1";
+    LogAlarmStream(0, 0) << "1";
     FNLOG_ASSERT(ChannelWrite(0) == DeviceWrite(1, 0), "channel begin");
     FNLOG_ASSERT(ChannelWrite(0) > 0, "channel begin");
     FNLOG_ASSERT(ChannelWrite(0) == DeviceWrite(0, 0), "channel begin");

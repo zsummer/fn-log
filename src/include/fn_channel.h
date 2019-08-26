@@ -227,9 +227,11 @@ namespace FNLog
         {
             case CHANNEL_MULTI:
                 EnterProcAsyncChannel(logger, channel_id);
+                channel.channel_state_ = CHANNEL_STATE_FINISH;
                 break;
             case CHANNEL_RING:
                 EnterProcRingChannel(logger, channel_id);
+                channel.channel_state_ = CHANNEL_STATE_FINISH;
                 break;
             case CHANNEL_SYNC:
                 EnterProcSyncChannel(logger, channel_id);
@@ -237,7 +239,7 @@ namespace FNLog
             default:
                 break;
         }
-        channel.channel_state_ = CHANNEL_STATE_FINISH;
+        
     }
     
 
