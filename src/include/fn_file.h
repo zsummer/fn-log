@@ -161,12 +161,7 @@ namespace FNLog
                 file_ = nullptr;
                 return -1;
             }
-            long tel = 0;
-            long cur = ftell(file_);
-            fseek(file_, 0L, SEEK_END);
-            tel = ftell(file_);
-            fseek(file_, cur, SEEK_SET);
-            return tel;
+            return file_stat.st_size;
         }
         return -2;
     }
@@ -412,7 +407,8 @@ namespace FNLog
         next_path += ".";
         next_path += std::to_string(depth);
         rollback(next_path, depth + 1, max_depth);
-        ::rename(path.c_str(), next_path.c_str());
+        int ret = ::rename(path.c_str(), next_path.c_str());
+        (void)ret;
         return true;
     }
 
@@ -499,7 +495,8 @@ public:
         addr.sin_family = AF_INET;
         addr.sin_port = port;
         addr.sin_addr.s_addr = ip;
-        sendto(handler_, data, len, 0, (struct sockaddr*) &addr, sizeof(addr));
+        int ret = sendto(handler_, data, len, 0, (struct sockaddr*) &addr, sizeof(addr));
+        (void)ret;
     }
  
 public:

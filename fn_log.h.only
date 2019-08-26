@@ -161,12 +161,7 @@ namespace FNLog
                 file_ = nullptr;
                 return -1;
             }
-            long tel = 0;
-            long cur = ftell(file_);
-            fseek(file_, 0L, SEEK_END);
-            tel = ftell(file_);
-            fseek(file_, cur, SEEK_SET);
-            return tel;
+            return file_stat.st_size;
         }
         return -2;
     }
@@ -412,7 +407,8 @@ namespace FNLog
         next_path += ".";
         next_path += std::to_string(depth);
         rollback(next_path, depth + 1, max_depth);
-        ::rename(path.c_str(), next_path.c_str());
+        int ret = ::rename(path.c_str(), next_path.c_str());
+        (void)ret;
         return true;
     }
 
@@ -499,7 +495,8 @@ public:
         addr.sin_family = AF_INET;
         addr.sin_port = port;
         addr.sin_addr.s_addr = ip;
-        sendto(handler_, data, len, 0, (struct sockaddr*) &addr, sizeof(addr));
+        int ret = sendto(handler_, data, len, 0, (struct sockaddr*) &addr, sizeof(addr));
+        (void)ret;
     }
  
 public:
@@ -2696,7 +2693,7 @@ namespace FNLog
 
 namespace FNLog
 {
-    inline LogData* AllocLogDataImpl(Logger& logger, int channel_id) noexcept
+    inline LogData* AllocLogDataImpl(Logger& logger, int channel_id) 
     {
         LogData* plog = nullptr;
         if (channel_id >= logger.channel_size_ || channel_id < 0)
@@ -2766,7 +2763,7 @@ namespace FNLog
         return plog;
     }
 
-    inline LogData* AllocLogData(Logger& logger, int channel_id, int priority, int category, unsigned int prefix) noexcept
+    inline LogData* AllocLogData(Logger& logger, int channel_id, int priority, int category, unsigned int prefix)
     {
         LogData* plog = AllocLogDataImpl(logger, channel_id);
         LogData& log = *plog;
@@ -2889,7 +2886,14 @@ namespace FNLog
 
         if (logger.sys_free_)
         {
-            logger.sys_free_(plog);
+            try
+            {
+                logger.sys_free_(plog);
+            }
+            catch (const std::exception&)
+            {
+                //terminate();
+            }
             plog = nullptr;
             return;
         }
@@ -3800,7 +3804,15 @@ namespace FNLog
                 return;
             }
             logger_ = &logger;
-            log_data_ = AllocLogData(logger, channel_id, priority, category, prefix);
+            try
+            {
+                log_data_ = AllocLogData(logger, channel_id, priority, category, prefix);
+            }
+            catch (const std::exception&)
+            {
+                printf("%s", "alloc log error. no more memory.");
+                return;
+            }
             if (prefix == LOG_PREFIX_NULL)
             {
                 return;
@@ -3951,7 +3963,6 @@ namespace FNLog
         LogStream& operator <<(std::nullptr_t) 
         {
             return write_pointer(nullptr);
-            return *this;
         }
 
         LogStream& operator << (char ch) { return write_buffer(&ch, 1);}

@@ -1,6 +1,6 @@
 #!/bin/bash
 cd bin
-ts=`find ./ -executable -type f`
+ts=`find ./ -maxdepth 1 -executable -type f`
 for t in $ts ;
 do
   echo begin test $t 

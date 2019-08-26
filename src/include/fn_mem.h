@@ -48,7 +48,7 @@
 
 namespace FNLog
 {
-    inline LogData* AllocLogDataImpl(Logger& logger, int channel_id) noexcept
+    inline LogData* AllocLogDataImpl(Logger& logger, int channel_id) 
     {
         LogData* plog = nullptr;
         if (channel_id >= logger.channel_size_ || channel_id < 0)
@@ -118,7 +118,7 @@ namespace FNLog
         return plog;
     }
 
-    inline LogData* AllocLogData(Logger& logger, int channel_id, int priority, int category, unsigned int prefix) noexcept
+    inline LogData* AllocLogData(Logger& logger, int channel_id, int priority, int category, unsigned int prefix)
     {
         LogData* plog = AllocLogDataImpl(logger, channel_id);
         LogData& log = *plog;
@@ -241,7 +241,14 @@ namespace FNLog
 
         if (logger.sys_free_)
         {
-            logger.sys_free_(plog);
+            try
+            {
+                logger.sys_free_(plog);
+            }
+            catch (const std::exception&)
+            {
+                //terminate();
+            }
             plog = nullptr;
             return;
         }

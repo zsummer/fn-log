@@ -19,7 +19,7 @@ R"----(
         category: 0
         category_extend: 0
         path: "./log/"
-        file: "$PNAME_$YEAR$MON$DAY"
+        file: "$PNAME_multi"
         rollback: 4
         limit_size: 100 m #only support M byte
     -device:1
@@ -36,7 +36,7 @@ R"----(
     -device: 0
         disable: false
         out_type: file
-        file: "$PNAME_$YEAR_ring"
+        file: "$PNAME_ring"
         rollback: 4
         limit_size: 100 m #only support M byte
 
@@ -50,7 +50,7 @@ R"----(
     -device: 0
         disable: false
         out_type: file
-        file: "$PNAME_$YEAR"
+        file: "$PNAME_sync"
         rollback: 4
         limit_size: 100 m #only support M byte
 

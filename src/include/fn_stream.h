@@ -73,7 +73,15 @@ namespace FNLog
                 return;
             }
             logger_ = &logger;
-            log_data_ = AllocLogData(logger, channel_id, priority, category, prefix);
+            try
+            {
+                log_data_ = AllocLogData(logger, channel_id, priority, category, prefix);
+            }
+            catch (const std::exception&)
+            {
+                printf("%s", "alloc log error. no more memory.");
+                return;
+            }
             if (prefix == LOG_PREFIX_NULL)
             {
                 return;
@@ -224,7 +232,6 @@ namespace FNLog
         LogStream& operator <<(std::nullptr_t) 
         {
             return write_pointer(nullptr);
-            return *this;
         }
 
         LogStream& operator << (char ch) { return write_buffer(&ch, 1);}
