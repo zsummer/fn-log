@@ -75,7 +75,7 @@ addons:
       name: "zsummer/fn-log"
       description: "fn-log coverity"
     notification_email: yawei.zhang@foxmail.com
-    build_command_prepend: "cmake ."
+    build_command_prepend: "cd build; cmake .."
     build_command: "make -j2"
     branch_pattern: multi-reboot
 
