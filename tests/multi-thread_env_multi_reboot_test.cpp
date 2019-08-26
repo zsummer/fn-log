@@ -22,7 +22,7 @@ void thread_proc(int index)
 {
     LogInfo() << "thread:<" << index << "> begin.";
     FNLog::Logger& logger = FNLog::GetDefaultLogger();
-    while (total_loop_ < 50000000)
+    while (total_loop_ < 2000000)
     {
         if (logger.logger_state_ == FNLog::LOGGER_STATE_RUNNING)
         {
