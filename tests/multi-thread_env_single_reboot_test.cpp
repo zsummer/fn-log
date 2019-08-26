@@ -69,8 +69,7 @@ int main(int argc, char* argv[])
     FNLog::Logger& logger = FNLog::GetDefaultLogger();
 
     int limit_second = 12;
-    int test_thread = 5;
-    for (int i = 0; i < test_thread; i++)
+    for (int i = 0; i < WRITE_THREAD_COUNT; i++)
     {
         g_multi_proc[i] = std::thread(thread_proc, i);
     }
@@ -101,7 +100,7 @@ int main(int argc, char* argv[])
 
     LogAlarm() << "finish";
     state = END;
-    for (int i = 0; i <= test_thread; i++)
+    for (int i = 0; i <= WRITE_THREAD_COUNT; i++)
     {
         if (g_multi_proc[i].joinable())
         {

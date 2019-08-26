@@ -155,7 +155,12 @@ namespace FNLog
         file_ = fopen(path, mod);
         if (file_)
         {
-            fstat(fileno(file_), &file_stat);
+            if (fstat(fileno(file_), &file_stat) != 0)
+            {
+                fclose(file_);
+                file_ = nullptr;
+                return -1;
+            }
             long tel = 0;
             long cur = ftell(file_);
             fseek(file_, 0L, SEEK_END);
@@ -163,7 +168,7 @@ namespace FNLog
             fseek(file_, cur, SEEK_SET);
             return tel;
         }
-        return -1;
+        return -2;
     }
     void FileHandler::close()
     {

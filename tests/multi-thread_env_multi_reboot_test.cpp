@@ -22,7 +22,7 @@ void thread_proc(int index)
 {
     LogInfo() << "thread:<" << index << "> begin.";
     FNLog::Logger& logger = FNLog::GetDefaultLogger();
-    while (total_loop_ < 500000)
+    while (total_loop_ < 50000000)
     {
         if (logger.logger_state_ == FNLog::LOGGER_STATE_RUNNING)
         {
@@ -60,13 +60,12 @@ int main(int argc, char* argv[])
 {
     signal(SIGINT, Stop);
 
-    int test_thread = 5;
-    for (int i = 0; i < test_thread; i++)
+    for (int i = 0; i < WRITE_THREAD_COUNT; i++)
     {
         g_multi_proc[i] = std::thread(thread_proc, i);
     }
 
-    for (int i = 0; i <= test_thread; i++)
+    for (int i = 0; i <= WRITE_THREAD_COUNT; i++)
     {
         if (g_multi_proc[i].joinable())
         {
