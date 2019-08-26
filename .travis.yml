@@ -76,7 +76,9 @@ script:
   - ./multi-thread_write_file_test
   - ./multi-thread_env_single_reboot_test
   - ./multi-thread_env_multi_reboot_test >/dev/null 2>&1
-  
+
+after_success:
+  - coveralls 
 addons:
   coverity_scan:
     project:
