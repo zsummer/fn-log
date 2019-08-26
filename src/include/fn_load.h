@@ -53,7 +53,7 @@ namespace FNLog
         Logger::StateLockGuard state_guard(logger.state_lock);
         if (logger.logger_state_ != LOGGER_STATE_UNINIT)
         {
-            printf("init from ymal text error\n");
+            printf("init from ymal:<%s> text error\n", path.c_str());
             return -1;
         }
         std::unique_ptr<LexState> ls(new LexState);
@@ -102,13 +102,13 @@ namespace FNLog
         config.open(path.c_str(), "rb", file_stat);
         if (!config.is_open())
         {
-            printf("open ymal error\n");
+            printf("ymal:<%s> open file error\n", path.c_str());
             return -1;
         }
         int ret = InitFromYMAL(logger, config.read_content(), path);
         if (ret != 0)
         {
-            printf("init from ymal file error\n");
+            printf("ymal:<%s> has parse/init error\n", path.c_str());
             return ret;
         }
 

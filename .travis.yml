@@ -3,6 +3,10 @@ language: cpp
 compiler: 
   - g++ 
   - clang
+os:
+  - linux
+  - osx
+  
 env:
   global:
     - secure: "To1R20fuYQQnL/d9OsGjTlGdTJ1cGo8Cm0aSf5IngkWIvCgmJHtt5uqO8DbCLONskmH07BlxnKPYZFjTSELe09ifSxggr866/Olnxh7BbBSLYU0xOAZ1C8LcEkFQxdXCfLQC/WrwWL9mosjYh6mozMZipUktBc2i6FopzkIpb41kTINO6+v4sKIHPOb2RLRVXM5gNnMee98QnlCQPI2IySm30R0K8MI/AjooC4RBOUBLTFSbN4DXzuYpJmGdpVofHx7sWrBcSzkpTMkEtQSHJPzXIPslSILAhEk0NGxL+Qikqt6yDXPrAWRJ+tYh/M0fgHwPYUJog9uEIlz9g1OIBjtOZH6yAI7OMv+XATDikqmfgYLT8nUiuvAypC9+0T4+uzh2ogKCCGa7wX9UyrIzCDV38MvehsQNmRSeGdofx8StuIcGE9OWPVhspaNMFm6BF7UpojZdC5b7+fz+ZZ0Q8aKQ0+yokAXYXlHhDbkO/sE7BnG0jiH/6BLKcSJtDzpsmLOKxFqWz9yMKy+i25C2vNATdppMkXbE1eUlsF/i8jLzHFAaT2J9JeTUbUx8gUyW0AVC2waNl/sJaH3vfvjG74LWMer4bZ0zFfyOIDguzdSC1S7oj5DPza3E1txcGjY2TmUAfHcdDcEuNA0+IA8b3YyMwR8N50id+Yi61EZgFsg="
@@ -10,21 +14,7 @@ env:
 before_install:
   - echo -n | openssl s_client -connect https://scan.coverity.com:443 | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' | sudo tee -a /etc/ssl/certs/ca-
 
-addons:
-  coverity_scan:
-    project:
-      name: "zsummer/fn-log"
-      description: "fn-log coverity"
-    notification_email: yawei.zhang@foxmail.com
-    build_command_prepend: "cmake ."
-    build_command: "make -j2"
-    branch_pattern: multi-reboot
 
-
-
-os:
-  - linux
-  - osx
 
 script:
   - cmake --version
@@ -79,5 +69,14 @@ script:
   - ./multi-thread_env_single_reboot_test
   - ./multi-thread_env_multi_reboot_test >/dev/null 2>&1
   
+addons:
+  coverity_scan:
+    project:
+      name: "zsummer/fn-log"
+      description: "fn-log coverity"
+    notification_email: yawei.zhang@foxmail.com
+    build_command_prepend: "cmake ."
+    build_command: "make -j2"
+    branch_pattern: multi-reboot
 
 

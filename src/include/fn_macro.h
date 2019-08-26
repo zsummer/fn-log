@@ -53,9 +53,9 @@ namespace FNLog
 
     inline Logger& GetDefaultLogger()
     {
-        static std::unique_ptr<Logger, std::function<void(Logger*)> > logger(new Logger(),
-            [](Logger* logger) {StopAndCleanLogger(*logger); delete logger; });
-        return *logger;
+        static Logger logger;
+        static GuardLogger guard(logger);
+        return logger;
     }
 
     inline int LoadAndStartDefaultLogger(const std::string& config_path)

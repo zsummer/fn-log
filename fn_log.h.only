@@ -2049,7 +2049,7 @@ namespace FNLog
         Logger::StateLockGuard state_guard(logger.state_lock);
         if (logger.logger_state_ != LOGGER_STATE_UNINIT)
         {
-            printf("init from ymal text error\n");
+            printf("init from ymal:<%s> text error\n", path.c_str());
             return -1;
         }
         std::unique_ptr<LexState> ls(new LexState);
@@ -2098,13 +2098,13 @@ namespace FNLog
         config.open(path.c_str(), "rb", file_stat);
         if (!config.is_open())
         {
-            printf("open ymal error\n");
+            printf("ymal:<%s> open file error\n", path.c_str());
             return -1;
         }
         int ret = InitFromYMAL(logger, config.read_content(), path);
         if (ret != 0)
         {
-            printf("init from ymal file error\n");
+            printf("ymal:<%s> has parse/init error\n", path.c_str());
             return ret;
         }
 
@@ -2687,7 +2687,7 @@ namespace FNLog
 
 namespace FNLog
 {
-    inline LogData* AllocLogDataImpl(Logger& logger, int channel_id)
+    inline LogData* AllocLogDataImpl(Logger& logger, int channel_id) noexcept
     {
         LogData* plog = nullptr;
         if (channel_id >= logger.channel_size_ || channel_id < 0)
@@ -2749,7 +2749,7 @@ namespace FNLog
             }
             else
             {
-                plog = new LogData;
+                plog = new LogData ;
             }
             channel.log_fields_[CHANNEL_LOG_ALLOC_REAL].num_++;
         }
@@ -2757,7 +2757,7 @@ namespace FNLog
         return plog;
     }
 
-    inline LogData* AllocLogData(Logger& logger, int channel_id, int priority, int category, unsigned int prefix)
+    inline LogData* AllocLogData(Logger& logger, int channel_id, int priority, int category, unsigned int prefix) noexcept
     {
         LogData* plog = AllocLogDataImpl(logger, channel_id);
         LogData& log = *plog;
@@ -2817,7 +2817,7 @@ namespace FNLog
         return &log;
     }
 
-    inline void FreeLogData(Logger& logger, int channel_id, LogData*& plog)
+    inline void FreeLogData(Logger& logger, int channel_id, LogData*& plog) noexcept
     {
         if (plog == nullptr)
         {
@@ -3374,23 +3374,23 @@ namespace FNLog
     {
         if (logger.logger_state_ != LOGGER_STATE_UNINIT)
         {
-            printf("start error 1");
+            printf("start error. state:<%u> not uninit:<%u>.\n", logger.logger_state_, LOGGER_STATE_UNINIT);
             return -1;
         }
         if (logger.channel_size_ > Logger::MAX_CHANNEL_SIZE || logger.channel_size_ <= 0)
         {
-            printf("start error 2");
+            printf("start error. channel size:<%d> invalid.\n", logger.channel_size_);
             return -2;
         }
         Logger::StateLockGuard state_guard(logger.state_lock);
         if (logger.logger_state_ != LOGGER_STATE_UNINIT)
         {
-            printf("start error 3");
+            printf("start error. state:<%u> not uninit:<%u>.\n", logger.logger_state_, LOGGER_STATE_UNINIT);
             return -3;
         }
         if (logger.channel_size_ > Logger::MAX_CHANNEL_SIZE || logger.channel_size_ <= 0)
         {
-            printf("start error 4");
+            printf("start error. channel size:<%d> invalid.\n", logger.channel_size_);
             return -4;
         }
         logger.logger_state_ = LOGGER_STATE_INITING;
@@ -3446,18 +3446,18 @@ namespace FNLog
     {
         if (logger.channel_size_ > Logger::MAX_CHANNEL_SIZE || logger.channel_size_ <= 0)
         {
-            printf("stop logger error\n");
+            printf("try stop error. channel size:<%d> invalid.\n", logger.channel_size_);
             return -1;
         }
         if (logger.logger_state_ != LOGGER_STATE_RUNNING)
         {
-            printf("stop logger error. state not running\n");
+            printf("try stop logger error. state:<%u> not running:<%u>.\n", logger.logger_state_, LOGGER_STATE_RUNNING);
             return -2;
         }
         Logger::StateLockGuard state_guard(logger.state_lock);
         if (logger.logger_state_ != LOGGER_STATE_RUNNING)
         {
-            printf("stop logger error. state not running in locked\n");
+            printf("try stop logger error. state:<%u> not running:<%u>.\n", logger.logger_state_, LOGGER_STATE_RUNNING);
             return -3;
         }
         logger.logger_state_ = LOGGER_STATE_CLOSING;
@@ -3581,6 +3581,11 @@ namespace FNLog
 
     inline int ParseAndStartLogger(Logger& logger, const std::string& config_content)
     {
+        if (logger.logger_state_ != LOGGER_STATE_UNINIT)
+        {
+            printf("parse and start error. state:<%u> not uninit:<%u>.\n", logger.logger_state_, LOGGER_STATE_UNINIT);
+            return -1;
+        }
         Logger::StateLockGuard state_guard(logger.state_lock);
         int ret = InitFromYMAL(logger, config_content, "");
         if (ret != 0)
@@ -3599,6 +3604,11 @@ namespace FNLog
 
     inline int LoadAndStartLogger(Logger& logger, const std::string& confg_path)
     {
+        if (logger.logger_state_ != LOGGER_STATE_UNINIT)
+        {
+            printf("load and start error. state:<%u> not uninit:<%u>.\n", logger.logger_state_, LOGGER_STATE_UNINIT);
+            return -1;
+        }
         Logger::StateLockGuard state_guard(logger.state_lock);
         int ret = InitFromYMALFile(logger, confg_path);
         if (ret != 0)
@@ -3689,7 +3699,7 @@ namespace FNLog
         {
             StopAndCleanLogger(logger_);
         }
-
+        inline Logger& logger() { return logger_; }
     private:
         Logger& logger_;
     };
@@ -4075,9 +4085,9 @@ namespace FNLog
 
     inline Logger& GetDefaultLogger()
     {
-        static std::unique_ptr<Logger, std::function<void(Logger*)> > logger(new Logger(),
-            [](Logger* logger) {StopAndCleanLogger(*logger); delete logger; });
-        return *logger;
+        static Logger logger;
+        static GuardLogger guard(logger);
+        return logger;
     }
 
     inline int LoadAndStartDefaultLogger(const std::string& config_path)

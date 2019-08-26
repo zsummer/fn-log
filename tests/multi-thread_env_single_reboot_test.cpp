@@ -52,7 +52,7 @@ std::thread g_multi_proc[WRITE_THREAD_COUNT];
 
 void Stop(int signo)
 {
-    printf("oops! stop!!!\n");
+    printf("%s", "oops! stop!!!\n");
     _exit(0);
 }
 
