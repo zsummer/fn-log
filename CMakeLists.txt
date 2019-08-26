@@ -111,11 +111,11 @@ FILE(GLOB_RECURSE TEST_CPP ${CMAKE_SOURCE_DIR}/tests/*.cpp)
 FOREACH (FILE_NAME ${TEST_CPP})
     STRING(REGEX REPLACE ".+/(.+)\\..*" "\\1" TEST_NAME ${FILE_NAME})
     ADD_EXECUTABLE(${TEST_NAME} ${FILE_NAME} ${SOURCES})
-    SET_TARGET_PROPERTIES(${TEST_NAME} 
-        PROPERTIES 
-        COMPILE_FLAGS "-ftest-coverage -fprofile-arcs" 
-        LINK_FLAGS "-lgcov --coverage" 
-    ) 
+    #SET_TARGET_PROPERTIES(${TEST_NAME} 
+    #    PROPERTIES 
+    #    COMPILE_FLAGS "-ftest-coverage -fprofile-arcs" 
+    #    LINK_FLAGS "-lgcov --coverage" 
+    #) 
     MESSAGE("TEST " ${TEST_NAME} )
 endforeach()
 

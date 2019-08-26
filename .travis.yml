@@ -14,6 +14,7 @@ env:
 before_install:
   - echo -n | openssl s_client -connect https://scan.coverity.com:443 | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' | sudo tee -a /etc/ssl/certs/ca-
   - pip install --user cpp-coveralls
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install lcov; fi
 
 install:
   #- sudo apt-get install -y gdb
@@ -73,10 +74,6 @@ script:
   - ./stress_udp_test
   - ./filter_test
 
-  - ./multi-thread_test
-  - ./multi-thread_write_file_test
-  - ./multi-thread_env_single_reboot_test
-  - ./multi-thread_env_multi_reboot_test >/dev/null 2>&1
 
 after_success:
   - coveralls 
