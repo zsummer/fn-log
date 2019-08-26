@@ -1,12 +1,28 @@
 sudo: true
 language: cpp
-
 compiler: 
   - g++ 
   - clang
 os:
   - linux
   - osx
+  
+env:
+  global:
+    - secure: "To1R20fuYQQnL/d9OsGjTlGdTJ1cGo8Cm0aSf5IngkWIvCgmJHtt5uqO8DbCLONskmH07BlxnKPYZFjTSELe09ifSxggr866/Olnxh7BbBSLYU0xOAZ1C8LcEkFQxdXCfLQC/WrwWL9mosjYh6mozMZipUktBc2i6FopzkIpb41kTINO6+v4sKIHPOb2RLRVXM5gNnMee98QnlCQPI2IySm30R0K8MI/AjooC4RBOUBLTFSbN4DXzuYpJmGdpVofHx7sWrBcSzkpTMkEtQSHJPzXIPslSILAhEk0NGxL+Qikqt6yDXPrAWRJ+tYh/M0fgHwPYUJog9uEIlz9g1OIBjtOZH6yAI7OMv+XATDikqmfgYLT8nUiuvAypC9+0T4+uzh2ogKCCGa7wX9UyrIzCDV38MvehsQNmRSeGdofx8StuIcGE9OWPVhspaNMFm6BF7UpojZdC5b7+fz+ZZ0Q8aKQ0+yokAXYXlHhDbkO/sE7BnG0jiH/6BLKcSJtDzpsmLOKxFqWz9yMKy+i25C2vNATdppMkXbE1eUlsF/i8jLzHFAaT2J9JeTUbUx8gUyW0AVC2waNl/sJaH3vfvjG74LWMer4bZ0zFfyOIDguzdSC1S7oj5DPza3E1txcGjY2TmUAfHcdDcEuNA0+IA8b3YyMwR8N50id+Yi61EZgFsg="
+
+before_install:
+  - echo -n | openssl s_client -connect https://scan.coverity.com:443 | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' | sudo tee -a /etc/ssl/certs/ca-
+
+install:
+  #- sudo apt-get install -y gdb
+
+before_script:
+  - ulimit -c unlimited -S
+
+after_failure:
+  #- COREFILE=$(find . -maxdepth 1 -name "core*" | head -n 1) # find core file
+  #- if [[ -f "$COREFILE" ]]; then gdb -c "$COREFILE" example -ex "thread apply all bt" -ex "set pagination 0" -batch; fi
 
 script:
   - cmake --version
@@ -16,18 +32,25 @@ script:
   - make -j2
   - ls ../bin/*
   - cd ../bin
+
+  - ./fast_start_debug_test
+  - ./fast_start_default_test
+  - ./fast_start_simple_test
+
   - ./buffer_test
   - ./buffer_correct_test
   - ./load_config_test
-  - ./simple_test
   - ./stress_udp_test
-  - ./stress_test
+  - ./filter_test
+
   - ./multi-thread_test
   - ./multi-thread_write_file_test
+  - ./multi-thread_env_single_reboot_test
+  - ./multi-thread_env_multi_reboot_test >/dev/null 2>&1
+
+  - ./stress_test
   - ./benchmark
-  - ./log4z_test
-  - ./filter_test
-  - ./multi-thread_reboot_test
+
   - cd ..
   - sh merge_header.sh
   - rm src/include/*
@@ -38,18 +61,30 @@ script:
   - make -j2 
   - ls ../bin/*
   - cd ../bin
+  
+  - ./fast_start_debug_test
+  - ./fast_start_default_test
+  - ./fast_start_simple_test
+
   - ./buffer_test
   - ./buffer_correct_test
   - ./load_config_test
-  - ./simple_test
   - ./stress_udp_test
-  - ./stress_test
+  - ./filter_test
+
   - ./multi-thread_test
   - ./multi-thread_write_file_test
-  - ./benchmark
-  - ./log4z_test
-  - ./filter_test
-  - ./multi-thread_reboot_test
+  - ./multi-thread_env_single_reboot_test
+  - ./multi-thread_env_multi_reboot_test >/dev/null 2>&1
   
+addons:
+  coverity_scan:
+    project:
+      name: "zsummer/fn-log"
+      description: "fn-log coverity"
+    notification_email: yawei.zhang@foxmail.com
+    build_command_prepend: "mkdir coverity; cd coverity; cmake .."
+    build_command: "make -j2"
+    branch_pattern: multi-reboot
 
 

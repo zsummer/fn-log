@@ -14,6 +14,8 @@ cat src/include/fn_out_screen_device.h  |sed `echo -e 's/\xEF\xBB\xBF//'` >> fn_
 cat src/include/fn_mem.h  |sed `echo -e 's/\xEF\xBB\xBF//'` >> fn_log.h
 cat src/include/fn_channel.h  |sed `echo -e 's/\xEF\xBB\xBF//'` >> fn_log.h
 cat src/include/fn_core.h  |sed `echo -e 's/\xEF\xBB\xBF//'` >> fn_log.h
+cat src/include/fn_stream.h  |sed `echo -e 's/\xEF\xBB\xBF//'` >> fn_log.h
+cat src/include/fn_macro.h  |sed `echo -e 's/\xEF\xBB\xBF//'` >> fn_log.h
 cat src/include/fn_log.h  |sed `echo -e 's/\xEF\xBB\xBF//'` >> fn_log.h
 
 cat fn_log.h | sed '/#include.*fn_/d' > fn_log.h.bak

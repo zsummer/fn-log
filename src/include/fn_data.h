@@ -217,6 +217,13 @@ namespace FNLog
         CHANNEL_LOG_MAX_ID
     };
 
+    enum ChannelState
+    {
+        CHANNEL_STATE_NULL = 0,
+        CHANNEL_STATE_RUNNING,
+        CHANNEL_STATE_WAITING_FINISH,
+        CHANNEL_STATE_FINISH,
+    };
 
     struct Channel
     {
@@ -228,8 +235,8 @@ namespace FNLog
         char chunk_1_[CHUNK_SIZE];
 
         int  channel_id_;
-        int channel_type_;
-        bool actived_;
+        int  channel_type_;
+        unsigned int channel_state_;
         time_t yaml_mtime_;
         time_t last_hot_check_;
 
@@ -256,6 +263,14 @@ namespace FNLog
         std::mutex pool_lock_;
     };
 
+    enum LoggerState
+    {
+        LOGGER_STATE_UNINIT = 0,
+        LOGGER_STATE_INITING,
+        LOGGER_STATE_RUNNING,
+        LOGGER_STATE_CLOSING,
+    };
+    
     class Logger
     {
     public:
@@ -270,13 +285,16 @@ namespace FNLog
         using AllocLogData = std::function<LogData* ()>;
         using FreeLogData = std::function<void(LogData*)>;
     public:
-        std::atomic_int last_error_;
-        
+        using StateLock = std::recursive_mutex;
+        using StateLockGuard = std::lock_guard<StateLock>;
+    public:
+        Logger();
+        ~Logger();
+        std::atomic_int inner_error_;
         bool hot_update_;
         std::string yaml_path_;
-
-        bool waiting_close_;
-
+        unsigned int logger_state_;
+        StateLock state_lock;
         int channel_size_;
         Channels channels_;
         SyncGroups syncs_;

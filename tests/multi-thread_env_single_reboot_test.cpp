@@ -52,7 +52,7 @@ std::thread g_multi_proc[WRITE_THREAD_COUNT];
 
 void Stop(int signo)
 {
-    printf("oops! stop!!!\n");
+    printf("%s", "oops! stop!!!\n");
     _exit(0);
 }
 
@@ -69,8 +69,7 @@ int main(int argc, char* argv[])
     FNLog::Logger& logger = FNLog::GetDefaultLogger();
 
     int limit_second = 12;
-    int test_thread = 5;
-    for (int i = 0; i < test_thread; i++)
+    for (int i = 0; i < WRITE_THREAD_COUNT; i++)
     {
         g_multi_proc[i] = std::thread(thread_proc, i);
     }
@@ -86,7 +85,7 @@ int main(int argc, char* argv[])
 
         if (i%3 == 0)
         {
-            int ret = FNLog::StopAndCleanLogger(logger);
+            int ret = FNLog::StopLogger(logger);
             if (ret != 0)
             {
                 return -1;
@@ -101,7 +100,7 @@ int main(int argc, char* argv[])
 
     LogAlarm() << "finish";
     state = END;
-    for (int i = 0; i <= test_thread; i++)
+    for (int i = 0; i < WRITE_THREAD_COUNT; i++)
     {
         if (g_multi_proc[i].joinable())
         {

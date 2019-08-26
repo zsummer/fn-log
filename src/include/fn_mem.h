@@ -48,7 +48,7 @@
 
 namespace FNLog
 {
-    inline LogData* AllocLogDataImpl(Logger& logger, int channel_id)
+    inline LogData* AllocLogDataImpl(Logger& logger, int channel_id) noexcept
     {
         LogData* plog = nullptr;
         if (channel_id >= logger.channel_size_ || channel_id < 0)
@@ -110,7 +110,7 @@ namespace FNLog
             }
             else
             {
-                plog = new LogData;
+                plog = new LogData ;
             }
             channel.log_fields_[CHANNEL_LOG_ALLOC_REAL].num_++;
         }
@@ -118,7 +118,7 @@ namespace FNLog
         return plog;
     }
 
-    inline LogData* AllocLogData(Logger& logger, int channel_id, int priority, int category, unsigned int prefix)
+    inline LogData* AllocLogData(Logger& logger, int channel_id, int priority, int category, unsigned int prefix) noexcept
     {
         LogData* plog = AllocLogDataImpl(logger, channel_id);
         LogData& log = *plog;
@@ -178,7 +178,7 @@ namespace FNLog
         return &log;
     }
 
-    inline void FreeLogData(Logger& logger, int channel_id, LogData*& plog)
+    inline void FreeLogData(Logger& logger, int channel_id, LogData*& plog) noexcept
     {
         if (plog == nullptr)
         {

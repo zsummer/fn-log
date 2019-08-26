@@ -298,8 +298,7 @@ namespace FNLog
         if (fabst < 0.0001 || fabst > 0xFFFFFFFFFFFFFFFULL)
         {
             gcvt(number, 16, dst);
-            int len = (int)strlen(dst);
-            return len;
+            return (int)strlen(dst);
         }
 
         if (number < 0.0)
@@ -378,8 +377,7 @@ namespace FNLog
         if (fabst < 0.0001 || fabst > 0xFFFFFFFULL)
         {
             gcvt(number, 7, dst);
-            int len = (int)strlen(dst);
-            return len;
+            return (int)strlen(dst);
         }
 
         if (number < 0.0)
