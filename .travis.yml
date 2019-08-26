@@ -85,6 +85,6 @@ addons:
     notification_email: yawei.zhang@foxmail.com
     build_command_prepend: "mkdir coverity; cd coverity; cmake .."
     build_command: "make -j2"
-    branch_pattern: multi-reboot
+    branch_pattern: coverity
 
 
