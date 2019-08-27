@@ -51,7 +51,8 @@ script:
   - sh merge_header.sh
   - rm src/include/*
   - mv fn_log.h.only src/include/fn_log.h
-  - cd build
+  - mkdir benchmarke-build
+  - cd benchmarke-build
   - rm -fr * 
   - cmake -DCMAKE_BUILD_TYPE=Release ..
   - make -j2 
