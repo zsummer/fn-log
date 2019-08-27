@@ -45,7 +45,7 @@ script:
   - ./test_fast_simple
   - ./test_channel_normal
   - ./test_multi-thread-env_concurrent_reboot
-
+  - find ./ -name "*.gc*"
 
   - cd ..
   - sh merge_header.sh
@@ -68,9 +68,12 @@ script:
   - ./benchmark_normal
   - ./benchmark_udp
   - ./benchmark_fast
+  - find ./ -name "*.gc*"
+  - cd ../build
 
 
 after_success:
+  - find ./ -name "*.gc*"
   - coveralls 
 addons:
   coverity_scan:
