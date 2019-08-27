@@ -73,6 +73,8 @@ script:
 
 
 after_success:
+  - pwd
+  - ls
   - find ./ -name "*.gc*"
   - coveralls 
 addons:
