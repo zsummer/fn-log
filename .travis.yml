@@ -30,28 +30,22 @@ script:
   - cmake --version
   - mkdir build
   - cd build
-  - cmake ..
-  - make -j2
+  - cmake -DENABLE_GCOV=TRUE .. 
+  - make -j4
   - ls ../bin/*
   - cd ../bin
 
-  - ./fast_start_debug_test
-  - ./fast_start_default_test
-  - ./fast_start_simple_test
+  - ./test_buffer
+  - ./test_filter
+  - ./test_load_config
+  - ./test_udp
+  - ./test_buffer_correct
+  - ./test_fast_debug
+  - ./test_fast_default
+  - ./test_fast_simple
+  - ./test_channel_normal
+  - ./test_multi-thread-env_concurrent_reboot
 
-  - ./buffer_test
-  - ./buffer_correct_test
-  - ./load_config_test
-  - ./stress_udp_test
-  - ./filter_test
-
-  - ./multi-thread_test
-  - ./multi-thread_write_file_test
-  - ./multi-thread_env_single_reboot_test
-  - ./multi-thread_env_multi_reboot_test >/dev/null 2>&1
-
-  - ./stress_test
-  - ./benchmark
 
   - cd ..
   - sh merge_header.sh
@@ -64,15 +58,15 @@ script:
   - ls ../bin/*
   - cd ../bin
   
-  - ./fast_start_debug_test
-  - ./fast_start_default_test
-  - ./fast_start_simple_test
-
-  - ./buffer_test
-  - ./buffer_correct_test
-  - ./load_config_test
-  - ./stress_udp_test
-  - ./filter_test
+  - ./stress_multi-thread-env_concurrent_reboot
+  - ./stress_multi-thread-env_main_reboot
+  - ./benchmark_multi-thread_dynamic_inc
+  - ./benchmark_multi-thread_write_file
+  - ./benchmark_serialize_integer
+  - ./benchmark_sync_bat_write
+  - ./benchmark_normal
+  - ./benchmark_udp
+  - ./benchmark_fast
 
 
 after_success:
