@@ -40,9 +40,10 @@ int main(int argc, char* argv[])
     }
 
     LogDebug() << "log init success";
-    while (true)
+    int total_count = 0;
+    while (total_count++ < 300)
     {
-        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
         LogDebug() << "now time:" << (long long)time(nullptr) << ";";
     }
 
