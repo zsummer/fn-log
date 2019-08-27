@@ -38,13 +38,13 @@ script:
   - ./test_buffer
   - ./test_filter
   - ./test_load_config
-  - ./test_udp
+  - ./test_udp 2>/dev/null 1>&2
   - ./test_buffer_correct
   - ./test_fast_debug
   - ./test_fast_default
   - ./test_fast_simple
   - ./test_channel_normal
-  - ./test_multi-thread-env_concurrent_reboot
+  - ./test_multi-thread-env_concurrent_reboot 2>/dev/null 1>&2
   - find ./ -name "*.gc*"
 
   - cd ..
@@ -55,11 +55,12 @@ script:
   - cd benchmarke-build
   - rm -fr * 
   - cmake -DCMAKE_BUILD_TYPE=Release ..
-  - make -j2 
+  - make -j4
+  - rm -fr * 
   - ls ../bin/*
   - cd ../bin
   
-  - ./stress_multi-thread-env_concurrent_reboot
+  - ./stress_multi-thread-env_concurrent_reboot 2>/dev/null 1>&2
   - ./stress_multi-thread-env_main_reboot
   - ./benchmark_multi-thread_dynamic_inc
   - ./benchmark_multi-thread_write_file
@@ -69,7 +70,7 @@ script:
   - ./benchmark_udp
   - ./benchmark_fast
   - find ./ -name "*.gc*"
-  - cd ../build
+  - cd ..
 
 
 after_success:
