@@ -58,6 +58,10 @@
 #define FN_LOG_MAX_LOG_QUEUE_CACHE_SIZE FN_LOG_MAX_LOG_QUEUE_SIZE
 #endif
 
+#ifndef FN_LOG_HOTUPDATE_INTERVEL
+#define FN_LOG_HOTUPDATE_INTERVEL 5
+#endif
+
 namespace FNLog
 {
     enum LogPriority
@@ -275,6 +279,7 @@ namespace FNLog
     {
     public:
         static const int MAX_CHANNEL_SIZE = FN_LOG_MAX_CHANNEL_SIZE;
+        static const int HOTUPDATE_INTERVEL = FN_LOG_HOTUPDATE_INTERVEL;
         using Channels = std::array<Channel, MAX_CHANNEL_SIZE>;
         using SyncGroups = std::array<SyncGroup, MAX_CHANNEL_SIZE>;
         using Locks = std::array<std::mutex, MAX_CHANNEL_SIZE>;

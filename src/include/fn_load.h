@@ -134,7 +134,7 @@ namespace FNLog
 
         Channel& dst_chl = logger.channels_[channel_id];
         time_t now = time(nullptr);
-        if (now - dst_chl.last_hot_check_ < 5)
+        if (now - dst_chl.last_hot_check_ < Logger::HOTUPDATE_INTERVEL)
         {
             return 0;
         }
@@ -151,6 +151,13 @@ namespace FNLog
         {
             return -6;
         }
+
+        Logger::StateLockGuard state_guard(logger.state_lock);
+        if (logger.logger_state_ != LOGGER_STATE_RUNNING)
+        {
+            return -7;
+        }
+
         dst_chl.yaml_mtime_ = file_stat.st_mtime;
 
         std::unique_ptr<LexState> ls(new LexState);
@@ -167,6 +174,8 @@ namespace FNLog
 
         static_assert(std::is_same<decltype(logger.channels_[channel_id].config_fields_), decltype(ls->channels_[channel_id].config_fields_)>::value, "");
         
+
+
         Channel& src_chl = ls->channels_[channel_id];
         if (dst_chl.channel_id_ != src_chl.channel_id_ || src_chl.channel_id_ != channel_id)
         {
