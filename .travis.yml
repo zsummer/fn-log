@@ -85,7 +85,7 @@ after_success:
   - pwd
   - ls
   - find ./ -name "*.gc*"
-  - if [[ "$TRAVIS_OS_NAME" != "osx" ]]; then coveralls; fi
+  - if [[ "$TRAVIS_OS_NAME" != "osx" && "$TRAVIS_COMPILER" == "gcc" ]]; then coveralls; fi
 
 addons:
   coverity_scan:
