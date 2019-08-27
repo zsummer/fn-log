@@ -2,10 +2,10 @@ sudo: true
 language: cpp
 compiler: 
   - g++ 
-  - clang
+ # - clang
 os:
   - linux
-  - osx
+ # - osx
   
 env:
   global:
