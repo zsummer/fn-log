@@ -47,19 +47,26 @@ script:
   - ./test_multi-thread-env_concurrent_reboot 2>/dev/null 1>&2
   - cd ..
   - find ./ -name "*.gc*"
-  - converalls
+  #- lcov --capture --initial --directory ./ --output-file out.info
+  #- lcov --no-checksum --directory ./ --capture --output-file out.info
+  #- genhtml --highlight --legend --output-directory report out.info
+
+
 
   - sh merge_header.sh
-  - rm src/include/*
+  - mv src/include src/bak
+  - mkdir src/include
   - mv fn_log.h.only src/include/fn_log.h
   - mkdir benchmarke-build
   - cd benchmarke-build
-  - rm -fr * 
   - cmake -DCMAKE_BUILD_TYPE=Release ..
   - make -j4
   - rm -fr * 
-  - ls ../bin/*
-  - cd ../bin
+  - cd ..
+  - rm -fr src/include
+  - mv src/bak src/include
+  - ls bin/*
+  - cd bin
   
   - ./stress_multi-thread-env_concurrent_reboot 2>/dev/null 1>&2
   - ./stress_multi-thread-env_main_reboot
@@ -78,7 +85,7 @@ after_success:
   - pwd
   - ls
   - find ./ -name "*.gc*"
-  #- coveralls 
+  - coveralls 
 addons:
   coverity_scan:
     project:
