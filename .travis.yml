@@ -45,9 +45,10 @@ script:
   - ./test_fast_simple
   - ./test_channel_normal
   - ./test_multi-thread-env_concurrent_reboot 2>/dev/null 1>&2
-  - find ./ -name "*.gc*"
-
   - cd ..
+  - find ./ -name "*.gc*"
+  - converalls
+
   - sh merge_header.sh
   - rm src/include/*
   - mv fn_log.h.only src/include/fn_log.h
@@ -77,7 +78,7 @@ after_success:
   - pwd
   - ls
   - find ./ -name "*.gc*"
-  - coveralls 
+  #- coveralls 
 addons:
   coverity_scan:
     project:
