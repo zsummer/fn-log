@@ -66,7 +66,7 @@ namespace FNLog
             {
                 os << " before:";
                 int limit = 0;
-                while (limit < 10 && ls->current_[limit] != '\0')
+                while (limit < 30 && ls->current_ + limit < ls->end_ && ls->current_[limit] != '\0')
                 {
                     limit++;
                 }

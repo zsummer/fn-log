@@ -47,14 +47,14 @@ namespace FNLog
 
     //support
     //[$PNAME $PID $YEAR $MON $DAY $HOUR $MIN $SEC]
-    inline std::string MakeFileName(Channel& channel, Device& device, const struct tm& t, LogData& log)
+    inline std::string MakeFileName(const std::string& fmt_name, int channel_id, int device_id, const struct tm& t)
     {
-        std::string name = device.out_file_;
+        std::string name = fmt_name;
         if (name.empty())
         {
             name = "$PNAME_$YEAR$MON$DAY_$PID.";
-            name += std::to_string(channel.channel_id_);
-            name += std::to_string(device.device_id_);
+            name += std::to_string(channel_id);
+            name += std::to_string(device_id);
         }
         name += ".log";
         size_t pos = 0;
@@ -150,7 +150,7 @@ namespace FNLog
 
             if (has_error)
             {
-                break;
+                pos++;
             }
         } while (true);
         return name;
@@ -197,7 +197,7 @@ namespace FNLog
             create_day = mktime(&day);
         }
 
-        std::string name = MakeFileName(channel, device, t, log);
+        std::string name = MakeFileName(device.out_file_, channel.channel_id_, device.device_id_, t);
 
         std::string path = device.out_path_;
         if (!path.empty())

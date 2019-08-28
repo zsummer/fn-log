@@ -84,6 +84,13 @@ int main(int argc, char* argv[])
     FNLOG_ASSERT((write_float_unsafe(buffer, 3.1426f) == 6), "write float pi");
     FNLOG_ASSERT((write_float_unsafe(buffer, 3.141f) == 5), "write float pi");
     FNLOG_ASSERT((write_float_unsafe(buffer, 3.14268f) == 6), "write float pi");
+    FNLOG_ASSERT((write_float_unsafe(buffer, -3.14268f) == 7), "write float -pi");
+    FNLOG_ASSERT((write_float_unsafe(buffer, -3.14268E-15f) > 3), "write float -pi");
+    FNLOG_ASSERT(std::regex_match(buffer, std::regex("-3\\.14.*15")), "write float -pi");
+    FNLOG_ASSERT((write_float_unsafe(buffer, 3.14268E-15f) > 3), "write float pi");
+    FNLOG_ASSERT(std::regex_match(buffer, std::regex("3\\.14.*15")), "write float pi");
+    FNLOG_ASSERT((write_float_unsafe(buffer, 3.14268E15f) > 3), "write float pi");
+    FNLOG_ASSERT(std::regex_match(buffer, std::regex("3\\.14.*15")), "write float pi");
 
     memset(buffer, 0, sizeof(buffer));
     FNLOG_ASSERT((write_double_unsafe(buffer, 3.14f) == 4), "write double pi");
@@ -91,10 +98,19 @@ int main(int argc, char* argv[])
     FNLOG_ASSERT(buffer[1] == '.', nullptr);
     FNLOG_ASSERT(buffer[2] == '1', nullptr);
 
-    FNLOG_ASSERT((write_double_unsafe(buffer, 3.1426f) == 6), "write double pi");
-    FNLOG_ASSERT((write_double_unsafe(buffer, 3.141f) == 5), "write double pi");
-    FNLOG_ASSERT((write_double_unsafe(buffer, 3.14268f) == 6), "write double pi");
-    
+    FNLOG_ASSERT((write_double_unsafe(buffer, 3.1426) == 6), "write double pi");
+    FNLOG_ASSERT((write_double_unsafe(buffer, 3.141) == 5), "write double pi");
+    FNLOG_ASSERT((write_double_unsafe(buffer, 3.14268) == 6), "write double pi");
+    FNLOG_ASSERT((write_double_unsafe(buffer, -3.14268) == 7), "write double -pi");
+    FNLOG_ASSERT((write_double_unsafe(buffer, -3.14268E-15) > 3), "write double -pi");
+    FNLOG_ASSERT(std::regex_match(buffer, std::regex("-3\\.14.*15")), "write double -pi");
+    FNLOG_ASSERT((write_double_unsafe(buffer, 3.14268E-15) > 3), "write double pi");
+    FNLOG_ASSERT(std::regex_match(buffer, std::regex("3\\.14.*15")), "write double pi");
+    FNLOG_ASSERT((write_double_unsafe(buffer, 3.14268E15) > 3), "write double pi");
+    FNLOG_ASSERT(!std::regex_match(buffer, std::regex("3\\.14.*15")), "write double pi");
+    FNLOG_ASSERT((write_double_unsafe(buffer, 3.14268E150) > 3), "write double pi");
+    FNLOG_ASSERT(std::regex_match(buffer, std::regex("3\\.14.*150")), "write double pi");
+
     FNLOG_ASSERT((write_pointer_unsafe(buffer, nullptr) == 4), "write nullptr");
 
     FNLOG_ASSERT((write_pointer_unsafe(buffer, (void*)1) == 3), "write 0x1");

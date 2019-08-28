@@ -284,6 +284,7 @@ namespace FNLog
         int line_number_;
         const char* first_;
         const char* current_;
+        const char* end_;
         Line line_;
         Logger::Channels channels_;
         int channel_size_;
@@ -590,6 +591,7 @@ namespace FNLog
             }
         }
         ls.first_ = first;
+        ls.end_ = first + text.length();
         memset(&ls.channels_, 0, sizeof(ls.channels_));
         ls.channel_size_ = 0;
         ls.hot_update_ = false;

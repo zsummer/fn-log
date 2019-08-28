@@ -463,6 +463,23 @@ namespace FNLog
         channel.devices_[device_id].config_fields_[field].num_ = val;
     }
 
+    inline long long GetDeviceConfig(Logger& logger, int channel_id, int device_id, DeviceConfigEnum field)
+    {
+        if (logger.channel_size_ <= channel_id || channel_id < 0)
+        {
+            return 0;
+        }
+        if (field >= DEVICE_CFG_MAX_ID)
+        {
+            return 0;
+        }
+        Channel& channel = logger.channels_[channel_id];
+        if (channel.device_size_ <= device_id || device_id < 0)
+        {
+            return 0;
+        }
+        return channel.devices_[device_id].config_fields_[field].num_;
+    }
     inline void InitLogger(Logger& logger)
     {
         logger.inner_error_ = 0;
@@ -493,14 +510,14 @@ namespace FNLog
 
     inline Logger::~Logger()
     {
-        do
+        while (logger_state_ != LOGGER_STATE_UNINIT)
         {
             int ret = StopLogger(*this);
             if (ret != 0)
             {
                 std::this_thread::sleep_for(std::chrono::milliseconds(20));
             }
-        } while (logger_state_ != LOGGER_STATE_UNINIT);
+        } ;
     }
 
 }
