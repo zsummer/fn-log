@@ -1,4 +1,11 @@
 #!/bin/bash
+if command -v lcov >/dev/null 2>&1; then 
+  echo 'exists lcov' 
+else 
+  echo 'no exists lcov'
+  exit 2 
+fi
+
 bcc=build-check-coverage
 if [ ! -d "./$bcc" ]; then
   mkdir $bcc
@@ -31,7 +38,10 @@ echo "all success "
 echo 
 echo 
 echo 
+lcov --zerocounters --directory ./
 lcov --capture --initial --directory ./ --output-file $bcc/coverage.info
 lcov --no-checksum --directory ./ --capture --output-file $bcc/coverage.info
+lcov  --extract $bcc/coverage.info '*/src/*' '*/tests/*' -o $bcc/coverage2.info
+mv $bcc/coverage2.info $bcc/coverage.info
 genhtml --highlight --legend --output-directory $bcc/report $bcc/coverage.info
 
