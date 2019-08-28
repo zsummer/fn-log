@@ -14,7 +14,6 @@ env:
 before_install:
   - echo -n | openssl s_client -connect https://scan.coverity.com:443 | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' | sudo tee -a /etc/ssl/certs/ca-
   - pip install --user cpp-coveralls
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install lcov; fi
   - echo "ENV IS $TRAVIS_OS_NAME $TRAVIS_COMPILER"
 
 install:
@@ -48,10 +47,6 @@ script:
   - ./stress_multi-thread-env_main_reboot
   - ./stress_multi-thread-env_concurrent_reboot 50000 2>/dev/null 1>&2
   - cd ..
-  #- find ./ -name "*.gc*"
-  #- lcov --capture --initial --directory ./ --output-file out.info
-  #- lcov --no-checksum --directory ./ --capture --output-file out.info
-  #- genhtml --highlight --legend --output-directory report out.info
 
 
 
