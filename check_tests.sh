@@ -1,6 +1,14 @@
 #!/bin/bash
+if [ ! -d "./build-check" ]; then
+  mkdir build-check
+fi
+cd build-check
+cmake .. 
+make -j4
+cd ..
+
 cd bin
-ts=`find ./ -maxdepth 1 -executable -type f`
+ts=`find ./ -maxdepth 1 -executable -type f |egrep -v "log"`
 for t in $ts ;
 do
   echo begin test $t 

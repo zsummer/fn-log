@@ -45,9 +45,10 @@ script:
   - ./test_fast_default
   - ./test_fast_simple
   - ./test_channel_normal
-  - ./test_multi-thread-env_concurrent_reboot 2>/dev/null 1>&2
+  - ./stress_multi-thread-env_main_reboot
+  - ./stress_multi-thread-env_concurrent_reboot 50000 2>/dev/null 1>&2
   - cd ..
-  - find ./ -name "*.gc*"
+  #- find ./ -name "*.gc*"
   #- lcov --capture --initial --directory ./ --output-file out.info
   #- lcov --no-checksum --directory ./ --capture --output-file out.info
   #- genhtml --highlight --legend --output-directory report out.info

@@ -17,22 +17,23 @@ R"----(
 
 )----";
 
-int total_loop_ = 0;
+int total_loop_ = 2000000;
+int cur_loop_ = 0;
 void thread_proc(int index)
 {
     LogInfo() << "thread:<" << index << "> begin.";
     FNLog::Logger& logger = FNLog::GetDefaultLogger();
-    while (total_loop_ < 2000000)
+    while (cur_loop_ < total_loop_)
     {
         if (logger.logger_state_ == FNLog::LOGGER_STATE_RUNNING)
         {
-            total_loop_++;
+            cur_loop_++;
         }
         LogDebug().write_buffer("rrrrrrrrrrrrrrrrrrrradfads33333333333333rrd",
                                 sizeof("rrrrrrrrrrrrrrrrrrrradfads33333333333333rrd") - 1);
-        if (total_loop_%1000 == 0)
+        if (cur_loop_%1000 == 0)
         {
-            LogInfo() << "already loop:" << total_loop_;
+            LogInfo() << "already loop:" << cur_loop_;
             if (logger.logger_state_ == FNLog::LOGGER_STATE_RUNNING)
             {
                 FNLog::StopLogger(FNLog::GetDefaultLogger());
@@ -59,7 +60,10 @@ void Stop(int signo)
 int main(int argc, char* argv[])
 {
     signal(SIGINT, Stop);
-
+    if (argc > 1)
+    {
+        total_loop_ = atoi(argv[1]);
+    }
     for (int i = 0; i < WRITE_THREAD_COUNT; i++)
     {
         g_multi_proc[i] = std::thread(thread_proc, i);
