@@ -16,7 +16,7 @@ make -j4
 cd ..
 
 cd bin
-ts=`find ./ -maxdepth 1 -executable -type f |egrep -v "log" | grep "test_"`
+ts=`find ./ -maxdepth 1 -type f |egrep -v "log" | grep "test_"`
 for t in $ts ;
 do
   echo begin test $t 

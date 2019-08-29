@@ -302,7 +302,7 @@ namespace FNLog
         memset(&ls.line_, 0, sizeof(ls.line_));
         while (true)
         {
-            const char& ch = *ls.current_++;
+            char ch = *ls.current_++;
             if (ls.line_.block_type_ == BLOCK_CLEAN && ch != '\0' && ch != '\r' && ch != '\n')
             {
                 continue;
@@ -312,7 +312,7 @@ namespace FNLog
             if (ls.line_.block_type_ == BLOCK_KEY && (ch < 'a' || ch > 'z') && ch != '_')
             {
                 ls.line_.block_type_ = BLOCK_PRE_SEP;
-                ls.line_.key_end_ = &ch;
+                ls.line_.key_end_ = ls.current_ - 1;
                 ls.line_.key_ = ParseReserve(ls.line_.key_begin_, ls.line_.key_end_);
                 if (ls.line_.key_ == RK_NULL)
                 {
@@ -326,7 +326,7 @@ namespace FNLog
                 {
                 case '\0': case'\n':case '\r': case '#': case '\"':
                     ls.line_.block_type_ = BLOCK_CLEAN;
-                    ls.line_.val_end_ = &ch;
+                    ls.line_.val_end_ = ls.current_ - 1;
                     break;
                 }
             }
@@ -414,11 +414,11 @@ namespace FNLog
                         break;
                     case BLOCK_BLANK: case BLOCK_PRE_KEY:
                         ls.line_.block_type_ = BLOCK_KEY;
-                        ls.line_.key_begin_ = &ch;
+                        ls.line_.key_begin_ = ls.current_ - 1;
                         break;
                     case BLOCK_PRE_VAL:
                         ls.line_.block_type_ = BLOCK_VAL;
-                        ls.line_.val_begin_ = &ch;
+                        ls.line_.val_begin_ = ls.current_ - 1;
                         break;
                     default:
                         ls.line_.line_type_ = LINE_ERROR;

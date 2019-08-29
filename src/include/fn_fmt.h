@@ -297,7 +297,8 @@ namespace FNLog
         
         if (fabst < 0.0001 || fabst > 0xFFFFFFFFFFFFFFFULL)
         {
-            gcvt(number, 16, dst);
+            char * buf = gcvt(number, 16, dst);
+            (void)buf;
             return (int)strlen(dst);
         }
 
@@ -376,7 +377,8 @@ namespace FNLog
 
         if (fabst < 0.0001 || fabst > 0xFFFFFFFULL)
         {
-            gcvt(number, 7, dst);
+            char* buf = gcvt(number, 7, dst);
+            (void)buf;
             return (int)strlen(dst);
         }
 

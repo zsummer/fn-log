@@ -565,6 +565,10 @@ public:
 #define FN_LOG_MAX_LOG_QUEUE_CACHE_SIZE FN_LOG_MAX_LOG_QUEUE_SIZE
 #endif
 
+#ifndef FN_LOG_HOTUPDATE_INTERVEL
+#define FN_LOG_HOTUPDATE_INTERVEL 5
+#endif
+
 namespace FNLog
 {
     enum LogPriority
@@ -782,6 +786,7 @@ namespace FNLog
     {
     public:
         static const int MAX_CHANNEL_SIZE = FN_LOG_MAX_CHANNEL_SIZE;
+        static const int HOTUPDATE_INTERVEL = FN_LOG_HOTUPDATE_INTERVEL;
         using Channels = std::array<Channel, MAX_CHANNEL_SIZE>;
         using SyncGroups = std::array<SyncGroup, MAX_CHANNEL_SIZE>;
         using Locks = std::array<std::mutex, MAX_CHANNEL_SIZE>;
@@ -1106,6 +1111,7 @@ namespace FNLog
         int line_number_;
         const char* first_;
         const char* current_;
+        const char* end_;
         Line line_;
         Logger::Channels channels_;
         int channel_size_;
@@ -1123,7 +1129,7 @@ namespace FNLog
         memset(&ls.line_, 0, sizeof(ls.line_));
         while (true)
         {
-            const char& ch = *ls.current_++;
+            char ch = *ls.current_++;
             if (ls.line_.block_type_ == BLOCK_CLEAN && ch != '\0' && ch != '\r' && ch != '\n')
             {
                 continue;
@@ -1133,7 +1139,7 @@ namespace FNLog
             if (ls.line_.block_type_ == BLOCK_KEY && (ch < 'a' || ch > 'z') && ch != '_')
             {
                 ls.line_.block_type_ = BLOCK_PRE_SEP;
-                ls.line_.key_end_ = &ch;
+                ls.line_.key_end_ = ls.current_ - 1;
                 ls.line_.key_ = ParseReserve(ls.line_.key_begin_, ls.line_.key_end_);
                 if (ls.line_.key_ == RK_NULL)
                 {
@@ -1147,7 +1153,7 @@ namespace FNLog
                 {
                 case '\0': case'\n':case '\r': case '#': case '\"':
                     ls.line_.block_type_ = BLOCK_CLEAN;
-                    ls.line_.val_end_ = &ch;
+                    ls.line_.val_end_ = ls.current_ - 1;
                     break;
                 }
             }
@@ -1235,11 +1241,11 @@ namespace FNLog
                         break;
                     case BLOCK_BLANK: case BLOCK_PRE_KEY:
                         ls.line_.block_type_ = BLOCK_KEY;
-                        ls.line_.key_begin_ = &ch;
+                        ls.line_.key_begin_ = ls.current_ - 1;
                         break;
                     case BLOCK_PRE_VAL:
                         ls.line_.block_type_ = BLOCK_VAL;
-                        ls.line_.val_begin_ = &ch;
+                        ls.line_.val_begin_ = ls.current_ - 1;
                         break;
                     default:
                         ls.line_.line_type_ = LINE_ERROR;
@@ -1412,6 +1418,7 @@ namespace FNLog
             }
         }
         ls.first_ = first;
+        ls.end_ = first + text.length();
         memset(&ls.channels_, 0, sizeof(ls.channels_));
         ls.channel_size_ = 0;
         ls.hot_update_ = false;
@@ -1776,7 +1783,8 @@ namespace FNLog
         
         if (fabst < 0.0001 || fabst > 0xFFFFFFFFFFFFFFFULL)
         {
-            gcvt(number, 16, dst);
+            char * buf = gcvt(number, 16, dst);
+            (void)buf;
             return (int)strlen(dst);
         }
 
@@ -1855,7 +1863,8 @@ namespace FNLog
 
         if (fabst < 0.0001 || fabst > 0xFFFFFFFULL)
         {
-            gcvt(number, 7, dst);
+            char* buf = gcvt(number, 7, dst);
+            (void)buf;
             return (int)strlen(dst);
         }
 
@@ -2070,7 +2079,7 @@ namespace FNLog
             {
                 os << " before:";
                 int limit = 0;
-                while (limit < 10 && ls->current_[limit] != '\0')
+                while (limit < 30 && ls->current_ + limit < ls->end_ && ls->current_[limit] != '\0')
                 {
                     limit++;
                 }
@@ -2138,7 +2147,7 @@ namespace FNLog
 
         Channel& dst_chl = logger.channels_[channel_id];
         time_t now = time(nullptr);
-        if (now - dst_chl.last_hot_check_ < 5)
+        if (now - dst_chl.last_hot_check_ < Logger::HOTUPDATE_INTERVEL)
         {
             return 0;
         }
@@ -2155,6 +2164,13 @@ namespace FNLog
         {
             return -6;
         }
+
+        Logger::StateLockGuard state_guard(logger.state_lock);
+        if (logger.logger_state_ != LOGGER_STATE_RUNNING)
+        {
+            return -7;
+        }
+
         dst_chl.yaml_mtime_ = file_stat.st_mtime;
 
         std::unique_ptr<LexState> ls(new LexState);
@@ -2171,6 +2187,8 @@ namespace FNLog
 
         static_assert(std::is_same<decltype(logger.channels_[channel_id].config_fields_), decltype(ls->channels_[channel_id].config_fields_)>::value, "");
         
+
+
         Channel& src_chl = ls->channels_[channel_id];
         if (dst_chl.channel_id_ != src_chl.channel_id_ || src_chl.channel_id_ != channel_id)
         {
@@ -2261,14 +2279,14 @@ namespace FNLog
 
     //support
     //[$PNAME $PID $YEAR $MON $DAY $HOUR $MIN $SEC]
-    inline std::string MakeFileName(Channel& channel, Device& device, const struct tm& t, LogData& log)
+    inline std::string MakeFileName(const std::string& fmt_name, int channel_id, int device_id, const struct tm& t)
     {
-        std::string name = device.out_file_;
+        std::string name = fmt_name;
         if (name.empty())
         {
             name = "$PNAME_$YEAR$MON$DAY_$PID.";
-            name += std::to_string(channel.channel_id_);
-            name += std::to_string(device.device_id_);
+            name += std::to_string(channel_id);
+            name += std::to_string(device_id);
         }
         name += ".log";
         size_t pos = 0;
@@ -2364,7 +2382,7 @@ namespace FNLog
 
             if (has_error)
             {
-                break;
+                pos++;
             }
         } while (true);
         return name;
@@ -2411,7 +2429,7 @@ namespace FNLog
             create_day = mktime(&day);
         }
 
-        std::string name = MakeFileName(channel, device, t, log);
+        std::string name = MakeFileName(device.out_file_, channel.channel_id_, device.device_id_, t);
 
         std::string path = device.out_path_;
         if (!path.empty())
@@ -3689,6 +3707,23 @@ namespace FNLog
         channel.devices_[device_id].config_fields_[field].num_ = val;
     }
 
+    inline long long GetDeviceConfig(Logger& logger, int channel_id, int device_id, DeviceConfigEnum field)
+    {
+        if (logger.channel_size_ <= channel_id || channel_id < 0)
+        {
+            return 0;
+        }
+        if (field >= DEVICE_CFG_MAX_ID)
+        {
+            return 0;
+        }
+        Channel& channel = logger.channels_[channel_id];
+        if (channel.device_size_ <= device_id || device_id < 0)
+        {
+            return 0;
+        }
+        return channel.devices_[device_id].config_fields_[field].num_;
+    }
     inline void InitLogger(Logger& logger)
     {
         logger.inner_error_ = 0;
@@ -3719,14 +3754,14 @@ namespace FNLog
 
     inline Logger::~Logger()
     {
-        do
+        while (logger_state_ != LOGGER_STATE_UNINIT)
         {
             int ret = StopLogger(*this);
             if (ret != 0)
             {
                 std::this_thread::sleep_for(std::chrono::milliseconds(20));
             }
-        } while (logger_state_ != LOGGER_STATE_UNINIT);
+        } ;
     }
 
 }
