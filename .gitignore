@@ -26,7 +26,19 @@
 *.a
 *.lib
 
+# Compiled Dir
+build
+build-*
+
 # Executables
 *.exe
 *.out
 *.app
+bin/test_*
+bin/stress_*
+bin/benchmark_*
+
+# log
+bin/*.log.*
+bin/*.log
+bin/log
