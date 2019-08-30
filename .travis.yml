@@ -14,18 +14,13 @@ env:
 before_install:
   - echo -n | openssl s_client -connect https://scan.coverity.com:443 | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' | sudo tee -a /etc/ssl/certs/ca-
   - pip install --user cpp-coveralls
-  - echo "ENV IS $TRAVIS_OS_NAME $TRAVIS_COMPILER"
 
 install:
-  #- sudo apt-get install -y gdb
+  - if [[ "$TRAVIS_OS_NAME" == "linux" && "$TRAVIS_COMPILER" == "g++" ]]; then sudo apt-get install -y gdb; fi 
 
 before_script:
-  - ulimit -c unlimited -S
-
-after_failure:
-  #- COREFILE=$(find . -maxdepth 1 -name "core*" | head -n 1) # find core file
-  #- if [[ -f "$COREFILE" ]]; then gdb -c "$COREFILE" example -ex "thread apply all bt" -ex "set pagination 0" -batch; fi
-
+  - if [[ "$TRAVIS_OS_NAME" == "linux" && "$TRAVIS_COMPILER" == "g++" ]]; then ulimit -c unlimited -S; fi 
+  
 script:
   - cmake --version
   - mkdir build
@@ -47,8 +42,9 @@ script:
   - ./stress_multi-thread-env_main_reboot
   - ./stress_multi-thread-env_concurrent_reboot 50000 >/dev/null 2>&1
   - cd ..
-
-
+  - find ./ -name "*.gc*"
+  - if [[ "$TRAVIS_OS_NAME" == "linux" && "$TRAVIS_COMPILER" == "g++" ]]; then coveralls --exclude build; fi 
+  - ls -la
 
   - sh merge_header.sh
   - mv src/include src/bak
@@ -58,8 +54,8 @@ script:
   - cd benchmarke-build
   - cmake -DCMAKE_BUILD_TYPE=Release ..
   - make -j4
-  - rm -fr * 
   - cd ..
+  - rm -fr benchmarke-build
   - rm -fr src/include
   - mv src/bak src/include
   - ls bin/*
@@ -79,10 +75,9 @@ script:
 
 
 after_success:
-  - pwd
-  - ls
-  - echo "ENV IS $TRAVIS_OS_NAME $TRAVIS_COMPILER"
-  - if [[ "$TRAVIS_OS_NAME" == "linux" && "$TRAVIS_COMPILER" == "g++" ]]; then coveralls --exclude build; fi
+after_failure:
+  #- COREFILE=$(find . -maxdepth 1 -name "core*" | head -n 1) # find core file
+  #- if [[ -f "$COREFILE" ]]; then gdb -c "$COREFILE" example -ex "thread apply all bt" -ex "set pagination 0" -batch; fi
 
 addons:
   coverity_scan:
