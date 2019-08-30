@@ -43,7 +43,7 @@ script:
   - ./stress_multi-thread-env_concurrent_reboot 50000 >/dev/null 2>&1
   - cd ..
   - find ./ -name "*.gc*"
-  - if [[ "$TRAVIS_OS_NAME" == "linux" && "$TRAVIS_COMPILER" == "gcc" ]]; then coveralls --exclude build; fi 
+  - if [[ "$TRAVIS_OS_NAME" == "linux" && "$TRAVIS_COMPILER" == "gcc" ]]; then coveralls; else echo "$TRAVIS_OS_NAME $TRAVIS_COMPILER"; fi 
   - ls -la
 
   - sh merge_header.sh
