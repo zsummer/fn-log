@@ -82,7 +82,7 @@ after_success:
   - pwd
   - ls
   - echo "ENV IS $TRAVIS_OS_NAME $TRAVIS_COMPILER"
-  - if [[ "$TRAVIS_OS_NAME" != "osx" && "$TRAVIS_COMPILER" != "clang" ]]; then coveralls -E "build.*"; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" && "$TRAVIS_COMPILER" == "g++" ]]; then coveralls --exclude build; fi
 
 addons:
   coverity_scan:
