@@ -194,7 +194,7 @@ namespace FNLog
     {
         CHANNEL_LOG_LOCKED,
         CHANNEL_LOG_PUSH,
-        CHANNEL_LOG_PROCESSED,
+        CHANNEL_LOG_PROCESSED = CHANNEL_LOG_PUSH + 8,
         CHANNEL_LOG_MAX_ID
     };
 
@@ -233,6 +233,7 @@ namespace FNLog
 
         int  channel_id_;
         int  channel_type_;
+        bool single_thread_write_;
         unsigned int channel_state_;
         time_t yaml_mtime_;
         time_t last_hot_check_;

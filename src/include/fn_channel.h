@@ -265,10 +265,28 @@ namespace FNLog
             {
                 continue;
             }
-            if (true)
+            if (channel.single_thread_write_)
+            {
+                for (int i = 0; i < RingBuffer::MAX_LOG_QUEUE_SIZE; i++)
+                {
+                    int hold_idx = (ring_buffer.write_count_ + i) % RingBuffer::MAX_LOG_QUEUE_SIZE;
+                    int next_idx = (ring_buffer.write_count_ + i + 1) % RingBuffer::MAX_LOG_QUEUE_SIZE;
+                    if (next_idx == ring_buffer.read_count_)
+                    {
+                        break;
+                    }
+                    if (ring_buffer.buffer_[hold_idx].data_mark_ != 0)
+                    {
+                        continue;
+                    }
+                    ring_buffer.buffer_[hold_idx].data_mark_ = 1;
+                    channel.log_fields_[CHANNEL_LOG_LOCKED].num_++;
+                    return hold_idx;
+                }
+            }
+            else
             {
                 Logger::WriteLockGuard l(logger.write_locks_[channel_id]);
-
                 for (int i = 0; i < RingBuffer::MAX_LOG_QUEUE_SIZE; i++)
                 {
                     int hold_idx = (ring_buffer.write_count_ + i) % RingBuffer::MAX_LOG_QUEUE_SIZE;
@@ -314,7 +332,23 @@ namespace FNLog
 
 
         log.data_mark_ = 2;
-        if (true)
+        if (channel.single_thread_write_)
+        {
+            do
+            {
+                int next_idx = (ring_buffer.write_count_ + 1) % RingBuffer::MAX_LOG_QUEUE_SIZE;
+                if (next_idx != ring_buffer.read_count_ && ring_buffer.buffer_[ring_buffer.write_count_].data_mark_ == 2)
+                {
+                    ring_buffer.write_count_ = next_idx;
+                    channel.log_fields_[CHANNEL_LOG_PUSH].num_++;
+                }
+                else
+                {
+                    break;
+                }
+            } while (true);
+        }
+        else
         {
             Logger::WriteLockGuard l(logger.write_locks_[channel_id]);
             do
@@ -333,8 +367,16 @@ namespace FNLog
         }
         if (channel.channel_type_ == CHANNEL_SYNC)
         {
-            Logger::WriteLockGuard l(logger.write_locks_[channel_id]);
-            EnterProcChannel(logger, channel_id);
+            if (channel.single_thread_write_)
+            {
+                EnterProcChannel(logger, channel_id);
+            }
+            else
+            {
+                Logger::WriteLockGuard l(logger.write_locks_[channel_id]);
+                EnterProcChannel(logger, channel_id);
+            }
+
         }
         return 0;
     }
