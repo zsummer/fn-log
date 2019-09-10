@@ -267,7 +267,8 @@ namespace FNLog
             }
             if (true)
             {
-                std::lock_guard<std::mutex> l(logger.syncs_[channel_id].write_lock_);
+                Logger::WriteLockGuard l(logger.write_locks_[channel_id]);
+
                 for (int i = 0; i < RingBuffer::MAX_LOG_QUEUE_SIZE; i++)
                 {
                     int hold_idx = (ring_buffer.write_count_ + i) % RingBuffer::MAX_LOG_QUEUE_SIZE;
@@ -315,7 +316,7 @@ namespace FNLog
         log.data_mark_ = 2;
         if (true)
         {
-            std::lock_guard<std::mutex> l(logger.syncs_[log.channel_id_].write_lock_);
+            Logger::WriteLockGuard l(logger.write_locks_[channel_id]);
             do
             {
                 int next_idx = (ring_buffer.write_count_ + 1) % RingBuffer::MAX_LOG_QUEUE_SIZE;
@@ -332,8 +333,8 @@ namespace FNLog
         }
         if (channel.channel_type_ == CHANNEL_SYNC)
         {
-            std::lock_guard<std::mutex> l(logger.syncs_[log.channel_id_].write_lock_);
-            EnterProcChannel(logger, log.channel_id_);
+            Logger::WriteLockGuard l(logger.write_locks_[channel_id]);
+            EnterProcChannel(logger, channel_id);
         }
         return 0;
     }

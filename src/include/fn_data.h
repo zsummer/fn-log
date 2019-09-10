@@ -244,13 +244,7 @@ namespace FNLog
         LogFields log_fields_;
     };
 
-    struct SyncGroup
-    {
-        char chunk_1_[CHUNK_SIZE];
-        std::thread log_thread_;
-        char chunk_2_[CHUNK_SIZE];
-        std::mutex write_lock_;
-    };
+
 
     enum LoggerState
     {
@@ -268,17 +262,22 @@ namespace FNLog
         using Channels = std::array<Channel, MAX_CHANNEL_SIZE>;
         using RingBuffers = std::array<RingBuffer, MAX_CHANNEL_SIZE>;
 
-        using SyncGroups = std::array<SyncGroup, MAX_CHANNEL_SIZE>;
-        using Locks = std::array<std::mutex, MAX_CHANNEL_SIZE>;
+        using WriteLocks = std::array<std::mutex, MAX_CHANNEL_SIZE>;
+        using WriteLockGuard = std::lock_guard<std::mutex>;
+
+        using AsyncThreads = std::array<std::thread, MAX_CHANNEL_SIZE>;
         using FileHandles = std::array<FileHandler, MAX_CHANNEL_SIZE* Channel::MAX_DEVICE_SIZE>;
         using UDPHandles = std::array<UDPHandler, MAX_CHANNEL_SIZE* Channel::MAX_DEVICE_SIZE>;
-    public:
-        using ProcDevice = std::function<void(Logger&, int, int, LogData& log)>;
-        using AllocLogData = std::function<LogData* ()>;
-        using FreeLogData = std::function<void(LogData*)>;
+
     public:
         using StateLock = std::recursive_mutex;
         using StateLockGuard = std::lock_guard<StateLock>;
+        using ScreenLock = std::mutex;
+        using ScreenLockGuard = std::lock_guard<ScreenLock>;
+    public:
+        using ProcDevice = std::function<void(Logger&, int, int, LogData& log)>;
+
+
     public:
         Logger();
         ~Logger();
@@ -290,14 +289,11 @@ namespace FNLog
         int channel_size_;
         Channels channels_;
         RingBuffers ring_buffers_;
-
-        SyncGroups syncs_;
-        SyncGroup screen_;
+        WriteLocks write_locks_;
+        AsyncThreads async_threads;
+        ScreenLock screen_lock_;
         FileHandles file_handles_;
         UDPHandles udp_handles_;
-    public:
-        AllocLogData sys_alloc_;
-        FreeLogData sys_free_;
     };
 
 

@@ -92,7 +92,7 @@ namespace FNLog
         {
             static_assert(LogData::MAX_LOG_SIZE > Device::MAX_PATH_SYS_LEN * 2 + 100, "");
             Channel& channel = logger.channels_[channel_id];
-            std::thread& thd = logger.syncs_[channel_id].log_thread_;
+            std::thread& thd = logger.async_threads[channel_id];
             switch (channel.channel_type_)
             {
             case CHANNEL_SYNC:
@@ -138,7 +138,7 @@ namespace FNLog
         {
             static_assert(LogData::MAX_LOG_SIZE > Device::MAX_PATH_SYS_LEN * 2 + 100, "");
             Channel& channel = logger.channels_[channel_id];
-            std::thread& thd = logger.syncs_[channel_id].log_thread_;
+            std::thread& thd = logger.async_threads[channel_id];
             switch (channel.channel_type_)
             {
             case CHANNEL_SYNC:
