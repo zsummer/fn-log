@@ -51,7 +51,7 @@
 #ifndef FN_LOG_MAX_LOG_SIZE
 #define FN_LOG_MAX_LOG_SIZE 1000
 #endif
-#ifndef FN_LOG_MAX_LOG_QUEUE_SIZE
+#ifndef FN_LOG_MAX_LOG_QUEUE_SIZE //the size need big than push log thread count
 #define FN_LOG_MAX_LOG_QUEUE_SIZE 50000
 #endif
 #ifndef FN_LOG_MAX_LOG_QUEUE_CACHE_SIZE
@@ -103,6 +103,7 @@ namespace FNLog
     public:
         static const int MAX_LOG_SIZE = FN_LOG_MAX_LOG_SIZE;
     public:
+        unsigned    data_mark_; //0 invalid, 1 hold, 2 ready
         int    channel_id_;
         int    priority_;
         int    category_;
@@ -173,30 +174,10 @@ namespace FNLog
         LogFields log_fields_;
     };
 
-    struct LogQueue
-    {
-    public:
-        using LogDataPtr = LogData *;
-        using SizeType = unsigned int;
-        static const int MAX_LOG_QUEUE_SIZE = FN_LOG_MAX_LOG_QUEUE_SIZE;
-        static const int MAX_LOG_QUEUE_CACHE_SIZE = FN_LOG_MAX_LOG_QUEUE_CACHE_SIZE;
-        static const int MAX_LOG_QUEUE_REAL_SIZE = MAX_LOG_QUEUE_SIZE > MAX_LOG_QUEUE_CACHE_SIZE ? MAX_LOG_QUEUE_SIZE : MAX_LOG_QUEUE_CACHE_SIZE;
-
-    public:
-        char chunk_1_[CHUNK_SIZE];
-        long long log_count_;
-        char chunk_2_[CHUNK_SIZE];
-        volatile SizeType write_count_;
-        char chunk_3_[CHUNK_SIZE];
-        volatile SizeType read_count_;
-        char chunk_4_[CHUNK_SIZE];
-        LogDataPtr log_queue_[MAX_LOG_QUEUE_REAL_SIZE];
-    };
    
     enum ChannelType
     {
-        CHANNEL_MULTI,
-        CHANNEL_RING,
+        CHANNEL_ASYNC,
         CHANNEL_SYNC,
     };
 
@@ -211,12 +192,8 @@ namespace FNLog
 
     enum ChannelLogEnum
     {
-        CHANNEL_LOG_ALLOC_CALL,
-        CHANNEL_LOG_ALLOC_REAL,
-        CHANNEL_LOG_ALLOC_CACHE,
-        CHANNEL_LOG_FREE_CALL,
-        CHANNEL_LOG_FREE_REAL,
-        CHANNEL_LOG_FREE_CACHE,
+        CHANNEL_LOG_LOCKED,
+        CHANNEL_LOG_PUSH,
         CHANNEL_LOG_PROCESSED,
         CHANNEL_LOG_MAX_ID
     };
@@ -229,12 +206,28 @@ namespace FNLog
         CHANNEL_STATE_FINISH,
     };
 
+    struct RingBuffer
+    {
+    public:
+        static const int MAX_LOG_QUEUE_SIZE = FN_LOG_MAX_LOG_QUEUE_SIZE;//the size need big than push log thread count
+        static const int MAX_LOG_QUEUE_CACHE_SIZE = FN_LOG_MAX_LOG_QUEUE_CACHE_SIZE;
+        static_assert(FN_LOG_MAX_LOG_QUEUE_CACHE_SIZE >= FN_LOG_MAX_LOG_QUEUE_SIZE, "cache must big than use");
+    public:
+        volatile int write_count_;
+        char chunk_3_[CHUNK_SIZE];
+        volatile int read_count_;
+        char chunk_4_[CHUNK_SIZE];
+        LogData buffer_[MAX_LOG_QUEUE_CACHE_SIZE];
+    };
+
     struct Channel
     {
     public:
         using ConfigFields = std::array<AnyVal, CHANNEL_CFG_MAX_ID>;
         using LogFields = std::array<AnyVal, CHANNEL_LOG_MAX_ID>;
         static const int MAX_DEVICE_SIZE = 20;
+
+
     public:
         char chunk_1_[CHUNK_SIZE];
 
@@ -243,12 +236,6 @@ namespace FNLog
         unsigned int channel_state_;
         time_t yaml_mtime_;
         time_t last_hot_check_;
-
-        char chunk_2_[CHUNK_SIZE];
-        int write_red_;
-        LogQueue red_black_queue_[2];
-        LogQueue log_pool_;
-        char chunk_3_[CHUNK_SIZE];
 
         int chunk_;
         int device_size_;
@@ -263,8 +250,6 @@ namespace FNLog
         std::thread log_thread_;
         char chunk_2_[CHUNK_SIZE];
         std::mutex write_lock_;
-        char chunk_3_[CHUNK_SIZE];
-        std::mutex pool_lock_;
     };
 
     enum LoggerState
@@ -281,6 +266,8 @@ namespace FNLog
         static const int MAX_CHANNEL_SIZE = FN_LOG_MAX_CHANNEL_SIZE;
         static const int HOTUPDATE_INTERVEL = FN_LOG_HOTUPDATE_INTERVEL;
         using Channels = std::array<Channel, MAX_CHANNEL_SIZE>;
+        using RingBuffers = std::array<RingBuffer, MAX_CHANNEL_SIZE>;
+
         using SyncGroups = std::array<SyncGroup, MAX_CHANNEL_SIZE>;
         using Locks = std::array<std::mutex, MAX_CHANNEL_SIZE>;
         using FileHandles = std::array<FileHandler, MAX_CHANNEL_SIZE* Channel::MAX_DEVICE_SIZE>;
@@ -302,6 +289,8 @@ namespace FNLog
         StateLock state_lock;
         int channel_size_;
         Channels channels_;
+        RingBuffers ring_buffers_;
+
         SyncGroups syncs_;
         SyncGroup screen_;
         FileHandles file_handles_;

@@ -46,66 +46,13 @@
 
 namespace FNLog
 {
-    inline int CanPushLog(Logger& logger, int channel_id, int priority, int category)
-    {
-        if (channel_id >= logger.channel_size_ || channel_id < 0)
-        {
-            return -2;
-        }
-        if (logger.logger_state_ != LOGGER_STATE_RUNNING)
-        {
-            return -3;
-        }
-        Channel& channel = logger.channels_[channel_id];
-        if (channel.channel_state_ != CHANNEL_STATE_RUNNING)
-        {
-            return -4;
-        }
-        if (priority < channel.config_fields_[CHANNEL_CFG_PRIORITY].num_)
-        {
-            return 1;
-        }
-        if (channel.config_fields_[CHANNEL_CFG_CATEGORY].num_ > 0)
-        {
-            if (category < channel.config_fields_[CHANNEL_CFG_CATEGORY].num_
-                || category > channel.config_fields_[CHANNEL_CFG_CATEGORY].num_ + channel.config_fields_[CHANNEL_CFG_CATEGORY_EXTEND].num_)
-            {
-                return 2;
-            }
-        }
-        return 0;
-    }
 
-    inline int PushLog(Logger& logger, LogData* plog, bool state_safly_env = false)
-    {
-        if (plog == nullptr)
-        {
-            return -1;
-        }
-        if (!state_safly_env && logger.logger_state_ != LOGGER_STATE_RUNNING)
-        {
-            FreeLogData(logger, plog->channel_id_, plog);
-            return -2;
-        }
-        LogData& log = *plog;
-        if (log.channel_id_ >= logger.channel_size_ || log.channel_id_ < 0)
-        {
-            FreeLogData(logger, log.channel_id_, plog);
-            return -3;
-        }
-        plog->content_len_ = FN_MIN(plog->content_len_, LogData::MAX_LOG_SIZE - 2);
-        plog->content_[plog->content_len_++] = '\n';
-        plog->content_[plog->content_len_] = '\0';
-        int ret = PushLogToChannel(logger, plog);
-        if (ret != 0)
-        {
-            FreeLogData(logger, plog->channel_id_, plog);
-            return ret;
-        }
-        return 0;
-    }
 
-    
+
+    inline int PushLog(Logger& logger, int channel_id, int hold_idx, bool state_safly_env = false)
+    {
+        return PushChannel(logger, channel_id, hold_idx);
+    }
 
     //not thread-safe
     inline Channel* NewChannel(Logger& logger, int channel_type)
@@ -151,8 +98,7 @@ namespace FNLog
             case CHANNEL_SYNC:
                 channel.channel_state_ = CHANNEL_STATE_RUNNING;
                 break;
-            case CHANNEL_RING:
-            case CHANNEL_MULTI:
+            case CHANNEL_ASYNC:
             {
                 thd = std::thread(EnterProcChannel, std::ref(logger), channel_id);
                 if (!thd.joinable())
@@ -198,8 +144,7 @@ namespace FNLog
             case CHANNEL_SYNC:
                 channel.channel_state_ = CHANNEL_STATE_NULL;
                 break;
-            case CHANNEL_RING:
-            case CHANNEL_MULTI:
+            case CHANNEL_ASYNC:
             {
                 if (thd.joinable())
                 {
@@ -260,52 +205,14 @@ namespace FNLog
         for (int channel_id = 0; channel_id < logger.channel_size_; channel_id++)
         {
             Channel& channel = logger.channels_[channel_id];
-            for (int i = 0; i < channel.red_black_queue_[channel.write_red_].log_count_; i++)
+            RingBuffer& ring_buffer = logger.ring_buffers_[channel_id];
+            while (ring_buffer.write_count_ != ring_buffer.read_count_)
             {
-                FreeLogData(logger, channel_id, channel.red_black_queue_[channel.write_red_].log_queue_[i]);
+                ring_buffer.buffer_[ring_buffer.read_count_].data_mark_ = 0;
+                ring_buffer.read_count_ = (ring_buffer.read_count_ + 1) % RingBuffer::MAX_LOG_QUEUE_SIZE;
             }
-            channel.red_black_queue_[channel.write_red_].log_count_ = 0;
-            channel.write_red_ = (channel.write_red_ + 1) % 2;
-            for (int i = 0; i < channel.red_black_queue_[channel.write_red_].log_count_; i++)
-            {
-                FreeLogData(logger, channel_id, channel.red_black_queue_[channel.write_red_].log_queue_[i]);
-            }
-            channel.red_black_queue_[channel.write_red_].log_count_ = 0;
-
-            while (channel.red_black_queue_[channel.write_red_].write_count_ != channel.red_black_queue_[channel.write_red_].read_count_)
-            {
-                FreeLogData(logger, channel_id, channel.red_black_queue_[channel.write_red_].log_queue_[channel.red_black_queue_[channel.write_red_].read_count_]);
-                channel.red_black_queue_[channel.write_red_].read_count_ = (channel.red_black_queue_[channel.write_red_].read_count_ + 1) % LogQueue::MAX_LOG_QUEUE_SIZE;
-            }
-            channel.red_black_queue_[channel.write_red_].write_count_ = 0;
-            channel.red_black_queue_[channel.write_red_].read_count_ = 0;
-
-            for (int i = 0; i < channel.log_pool_.log_count_; i++)
-            {
-                if (logger.sys_free_)
-                {
-                    logger.sys_free_(channel.log_pool_.log_queue_[i]);
-                }
-                delete channel.log_pool_.log_queue_[i];
-            }
-            channel.log_pool_.log_count_ = 0;
-
-            while (channel.log_pool_.write_count_ != channel.log_pool_.read_count_)
-            {
-                if (logger.sys_free_)
-                {
-                    logger.sys_free_(channel.log_pool_.log_queue_[channel.log_pool_.read_count_]);
-                    channel.log_pool_.log_queue_[channel.log_pool_.read_count_] = nullptr;
-                }
-                else
-                {
-                    delete channel.log_pool_.log_queue_[channel.log_pool_.read_count_];
-                    channel.log_pool_.log_queue_[channel.log_pool_.read_count_] = nullptr;
-                }
-                channel.log_pool_.read_count_ = (channel.log_pool_.read_count_ + 1) % LogQueue::MAX_LOG_QUEUE_CACHE_SIZE;
-            }
-            channel.log_pool_.write_count_ = 0;
-            channel.log_pool_.read_count_ = 0;
+            ring_buffer.read_count_ = 0;
+            ring_buffer.write_count_ = 0;
         }
         return 0;
     }
@@ -487,6 +394,7 @@ namespace FNLog
         logger.logger_state_ = LOGGER_STATE_UNINIT;
         logger.channel_size_ = 0;
         memset(&logger.channels_, 0, sizeof(logger.channels_));
+        memset(&logger.ring_buffers_, 0, sizeof(logger.ring_buffers_));
 #if ((defined _WIN32) && !KEEP_INPUT_QUICK_EDIT)
         HANDLE input_handle = ::GetStdHandle(STD_INPUT_HANDLE);
         if (input_handle != INVALID_HANDLE_VALUE)

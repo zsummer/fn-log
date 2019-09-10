@@ -72,12 +72,10 @@ std::string ChannelDesc(int channel_type)
 {
     switch (channel_type)
     {
-        case FNLog::CHANNEL_MULTI:
-            return "async write";
-        case FNLog::CHANNEL_RING:
-            return "ring write";
-        case FNLog::CHANNEL_SYNC:
-            return "sync write";
+    case FNLog::CHANNEL_ASYNC:
+        return "async thread write";
+    case FNLog::CHANNEL_SYNC:
+        return "sync write";
     }
     return "invalid channel";
 }
@@ -110,9 +108,7 @@ int main(int argc, char *argv[])
                 {
                     LogInfoStream(0, 1) << "channel:<" << (long long)i << "> "
                         << ChannelDesc(logger.channels_[i].channel_type_) << " has write file:<"
-                        << logger.channels_[i].device_size_ << "> test " << 1000000*1000 / (now - last) << " line/sec. cache hit:"
-                        << (double)logger.channels_[i].log_fields_[FNLog::CHANNEL_LOG_ALLOC_CACHE].num_ 
-                                / logger.channels_[i].log_fields_[FNLog::CHANNEL_LOG_ALLOC_CALL].num_ * 100 << "%";
+                        << logger.channels_[i].device_size_ << "> test " << 1000000*1000 / (now - last) << " line/sec. ";
                     last = now;
                     break;
                 }

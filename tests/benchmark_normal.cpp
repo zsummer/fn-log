@@ -30,22 +30,8 @@ R"----(
  # 1通道为多线程不挂任何输出端 
  - channel: 1
 
- # 2通道为单线程异步写文件(回环队列) 
+ # 2通道为单线程同步写文件 
  - channel: 2
-    sync: ring #only support single thread
-    -device: 0
-        disable: false
-        out_type: file
-        file: "$PNAME_ring"
-        rollback: 4
-        limit_size: 100 m #only support M byte
-
- # 3通道为单线程异步无输出端(回环队列) 
- - channel: 3
-    sync: ring #only support single thread
-
- # 4通道为单线程同步写文件 
- - channel: 4
     sync: sync #only support single thread
     -device: 0
         disable: false
@@ -54,8 +40,8 @@ R"----(
         rollback: 4
         limit_size: 100 m #only support M byte
 
- # 5通道为单线程无输出端 
- - channel: 5
+ # 3通道为单线程无输出端 
+ - channel: 3
     sync: sync #only support single thread
 
 )----";
@@ -64,10 +50,8 @@ std::string ChannelDesc(int channel_type)
 {
     switch (channel_type)
     {
-        case FNLog::CHANNEL_MULTI:
-            return "multi thread write";
-        case FNLog::CHANNEL_RING:
-            return "ring buffer write";
+        case FNLog::CHANNEL_ASYNC:
+            return "async thread write";
         case FNLog::CHANNEL_SYNC:
             return "sync write";
     }
@@ -102,9 +86,7 @@ int main(int argc, char *argv[])
                 {
                     LogInfoStream(0, 1) << "channel:<" << (long long)i << "> "
                         << ChannelDesc(logger.channels_[i].channel_type_) << " <"
-                        << logger.channels_[i].device_size_ << "> test " << 1000000*1000 / (now - last) << " line/sec. cache hit:"
-                        << (double)logger.channels_[i].log_fields_[FNLog::CHANNEL_LOG_ALLOC_CACHE].num_ 
-                                / logger.channels_[i].log_fields_[FNLog::CHANNEL_LOG_ALLOC_CALL].num_ * 100 << "%";
+                        << logger.channels_[i].device_size_ << "> test " << 1000000*1000 / (now - last) << " line/sec. ";
                     last = now;
                     break;
                 }

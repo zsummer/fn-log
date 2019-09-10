@@ -192,20 +192,20 @@ namespace FNLog
     {
         if (end <= begin)
         {
-            return CHANNEL_MULTI;
+            return CHANNEL_ASYNC;
         }
         switch (*begin)
         {
             case 'm': case 'M':
-                return CHANNEL_MULTI;
+                return CHANNEL_ASYNC;
             case 's': case 'S':
                 return CHANNEL_SYNC;
             case 'r': case 'R':
-                return CHANNEL_RING;
+                return CHANNEL_ASYNC;
             case 'a':case 'A':
-                return CHANNEL_MULTI;
+                return CHANNEL_ASYNC;
         }
-        return CHANNEL_MULTI;
+        return CHANNEL_ASYNC;
     }
     
     inline DeviceOutType ParseOutType(const char* begin, const char* end)

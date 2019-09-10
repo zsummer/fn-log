@@ -77,9 +77,7 @@ int main(int argc, char* argv[])
         long long last_writed = logger.channels_[0].log_fields_[FNLog::CHANNEL_LOG_PROCESSED].num_;
         std::this_thread::sleep_for(std::chrono::milliseconds(1000));
         long long now_writed = logger.channels_[0].log_fields_[FNLog::CHANNEL_LOG_PROCESSED].num_;
-        LogInfo() << "now thread:" << thread_id+1 << ": writed:" << now_writed - last_writed << ", cache hit:"
-            << (double)logger.channels_[0].log_fields_[FNLog::CHANNEL_LOG_ALLOC_CACHE].num_
-            / logger.channels_[0].log_fields_[FNLog::CHANNEL_LOG_ALLOC_CALL].num_ * 100.0;
+        LogInfo() << "now thread:" << thread_id+1 << ": writed:" << now_writed - last_writed ;
         
         if (limit_second/3 > thread_id && thread_id+1 < WRITE_THREAD_COUNT)
         {

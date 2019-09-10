@@ -39,9 +39,7 @@ int main(int argc, char *argv[])
                 long long now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
                 if (total_count > 0)
                 {
-                    LogAlarm() << " test " << 10000000*1000ULL / (now - last) << " line/sec. cache hit:"
-                        << (double)logger.channels_[0].log_fields_[FNLog::CHANNEL_LOG_ALLOC_CACHE].num_ 
-                                / logger.channels_[0].log_fields_[FNLog::CHANNEL_LOG_ALLOC_CALL].num_ * 100 << "%";
+                    LogAlarm() << " test " << 10000000*1000ULL / (now - last) << " line/sec.";
                     last = now;
                     break;
                 }
