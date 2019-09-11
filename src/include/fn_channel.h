@@ -334,11 +334,11 @@ namespace FNLog
         {
             int old_idx = ring_buffer.write_idx_;
             int next_idx = (old_idx + 1) % RingBuffer::MAX_LOG_QUEUE_SIZE;
-            if (next_idx == ring_buffer.hold_idx_)
+            if (old_idx == ring_buffer.hold_idx_)
             {
                 break;
             }
-            if (ring_buffer.buffer_[next_idx].data_mark_ != 2)
+            if (ring_buffer.buffer_[old_idx].data_mark_ != 2)
             {
                 break;
             }
