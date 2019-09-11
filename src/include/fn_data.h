@@ -86,11 +86,6 @@ namespace FNLog
         LOG_PREFIX_ALL = 0xff
     };
 
-    union AnyVal
-    {
-        long long num_;
-        double float_;
-    };
 
     enum LogType
     {
@@ -98,12 +93,19 @@ namespace FNLog
         LOG_TYPE_MAX,
     };
 
+    enum LogState
+    {
+        MARK_INVALID,
+        MARK_HOLD,
+        MARK_READY
+    };
+
     struct LogData
     {
     public:
         static const int MAX_LOG_SIZE = FN_LOG_MAX_LOG_SIZE;
     public:
-        unsigned    data_mark_; //0 invalid, 1 hold, 2 ready
+        std::atomic_int    data_mark_; //0 invalid, 1 hold, 2 ready
         int    channel_id_;
         int    priority_;
         int    category_;
@@ -162,8 +164,8 @@ namespace FNLog
         static_assert(MAX_PATH_LEN + MAX_NAME_LEN + MAX_ROLLBACK_LEN < MAX_PATH_SYS_LEN, "");
         static_assert(LogData::MAX_LOG_SIZE > MAX_PATH_SYS_LEN*2, "unsafe size"); // promise format length: date, time, source file path, function length.
         static_assert(MAX_ROLLBACK_PATHS < 10, "");
-        using ConfigFields = std::array<AnyVal, DEVICE_CFG_MAX_ID>;
-        using LogFields = std::array<AnyVal, DEVICE_LOG_MAX_ID>;
+        using ConfigFields = std::array<std::atomic_llong, DEVICE_CFG_MAX_ID>;
+        using LogFields = std::array<std::atomic_llong, DEVICE_LOG_MAX_ID>;
 
     public:
         int device_id_;
@@ -213,18 +215,23 @@ namespace FNLog
         static const int MAX_LOG_QUEUE_CACHE_SIZE = FN_LOG_MAX_LOG_QUEUE_CACHE_SIZE;
         static_assert(FN_LOG_MAX_LOG_QUEUE_CACHE_SIZE >= FN_LOG_MAX_LOG_QUEUE_SIZE, "cache must big than use");
     public:
-        volatile int write_count_;
+        char chunk_1_[CHUNK_SIZE];
+        std::atomic_int write_idx_;
+        char chunk_2_[CHUNK_SIZE];
+        std::atomic_int hold_idx_;
         char chunk_3_[CHUNK_SIZE];
-        volatile int read_count_;
+        std::atomic_int read_idx_;
         char chunk_4_[CHUNK_SIZE];
+        std::atomic_int proc_idx_;
+        char chunk_5_[CHUNK_SIZE];
         LogData buffer_[MAX_LOG_QUEUE_CACHE_SIZE];
     };
 
     struct Channel
     {
     public:
-        using ConfigFields = std::array<AnyVal, CHANNEL_CFG_MAX_ID>;
-        using LogFields = std::array<AnyVal, CHANNEL_LOG_MAX_ID>;
+        using ConfigFields = std::array<std::atomic_llong, CHANNEL_CFG_MAX_ID>;
+        using LogFields = std::array<std::atomic_llong, CHANNEL_LOG_MAX_ID>;
         static const int MAX_DEVICE_SIZE = 20;
 
 
@@ -233,7 +240,6 @@ namespace FNLog
 
         int  channel_id_;
         int  channel_type_;
-        bool single_thread_write_;
         unsigned int channel_state_;
         time_t yaml_mtime_;
         time_t last_hot_check_;
@@ -290,7 +296,6 @@ namespace FNLog
         int channel_size_;
         Channels channels_;
         RingBuffers ring_buffers_;
-        WriteLocks write_locks_;
         AsyncThreads async_threads;
         ScreenLock screen_lock_;
         FileHandles file_handles_;

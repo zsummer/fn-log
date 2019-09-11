@@ -297,20 +297,20 @@ namespace FNLog
             write_buffer("(", 1);
             *this << container.size();
             write_buffer(")[", 2);
-            int inputCount = 0;
+            int input_count = 0;
             for (auto iter = container.begin(); iter != container.end(); iter++)
             {
-                if (inputCount >= MAX_CONTAINER_DEPTH)
+                if (input_count >= MAX_CONTAINER_DEPTH)
                 {
                     *this << "..., ";
                     break;
                 }
-                if(inputCount > 0)
+                if(input_count > 0)
                 {
                     *this << ", ";
                 }
                 *this << *iter;
-                inputCount++;
+                input_count++;
             }
             return *this << "]";
         }

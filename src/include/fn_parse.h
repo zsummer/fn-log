@@ -228,7 +228,7 @@ namespace FNLog
         return DEVICE_OUT_NULL;
     }
 
-    inline void ParseAddres(const char* begin, const char* end, long long& ip, long long& port)
+    inline void ParseAddres(const char* begin, const char* end, std::atomic_llong& ip, std::atomic_llong& port)
     {
         ip = 0;
         port = 0;
@@ -467,22 +467,22 @@ namespace FNLog
                 device.out_type_ = ParseOutType(ls.line_.val_begin_, ls.line_.val_end_);
                 break;
             case RK_DISABLE:
-                device.config_fields_[DEVICE_CFG_ABLE].num_ = !ParseBool(ls.line_.val_begin_, ls.line_.val_end_); //"disable"
+                device.config_fields_[DEVICE_CFG_ABLE] = !ParseBool(ls.line_.val_begin_, ls.line_.val_end_); //"disable"
                 break;
             case RK_PRIORITY:
-                device.config_fields_[DEVICE_CFG_PRIORITY].num_ = ParsePriority(ls.line_.val_begin_, ls.line_.val_end_);
+                device.config_fields_[DEVICE_CFG_PRIORITY] = ParsePriority(ls.line_.val_begin_, ls.line_.val_end_);
                 break;
             case RK_CATEGORY:
-                device.config_fields_[DEVICE_CFG_CATEGORY].num_ = atoll(ls.line_.val_begin_);
+                device.config_fields_[DEVICE_CFG_CATEGORY] = atoll(ls.line_.val_begin_);
                 break;
             case RK_CATEGORY_EXTEND:
-                device.config_fields_[DEVICE_CFG_CATEGORY_EXTEND].num_ = atoll(ls.line_.val_begin_);
+                device.config_fields_[DEVICE_CFG_CATEGORY_EXTEND] = atoll(ls.line_.val_begin_);
                 break;
             case RK_LIMIT_SIZE:
-                device.config_fields_[DEVICE_CFG_FILE_LIMIT_SIZE].num_ = atoll(ls.line_.val_begin_) * 1000*1000;
+                device.config_fields_[DEVICE_CFG_FILE_LIMIT_SIZE] = atoll(ls.line_.val_begin_) * 1000*1000;
                 break;
             case RK_ROLLBACK:
-                device.config_fields_[DEVICE_CFG_FILE_ROLLBACK].num_ = atoll(ls.line_.val_begin_);
+                device.config_fields_[DEVICE_CFG_FILE_ROLLBACK] = atoll(ls.line_.val_begin_);
                 break;
             case RK_PATH:
                 if (ls.line_.val_end_ - ls.line_.val_begin_ < Device::MAX_PATH_LEN - 1
@@ -501,7 +501,7 @@ namespace FNLog
                 }
                 break;
             case RK_UDP_ADDR:
-                ParseAddres(ls.line_.val_begin_, ls.line_.val_end_, device.config_fields_[DEVICE_CFG_UDP_IP].num_, device.config_fields_[DEVICE_CFG_UDP_PORT].num_);
+                ParseAddres(ls.line_.val_begin_, ls.line_.val_end_, device.config_fields_[DEVICE_CFG_UDP_IP], device.config_fields_[DEVICE_CFG_UDP_PORT]);
                 break;
             default:
                 return LINE_ERROR;
@@ -539,13 +539,13 @@ namespace FNLog
                 channel.channel_type_ = ParseChannelType(ls.line_.val_begin_, ls.line_.val_end_);
                 break;
             case RK_PRIORITY:
-                channel.config_fields_[CHANNEL_CFG_PRIORITY].num_ = ParsePriority(ls.line_.val_begin_, ls.line_.val_end_);
+                channel.config_fields_[CHANNEL_CFG_PRIORITY] = ParsePriority(ls.line_.val_begin_, ls.line_.val_end_);
                 break;
             case RK_CATEGORY:
-                channel.config_fields_[CHANNEL_CFG_CATEGORY].num_ = atoi(ls.line_.val_begin_);
+                channel.config_fields_[CHANNEL_CFG_CATEGORY] = atoi(ls.line_.val_begin_);
                 break;            
             case RK_CATEGORY_EXTEND:
-                channel.config_fields_[CHANNEL_CFG_CATEGORY_EXTEND].num_ = atoi(ls.line_.val_begin_);
+                channel.config_fields_[CHANNEL_CFG_CATEGORY_EXTEND] = atoi(ls.line_.val_begin_);
                 break;
             case RK_DEVICE:
                 if (ls.line_.line_type_ != LINE_ARRAY)

@@ -80,7 +80,7 @@ namespace FNLog
             device = &channel.devices_[device_id];
             device->device_id_ = device_id;
             device->out_type_ = out_type;
-            device->config_fields_[DEVICE_CFG_ABLE].num_ = 1;
+            device->config_fields_[DEVICE_CFG_ABLE] = 1;
             return device;
         }
         return device;
@@ -206,13 +206,14 @@ namespace FNLog
         {
             Channel& channel = logger.channels_[channel_id];
             RingBuffer& ring_buffer = logger.ring_buffers_[channel_id];
-            while (ring_buffer.write_count_ != ring_buffer.read_count_)
+
+            while (ring_buffer.read_idx_ != ring_buffer.write_idx_)
             {
-                ring_buffer.buffer_[ring_buffer.read_count_].data_mark_ = 0;
-                ring_buffer.read_count_ = (ring_buffer.read_count_ + 1) % RingBuffer::MAX_LOG_QUEUE_SIZE;
+                ring_buffer.buffer_[ring_buffer.read_idx_].data_mark_ = 0;
+                ring_buffer.read_idx_ = (ring_buffer.read_idx_ + 1) % RingBuffer::MAX_LOG_QUEUE_SIZE;
             }
-            ring_buffer.read_count_ = 0;
-            ring_buffer.write_count_ = 0;
+            ring_buffer.read_idx_ = 0;
+            ring_buffer.write_idx_ = 0;
         }
         return 0;
     }
@@ -231,6 +232,7 @@ namespace FNLog
             return -2;
         }
         Logger::StateLockGuard state_guard(logger.state_lock);
+        
         if (logger.logger_state_ != LOGGER_STATE_RUNNING)
         {
             printf("try stop logger error. state:<%u> not running:<%u>.\n", logger.logger_state_, LOGGER_STATE_RUNNING);
@@ -317,7 +319,7 @@ namespace FNLog
         {
             return 0;
         }
-        return channel.log_fields_[field].num_;
+        return channel.log_fields_[field];
     }
 
     inline void UnsafeChangeChannelConfig(Logger& logger, int channel_id, ChannelConfigEnum field, long long val)
@@ -331,7 +333,7 @@ namespace FNLog
         {
             return;
         }
-        channel.config_fields_[field].num_ = val;
+        channel.config_fields_[field] = val;
     }
 
     inline long long GetDeviceLog(Logger& logger, int channel_id, int device_id, DeviceLogEnum field)
@@ -349,7 +351,7 @@ namespace FNLog
         {
             return 0;
         }
-        return channel.devices_[device_id].log_fields_[field].num_;
+        return channel.devices_[device_id].log_fields_[field];
     }
 
     inline void UnsafeChangeDeviceConfig(Logger& logger, int channel_id, int device_id, DeviceConfigEnum field, long long val)
@@ -367,7 +369,7 @@ namespace FNLog
         {
             return;
         }
-        channel.devices_[device_id].config_fields_[field].num_ = val;
+        channel.devices_[device_id].config_fields_[field] = val;
     }
 
     inline long long GetDeviceConfig(Logger& logger, int channel_id, int device_id, DeviceConfigEnum field)
@@ -385,7 +387,7 @@ namespace FNLog
         {
             return 0;
         }
-        return channel.devices_[device_id].config_fields_[field].num_;
+        return channel.devices_[device_id].config_fields_[field];
     }
     inline void InitLogger(Logger& logger)
     {

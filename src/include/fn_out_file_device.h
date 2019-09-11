@@ -159,22 +159,22 @@ namespace FNLog
     inline void OpenFileDevice(Logger & logger, Channel & channel, Device & device, FileHandler & writer, LogData & log)
     {
         bool sameday = true;
-        if (log.timestamp_ < device.log_fields_[DEVICE_LOG_CUR_FILE_CREATE_DAY].num_
-            || log.timestamp_ >= device.log_fields_[DEVICE_LOG_CUR_FILE_CREATE_DAY].num_ + 24 * 3600)
+        if (log.timestamp_ < device.log_fields_[DEVICE_LOG_CUR_FILE_CREATE_DAY]
+            || log.timestamp_ >= device.log_fields_[DEVICE_LOG_CUR_FILE_CREATE_DAY] + 24 * 3600)
         {
             sameday = false;
         }
 
         bool file_over = false;
-        if (device.config_fields_[DEVICE_CFG_FILE_LIMIT_SIZE].num_ > 0 && device.config_fields_[DEVICE_CFG_FILE_ROLLBACK].num_ > 0
-            && device.log_fields_[DEVICE_LOG_CUR_FILE_SIZE].num_ + log.content_len_ > device.config_fields_[DEVICE_CFG_FILE_LIMIT_SIZE].num_)
+        if (device.config_fields_[DEVICE_CFG_FILE_LIMIT_SIZE] > 0 && device.config_fields_[DEVICE_CFG_FILE_ROLLBACK] > 0
+            && device.log_fields_[DEVICE_LOG_CUR_FILE_SIZE] + log.content_len_ > device.config_fields_[DEVICE_CFG_FILE_LIMIT_SIZE])
         {
             file_over = true;
         }
 
         if (!sameday || file_over)
         {
-            device.log_fields_[DEVICE_LOG_CUR_FILE_SIZE].num_ = 0;
+            device.log_fields_[DEVICE_LOG_CUR_FILE_SIZE] = 0;
             if (writer.is_open())
             {
                 writer.close();
@@ -216,14 +216,14 @@ namespace FNLog
         if (path.length() >= Device::MAX_PATH_LEN + Device::MAX_NAME_LEN)
         {
             logger.inner_error_.fetch_add(1);
-            device.log_fields_[DEVICE_LOG_LAST_TRY_CREATE_TIMESTAMP].num_ = log.timestamp_;
+            device.log_fields_[DEVICE_LOG_LAST_TRY_CREATE_TIMESTAMP] = log.timestamp_;
             return;
         }
 
-        if (device.config_fields_[DEVICE_CFG_FILE_ROLLBACK].num_ > 0 || device.config_fields_[DEVICE_CFG_FILE_LIMIT_SIZE].num_ > 0)
+        if (device.config_fields_[DEVICE_CFG_FILE_ROLLBACK] > 0 || device.config_fields_[DEVICE_CFG_FILE_LIMIT_SIZE] > 0)
         {
             //when no rollback but has limit size. need try rollback once.
-            long long limit_roll = device.config_fields_[DEVICE_CFG_FILE_ROLLBACK].num_;
+            long long limit_roll = device.config_fields_[DEVICE_CFG_FILE_ROLLBACK];
             limit_roll = limit_roll > 0 ? limit_roll : 1;
             FileHandler::rollback(path, 1, (int)limit_roll);
         }
@@ -233,14 +233,14 @@ namespace FNLog
         if (!writer.is_open())
         {
             logger.inner_error_.fetch_add(1);
-            device.log_fields_[DEVICE_LOG_LAST_TRY_CREATE_TIMESTAMP].num_ = log.timestamp_;
+            device.log_fields_[DEVICE_LOG_LAST_TRY_CREATE_TIMESTAMP] = log.timestamp_;
             return;
         }
 
-        device.log_fields_[DEVICE_LOG_LAST_TRY_CREATE_TIMESTAMP].num_ = 0;
-        device.log_fields_[DEVICE_LOG_CUR_FILE_CREATE_TIMESTAMP].num_ = log.timestamp_;
-        device.log_fields_[DEVICE_LOG_CUR_FILE_CREATE_DAY].num_ = create_day;
-        device.log_fields_[DEVICE_LOG_CUR_FILE_SIZE].num_ = writed_byte;
+        device.log_fields_[DEVICE_LOG_LAST_TRY_CREATE_TIMESTAMP] = 0;
+        device.log_fields_[DEVICE_LOG_CUR_FILE_CREATE_TIMESTAMP] = log.timestamp_;
+        device.log_fields_[DEVICE_LOG_CUR_FILE_CREATE_DAY] = create_day;
+        device.log_fields_[DEVICE_LOG_CUR_FILE_SIZE] = writed_byte;
     }
 
 
@@ -251,7 +251,7 @@ namespace FNLog
         Device& device = channel.devices_[device_id];
         FileHandler& writer = logger.file_handles_[channel_id + channel_id * device_id];
 
-        if (!writer.is_open() && device.log_fields_[DEVICE_LOG_LAST_TRY_CREATE_TIMESTAMP].num_ + 5 > log.timestamp_)
+        if (!writer.is_open() && device.log_fields_[DEVICE_LOG_LAST_TRY_CREATE_TIMESTAMP] + 5 > log.timestamp_)
         {
             return;
         }
@@ -261,9 +261,9 @@ namespace FNLog
             return;
         }
         writer.write(log.content_, log.content_len_);
-        device.log_fields_[DEVICE_LOG_TOTAL_WRITE_LINE].num_++;
-        device.log_fields_[DEVICE_LOG_TOTAL_WRITE_BYTE].num_ += log.content_len_;
-        device.log_fields_[DEVICE_LOG_CUR_FILE_SIZE].num_ += log.content_len_;
+        device.log_fields_[DEVICE_LOG_TOTAL_WRITE_LINE]++;
+        device.log_fields_[DEVICE_LOG_TOTAL_WRITE_BYTE] += log.content_len_;
+        device.log_fields_[DEVICE_LOG_CUR_FILE_SIZE] += log.content_len_;
     }
 
 

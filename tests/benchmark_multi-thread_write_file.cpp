@@ -65,7 +65,18 @@ int main(int argc, char* argv[])
     {
         return ret;
     }
+    if (true)
+    {
+        char buf[10] = { 0 };
+        std::atomic_short * a = new(buf) std::atomic_short();
+        a->fetch_add(1);
+        memset(buf, 0, 10);
+        a->fetch_add(2);
+        int i = 0;
+    }
 
+    
+    constexpr int a = sizeof(std::atomic<int>);
     FNLog::Logger& logger = FNLog::GetDefaultLogger();
 
     int limit_second = 0;
@@ -74,9 +85,9 @@ int main(int argc, char* argv[])
 
     do
     {
-        long long last_writed = logger.channels_[0].devices_[0].log_fields_[FNLog::DEVICE_LOG_TOTAL_WRITE_LINE].num_;
+        long long last_writed = logger.channels_[0].devices_[0].log_fields_[FNLog::DEVICE_LOG_TOTAL_WRITE_LINE];
         std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-        long long now_writed = logger.channels_[0].devices_[0].log_fields_[FNLog::DEVICE_LOG_TOTAL_WRITE_LINE].num_;
+        long long now_writed = logger.channels_[0].devices_[0].log_fields_[FNLog::DEVICE_LOG_TOTAL_WRITE_LINE];
         LogInfo() << "now thread:" << thread_id+1 << ": writed:" << now_writed - last_writed ;
         if (limit_second/3 > thread_id && thread_id+1 < WRITE_THREAD_COUNT)
         {

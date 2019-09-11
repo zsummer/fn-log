@@ -52,8 +52,8 @@ namespace FNLog
     {
         Logger::ScreenLockGuard l(logger.screen_lock_);
         Device& device = logger.channels_[channel_id].devices_[device_id];
-        device.log_fields_[DEVICE_LOG_TOTAL_WRITE_LINE].num_++;
-        device.log_fields_[DEVICE_LOG_TOTAL_WRITE_BYTE].num_ += log.content_len_;
+        device.log_fields_[DEVICE_LOG_TOTAL_WRITE_LINE]++;
+        device.log_fields_[DEVICE_LOG_TOTAL_WRITE_BYTE] += log.content_len_;
 
         int priority = log.priority_;
         if (log.priority_ < PRIORITY_INFO)
