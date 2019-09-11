@@ -213,7 +213,9 @@ namespace FNLog
                 ring_buffer.read_idx_ = (ring_buffer.read_idx_ + 1) % RingBuffer::MAX_LOG_QUEUE_SIZE;
             }
             ring_buffer.read_idx_ = 0;
+            ring_buffer.proc_idx_ = 0;
             ring_buffer.write_idx_ = 0;
+            ring_buffer.hold_idx_ = 0;
         }
         return 0;
     }

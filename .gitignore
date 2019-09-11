@@ -29,6 +29,10 @@
 # Compiled Dir
 build
 build-*
+.DS_Store
+.vs
+.vscode
+xcodes
 
 # Executables
 *.exe
