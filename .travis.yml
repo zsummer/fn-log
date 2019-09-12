@@ -80,17 +80,6 @@ script:
   - ./benchmark_udp
   - ./benchmark_fast
 
-  - cd ..
-
-  - mkdir shm-build
-  - cd shm-build
-  - cmake -DCMAKE_BUILD_TYPE=Release -DUSE_SHM=True ..
-  - make -j4
-  - cd ..
-  - rm -fr shm-build
-  - ls bin/*
-  - cd bin
-  
   - ipcs -m
   - ipcs -mt
   - ./test_shm
@@ -99,18 +88,8 @@ script:
   - ./test_shm
   - ipcs -m
   - ipcs -mt
-  
-  - ./stress_multi-thread-env_concurrent_reboot >/dev/null 2>&1
-  - ./stress_multi-thread-env_main_reboot
-  - ./benchmark_multi-thread
-  - ./benchmark_multi-thread_nofile
-  - ./benchmark_multi-thread_sync
-  - ./benchmark_multi-thread_sync_nofile
-  - ./benchmark_serialize_integer
-  - ./benchmark_sync_bat_write
-  - ./benchmark_normal
-  - ./benchmark_udp
-  - ./benchmark_fast
+  - ./benchmark_multi-thread_travis_shm
+  - cd ..
 
 
   - find ./ -name "*.gc*"
