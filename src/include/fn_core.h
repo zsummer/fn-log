@@ -422,17 +422,12 @@ namespace FNLog
         else
         {
             void* addr = shmat(idx, nullptr, 0);
-            if (addr <= 0)
+            if (addr == nullptr || addr == (void*)-1)
             {
                 printf("shmat error. key:<%x>, idx:<%d>, errno:<%d>.\n", FN_LOG_SHM_KEY, idx, errno);
                 return;
             }
             shm = (SHMLogger*)addr;
-            if (addr == nullptr || addr == (void*)-1)
-            {
-                printf("shmat error. key:<0x%x>, idx:<%d>, errno:<%d>.\n", FN_LOG_SHM_KEY, idx, errno);
-                return;
-            }
         }
 
         if (shm->shm_size_ != sizeof(SHMLogger) || shm->shm_id_ != idx)
