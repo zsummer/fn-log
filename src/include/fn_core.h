@@ -196,7 +196,6 @@ namespace FNLog
             return -5;
         }
         logger.logger_state_ = LOGGER_STATE_RUNNING;
-        logger.inner_error_ = 0;
         return 0;
     }
 
@@ -393,7 +392,6 @@ namespace FNLog
     }
     inline void InitLogger(Logger& logger)
     {
-        logger.inner_error_ = 0;
         logger.hot_update_ = false;
         logger.logger_state_ = LOGGER_STATE_UNINIT;
         logger.channel_size_ = 0;

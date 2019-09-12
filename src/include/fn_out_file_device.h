@@ -215,7 +215,7 @@ namespace FNLog
 
         if (path.length() >= Device::MAX_PATH_LEN + Device::MAX_NAME_LEN)
         {
-            logger.inner_error_.fetch_add(1);
+            device.log_fields_[DEVICE_LOG_LAST_TRY_CREATE_ERROR] = 1;
             device.log_fields_[DEVICE_LOG_LAST_TRY_CREATE_TIMESTAMP] = log.timestamp_;
             return;
         }
@@ -232,11 +232,12 @@ namespace FNLog
         long writed_byte = writer.open(path.c_str(), "ab", file_stat);
         if (!writer.is_open())
         {
-            logger.inner_error_.fetch_add(1);
+            device.log_fields_[DEVICE_LOG_LAST_TRY_CREATE_ERROR] = 2;
             device.log_fields_[DEVICE_LOG_LAST_TRY_CREATE_TIMESTAMP] = log.timestamp_;
             return;
         }
 
+        device.log_fields_[DEVICE_LOG_LAST_TRY_CREATE_ERROR] = 0;
         device.log_fields_[DEVICE_LOG_LAST_TRY_CREATE_TIMESTAMP] = 0;
         device.log_fields_[DEVICE_LOG_CUR_FILE_CREATE_TIMESTAMP] = log.timestamp_;
         device.log_fields_[DEVICE_LOG_CUR_FILE_CREATE_DAY] = create_day;

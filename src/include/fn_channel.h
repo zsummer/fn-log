@@ -46,7 +46,6 @@
 #include "fn_out_file_device.h"
 #include "fn_out_screen_device.h"
 #include "fn_out_udp_device.h"
-#include "fn_mem.h"
 #include "fn_fmt.h"
 
 namespace FNLog
@@ -56,6 +55,7 @@ namespace FNLog
     {
         Channel& channel = logger.channels_[channel_id];
         Device& device = channel.devices_[device_id];
+        Logger::ReadGuard rg(logger.read_locks_[channel_id]);
         switch (device.out_type_)
         {
         case DEVICE_OUT_FILE:

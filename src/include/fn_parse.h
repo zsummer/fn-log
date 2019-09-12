@@ -190,22 +190,11 @@ namespace FNLog
 
     inline ChannelType ParseChannelType(const char* begin, const char* end)
     {
-        if (end <= begin)
+        if (end <= begin || *begin != 's')
         {
             return CHANNEL_ASYNC;
         }
-        switch (*begin)
-        {
-            case 'm': case 'M':
-                return CHANNEL_ASYNC;
-            case 's': case 'S':
-                return CHANNEL_SYNC;
-            case 'r': case 'R':
-                return CHANNEL_ASYNC;
-            case 'a':case 'A':
-                return CHANNEL_ASYNC;
-        }
-        return CHANNEL_ASYNC;
+        return CHANNEL_SYNC;
     }
     
     inline DeviceOutType ParseOutType(const char* begin, const char* end)

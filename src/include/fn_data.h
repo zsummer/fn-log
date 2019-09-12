@@ -144,8 +144,9 @@ namespace FNLog
         DEVICE_LOG_CUR_FILE_SIZE, 
         DEVICE_LOG_CUR_FILE_CREATE_TIMESTAMP,  
         DEVICE_LOG_CUR_FILE_CREATE_DAY, 
-        DEVICE_LOG_LAST_TRY_CREATE_TIMESTAMP, 
-        DEVICE_LOG_TOTAL_WRITE_LINE,  
+        DEVICE_LOG_LAST_TRY_CREATE_TIMESTAMP,
+        DEVICE_LOG_LAST_TRY_CREATE_ERROR,
+        DEVICE_LOG_TOTAL_WRITE_LINE,
         DEVICE_LOG_TOTAL_WRITE_BYTE,  
         DEVICE_LOG_MAX_ID
     };
@@ -269,8 +270,8 @@ namespace FNLog
         using Channels = std::array<Channel, MAX_CHANNEL_SIZE>;
         using RingBuffers = std::array<RingBuffer, MAX_CHANNEL_SIZE>;
 
-        using WriteLocks = std::array<std::mutex, MAX_CHANNEL_SIZE>;
-        using WriteLockGuard = std::lock_guard<std::mutex>;
+        using ReadLocks = std::array<std::mutex, MAX_CHANNEL_SIZE>;
+        using ReadGuard = std::lock_guard<std::mutex>;
 
         using AsyncThreads = std::array<std::thread, MAX_CHANNEL_SIZE>;
         using FileHandles = std::array<FileHandler, MAX_CHANNEL_SIZE* Channel::MAX_DEVICE_SIZE>;
@@ -279,6 +280,7 @@ namespace FNLog
     public:
         using StateLock = std::recursive_mutex;
         using StateLockGuard = std::lock_guard<StateLock>;
+
         using ScreenLock = std::mutex;
         using ScreenLockGuard = std::lock_guard<ScreenLock>;
     public:
@@ -288,7 +290,6 @@ namespace FNLog
     public:
         Logger();
         ~Logger();
-        std::atomic_int inner_error_;
         bool hot_update_;
         std::string yaml_path_;
         unsigned int logger_state_;
@@ -296,6 +297,7 @@ namespace FNLog
         int channel_size_;
         Channels channels_;
         RingBuffers ring_buffers_;
+        ReadLocks read_locks_;
         AsyncThreads async_threads;
         ScreenLock screen_lock_;
         FileHandles file_handles_;
