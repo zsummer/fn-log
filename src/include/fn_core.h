@@ -47,8 +47,6 @@
 namespace FNLog
 {
 
-
-
     inline int PushLog(Logger& logger, int channel_id, int hold_idx, bool state_safly_env = false)
     {
         return PushChannel(logger, channel_id, hold_idx);
@@ -58,11 +56,11 @@ namespace FNLog
     inline Channel* NewChannel(Logger& logger, int channel_type)
     {
         Channel * channel = nullptr;
-        if (logger.channel_size_ < Logger::MAX_CHANNEL_SIZE) 
+        if (logger.shm_->channel_size_ < Logger::MAX_CHANNEL_SIZE) 
         {
-            int channel_id = logger.channel_size_;
-            logger.channel_size_++;
-            channel = &logger.channels_[channel_id];
+            int channel_id = logger.shm_->channel_size_;
+            logger.shm_->channel_size_++;
+            channel = &logger.shm_->channels_[channel_id];
             channel->channel_id_ = channel_id;
             channel->channel_type_ = channel_type;
             return channel;
@@ -88,10 +86,10 @@ namespace FNLog
 
     inline int StartChannels(Logger& logger)
     {
-        for (int channel_id = 0; channel_id < logger.channel_size_; channel_id++)
+        for (int channel_id = 0; channel_id < logger.shm_->channel_size_; channel_id++)
         {
             static_assert(LogData::MAX_LOG_SIZE > Device::MAX_PATH_SYS_LEN * 2 + 100, "");
-            Channel& channel = logger.channels_[channel_id];
+            Channel& channel = logger.shm_->channels_[channel_id];
             std::thread& thd = logger.async_threads[channel_id];
             switch (channel.channel_type_)
             {
@@ -134,10 +132,10 @@ namespace FNLog
 
     inline int StopChannels(Logger& logger)
     {
-        for (int channel_id = 0; channel_id < logger.channel_size_; channel_id++)
+        for (int channel_id = 0; channel_id < logger.shm_->channel_size_; channel_id++)
         {
             static_assert(LogData::MAX_LOG_SIZE > Device::MAX_PATH_SYS_LEN * 2 + 100, "");
-            Channel& channel = logger.channels_[channel_id];
+            Channel& channel = logger.shm_->channels_[channel_id];
             std::thread& thd = logger.async_threads[channel_id];
             switch (channel.channel_type_)
             {
@@ -172,9 +170,9 @@ namespace FNLog
             printf("start error. state:<%u> not uninit:<%u>.\n", logger.logger_state_, LOGGER_STATE_UNINIT);
             return -1;
         }
-        if (logger.channel_size_ > Logger::MAX_CHANNEL_SIZE || logger.channel_size_ <= 0)
+        if (logger.shm_->channel_size_ > Logger::MAX_CHANNEL_SIZE || logger.shm_->channel_size_ <= 0)
         {
-            printf("start error. channel size:<%d> invalid.\n", logger.channel_size_);
+            printf("start error. channel size:<%d> invalid.\n", logger.shm_->channel_size_);
             return -2;
         }
         Logger::StateLockGuard state_guard(logger.state_lock);
@@ -183,9 +181,9 @@ namespace FNLog
             printf("start error. state:<%u> not uninit:<%u>.\n", logger.logger_state_, LOGGER_STATE_UNINIT);
             return -3;
         }
-        if (logger.channel_size_ > Logger::MAX_CHANNEL_SIZE || logger.channel_size_ <= 0)
+        if (logger.shm_->channel_size_ > Logger::MAX_CHANNEL_SIZE || logger.shm_->channel_size_ <= 0)
         {
-            printf("start error. channel size:<%d> invalid.\n", logger.channel_size_);
+            printf("start error. channel size:<%d> invalid.\n", logger.shm_->channel_size_);
             return -4;
         }
         logger.logger_state_ = LOGGER_STATE_INITING;
@@ -201,10 +199,9 @@ namespace FNLog
 
     inline int CleanChannels(Logger& logger)
     {
-        for (int channel_id = 0; channel_id < logger.channel_size_; channel_id++)
+        for (int channel_id = 0; channel_id < logger.shm_->channel_size_; channel_id++)
         {
-            Channel& channel = logger.channels_[channel_id];
-            RingBuffer& ring_buffer = logger.ring_buffers_[channel_id];
+            RingBuffer& ring_buffer = logger.shm_->ring_buffers_[channel_id];
 
             while (ring_buffer.read_idx_ != ring_buffer.write_idx_)
             {
@@ -222,9 +219,9 @@ namespace FNLog
 
     inline int StopLogger(Logger& logger)
     {
-        if (logger.channel_size_ > Logger::MAX_CHANNEL_SIZE || logger.channel_size_ <= 0)
+        if (logger.shm_->channel_size_ > Logger::MAX_CHANNEL_SIZE || logger.shm_->channel_size_ <= 0)
         {
-            printf("try stop error. channel size:<%d> invalid.\n", logger.channel_size_);
+            printf("try stop error. channel size:<%d> invalid.\n", logger.shm_->channel_size_);
             return -1;
         }
         if (logger.logger_state_ != LOGGER_STATE_RUNNING)
@@ -311,11 +308,11 @@ namespace FNLog
 
     inline long long GetChannelLog(Logger& logger, int channel_id, ChannelLogEnum field)
     {
-        if (logger.channel_size_ <= channel_id || channel_id < 0)
+        if (logger.shm_->channel_size_ <= channel_id || channel_id < 0)
         {
             return 0;
         }
-        Channel& channel = logger.channels_[channel_id];
+        Channel& channel = logger.shm_->channels_[channel_id];
         if (field >= CHANNEL_LOG_MAX_ID)
         {
             return 0;
@@ -325,11 +322,11 @@ namespace FNLog
 
     inline void UnsafeChangeChannelConfig(Logger& logger, int channel_id, ChannelConfigEnum field, long long val)
     {
-        if (logger.channel_size_ <= channel_id || channel_id < 0)
+        if (logger.shm_->channel_size_ <= channel_id || channel_id < 0)
         {
             return;
         }
-        Channel& channel = logger.channels_[channel_id];
+        Channel& channel = logger.shm_->channels_[channel_id];
         if (field >= CHANNEL_CFG_MAX_ID)
         {
             return;
@@ -339,11 +336,11 @@ namespace FNLog
 
     inline long long GetDeviceLog(Logger& logger, int channel_id, int device_id, DeviceLogEnum field)
     {
-        if (logger.channel_size_ <= channel_id || channel_id < 0)
+        if (logger.shm_->channel_size_ <= channel_id || channel_id < 0)
         {
             return 0;
         }
-        Channel& channel = logger.channels_[channel_id];
+        Channel& channel = logger.shm_->channels_[channel_id];
         if (field >= DEVICE_LOG_MAX_ID)
         {
             return 0;
@@ -357,7 +354,7 @@ namespace FNLog
 
     inline void UnsafeChangeDeviceConfig(Logger& logger, int channel_id, int device_id, DeviceConfigEnum field, long long val)
     {
-        if (logger.channel_size_ <= channel_id || channel_id < 0)
+        if (logger.shm_->channel_size_ <= channel_id || channel_id < 0)
         {
             return;
         }
@@ -365,7 +362,7 @@ namespace FNLog
         {
             return;
         }
-        Channel& channel = logger.channels_[channel_id];
+        Channel& channel = logger.shm_->channels_[channel_id];
         if (channel.device_size_ <= device_id || device_id < 0)
         {
             return;
@@ -375,7 +372,7 @@ namespace FNLog
 
     inline long long GetDeviceConfig(Logger& logger, int channel_id, int device_id, DeviceConfigEnum field)
     {
-        if (logger.channel_size_ <= channel_id || channel_id < 0)
+        if (logger.shm_->channel_size_ <= channel_id || channel_id < 0)
         {
             return 0;
         }
@@ -383,20 +380,125 @@ namespace FNLog
         {
             return 0;
         }
-        Channel& channel = logger.channels_[channel_id];
+        Channel& channel = logger.shm_->channels_[channel_id];
         if (channel.device_size_ <= device_id || device_id < 0)
         {
             return 0;
         }
         return channel.devices_[device_id].config_fields_[field];
     }
+
+    inline void LoadSharedMemory(Logger& logger)
+    {
+#if defined(FN_LOG_USE_SHM) && !defined(_WIN32)
+        SHMLogger* shm = nullptr;
+        int idx = shmget(FN_LOG_SHM_KEY, 0, 0);
+        if (idx < 0 && errno != ENOENT)
+        {
+            printf("shmget error. key:<0x%x>, errno:<%d>. can use 'ipcs -m', 'ipcrm -m' to view and clear.\n", 
+                FN_LOG_SHM_KEY, errno);
+            return;
+        }
+
+        if (idx < 0)
+        {
+            idx = shmget(FN_LOG_SHM_KEY, sizeof(SHMLogger), IPC_CREAT | IPC_EXCL | 0600);
+            if (idx < 0)
+            {
+                printf("new shm. shmget error. key:<0x%x>, errno:<%d>.\n", FN_LOG_SHM_KEY, errno);
+                return;
+            }
+            void* addr = shmat(idx, nullptr, 0);
+            if (addr == nullptr || addr == (void*)-1)
+            {
+                printf("new shm. shmat error. key:<0x%x>, idx:<%d>, errno:<%d>.\n", FN_LOG_SHM_KEY, idx, errno);
+                return;
+            }
+            memset(addr, 0, sizeof(SHMLogger));
+            shm = (SHMLogger*)addr;
+            shm->shm_size_ = sizeof(SHMLogger);
+            shm->shm_id_ = idx;
+        }
+        else
+        {
+            void* addr = shmat(idx, nullptr, 0);
+            if (addr <= 0)
+            {
+                printf("shmat error. key:<%x>, idx:<%d>, errno:<%d>.\n", FN_LOG_SHM_KEY, idx, errno);
+                return;
+            }
+            shm = (SHMLogger*)addr;
+            if (addr == nullptr || addr == (void*)-1)
+            {
+                printf("shmat error. key:<0x%x>, idx:<%d>, errno:<%d>.\n", FN_LOG_SHM_KEY, idx, errno);
+                return;
+            }
+        }
+
+        if (shm->shm_size_ != sizeof(SHMLogger) || shm->shm_id_ != idx)
+        {
+            printf("shm version error. key:<0x%x>, old id:<%d>, new id:<%d>, old size:<%d> new size:<%d>. "
+                "can use 'ipcs -m', 'ipcrm -m' to view and clear.\n",
+                FN_LOG_SHM_KEY, shm->shm_id_, idx, shm->shm_size_, (int)sizeof(SHMLogger));
+            return;
+        }
+        for (int i = 0; i < shm->channel_size_; i++)
+        {
+            if (i >= SHMLogger::MAX_CHANNEL_SIZE)
+            {
+                return;
+            }
+
+            if (shm->ring_buffers_[i].write_idx_ >= RingBuffer::MAX_LOG_QUEUE_SIZE
+                || shm->ring_buffers_[i].write_idx_ < 0)
+            {
+                return;
+            }
+            shm->ring_buffers_[i].hold_idx_ = shm->ring_buffers_[i].write_idx_.load();
+
+            if (shm->ring_buffers_[i].read_idx_ >= RingBuffer::MAX_LOG_QUEUE_SIZE
+                || shm->ring_buffers_[i].read_idx_ < 0)
+            {
+                return;
+            }
+            shm->ring_buffers_[i].proc_idx_ = shm->ring_buffers_[i].read_idx_.load();
+            if (shm->ring_buffers_[i].read_idx_ != 0 || shm->ring_buffers_[i].write_idx_ != 0)
+            {
+                printf("attach shm channel:<%d>, write:<%d>, read:<%d> \n",
+                    i, shm->ring_buffers_[i].write_idx_.load(), (int)shm->ring_buffers_[i].read_idx_.load());
+            }
+        }
+        logger.shm_ = shm;
+#else
+        logger.shm_ = new SHMLogger();
+        memset(logger.shm_, 0, sizeof(SHMLogger));
+#endif
+    }
+    inline void UnloadSharedMemory(Logger& logger)
+    {
+#if defined(FN_LOG_USE_SHM) && !defined(_WIN32)
+        if (logger.shm_)
+        {
+            int idx = logger.shm_->shm_id_;
+            shmdt(logger.shm_);
+            shmctl(idx, IPC_RMID, nullptr);
+            logger.shm_ = nullptr;
+        }
+#else
+        if (logger.shm_)
+        {
+            delete logger.shm_;
+            logger.shm_ = nullptr;
+        }
+#endif
+    }
+
     inline void InitLogger(Logger& logger)
     {
         logger.hot_update_ = false;
         logger.logger_state_ = LOGGER_STATE_UNINIT;
-        logger.channel_size_ = 0;
-        memset(&logger.channels_, 0, sizeof(logger.channels_));
-        memset(&logger.ring_buffers_, 0, sizeof(logger.ring_buffers_));
+        LoadSharedMemory(logger);
+
 #if ((defined _WIN32) && !KEEP_INPUT_QUICK_EDIT)
         HANDLE input_handle = ::GetStdHandle(STD_INPUT_HANDLE);
         if (input_handle != INVALID_HANDLE_VALUE)
@@ -428,6 +530,7 @@ namespace FNLog
                 std::this_thread::sleep_for(std::chrono::milliseconds(20));
             }
         } ;
+        UnloadSharedMemory(*this);
     }
 
 }

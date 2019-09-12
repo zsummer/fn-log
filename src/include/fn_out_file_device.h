@@ -248,7 +248,7 @@ namespace FNLog
 
     inline void EnterProcOutFileDevice(Logger& logger, int channel_id, int device_id, LogData& log)
     {
-        Channel& channel = logger.channels_[channel_id];
+        Channel& channel = logger.shm_->channels_[channel_id];
         Device& device = channel.devices_[device_id];
         FileHandler& writer = logger.file_handles_[channel_id + channel_id * device_id];
 

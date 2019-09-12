@@ -275,7 +275,7 @@ namespace FNLog
         const char* current_;
         const char* end_;
         Line line_;
-        Logger::Channels channels_;
+        SHMLogger::Channels channels_;
         int channel_size_;
         bool hot_update_;
     };

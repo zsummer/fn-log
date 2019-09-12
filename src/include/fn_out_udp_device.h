@@ -59,7 +59,7 @@ namespace FNLog
         {
             return;
         }
-        Device& device = logger.channels_[channel_id].devices_[device_id];
+        Device& device = logger.shm_->channels_[channel_id].devices_[device_id];
         long long ip = device.config_fields_[DEVICE_CFG_UDP_IP];
         long long port = device.config_fields_[DEVICE_CFG_UDP_PORT];
         udp.write((unsigned long)ip, (unsigned short)port, log.content_, log.content_len_);

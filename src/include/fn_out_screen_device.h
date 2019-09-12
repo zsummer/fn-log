@@ -51,7 +51,7 @@ namespace FNLog
     inline void EnterProcOutScreenDevice(Logger& logger, int channel_id, int device_id, LogData& log)
     {
         Logger::ScreenLockGuard l(logger.screen_lock_);
-        Device& device = logger.channels_[channel_id].devices_[device_id];
+        Device& device = logger.shm_->channels_[channel_id].devices_[device_id];
         device.log_fields_[DEVICE_LOG_TOTAL_WRITE_LINE]++;
         device.log_fields_[DEVICE_LOG_TOTAL_WRITE_BYTE] += log.content_len_;
 

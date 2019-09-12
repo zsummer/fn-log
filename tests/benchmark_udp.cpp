@@ -86,7 +86,7 @@ int main(int argc, char *argv[])
     FNLog::Logger& logger = FNLog::GetDefaultLogger();
 
     unsigned int total_count = 0;
-    for (int i = 0; i < logger.channel_size_; i++)
+    for (int i = 0; i < logger.shm_->channel_size_; i++)
     {
         total_count = 0;
         do
@@ -102,8 +102,8 @@ int main(int argc, char *argv[])
                 if (total_count > 0)
                 {
                     LogInfoStream(0, 1) << "channel:<" << (long long)i << "> "
-                        << ChannelDesc(logger.channels_[i].channel_type_) << " <"
-                        << logger.channels_[i].device_size_ << "> test " << 100000*1000 / (now - last)  << "line/sec.";
+                        << ChannelDesc(logger.shm_->channels_[i].channel_type_) << " <"
+                        << logger.shm_->channels_[i].device_size_ << "> test " << 100000*1000 / (now - last)  << "line/sec.";
                     last = now;
                 }
             }

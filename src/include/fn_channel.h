@@ -53,7 +53,7 @@ namespace FNLog
     
     inline void EnterProcDevice(Logger& logger, int channel_id, int device_id, LogData & log)
     {
-        Channel& channel = logger.channels_[channel_id];
+        Channel& channel = logger.shm_->channels_[channel_id];
         Device& device = channel.devices_[device_id];
         Logger::ReadGuard rg(logger.read_locks_[channel_id]);
         switch (device.out_type_)
@@ -100,8 +100,8 @@ namespace FNLog
 
     inline void EnterProcChannel(Logger& logger, int channel_id)
     {
-        Channel& channel = logger.channels_[channel_id];
-        RingBuffer& ring_buffer = logger.ring_buffers_[channel_id];
+        Channel& channel = logger.shm_->channels_[channel_id];
+        RingBuffer& ring_buffer = logger.shm_->ring_buffers_[channel_id];
         do
         {
             bool has_write_op = false;
@@ -242,7 +242,7 @@ namespace FNLog
 
     inline int HoldChannel(Logger& logger, int channel_id, int priority, int category)
     {
-        if (channel_id >= logger.channel_size_ || channel_id < 0)
+        if (channel_id >= logger.shm_->channel_size_ || channel_id < 0)
         {
             return -1;
         }
@@ -250,8 +250,8 @@ namespace FNLog
         {
             return -2;
         }
-        Channel& channel = logger.channels_[channel_id];
-        RingBuffer& ring_buffer = logger.ring_buffers_[channel_id];
+        Channel& channel = logger.shm_->channels_[channel_id];
+        RingBuffer& ring_buffer = logger.shm_->ring_buffers_[channel_id];
         if (channel.channel_state_ != CHANNEL_STATE_RUNNING)
         {
             return -3;
@@ -307,7 +307,7 @@ namespace FNLog
 
     inline int PushChannel(Logger& logger, int channel_id, int hold_idx)
     {
-        if (channel_id >= logger.channel_size_ || channel_id < 0)
+        if (channel_id >= logger.shm_->channel_size_ || channel_id < 0)
         {
             return -1;
         }
@@ -315,8 +315,8 @@ namespace FNLog
         {
             return -2;
         }
-        Channel& channel = logger.channels_[channel_id];
-        RingBuffer& ring_buffer = logger.ring_buffers_[channel_id];
+        Channel& channel = logger.shm_->channels_[channel_id];
+        RingBuffer& ring_buffer = logger.shm_->ring_buffers_[channel_id];
         if (channel.channel_state_ != CHANNEL_STATE_RUNNING)
         {
             return -1;

@@ -1,30 +1,40 @@
+
+#define FN_LOG_MAX_LOG_SIZE 1000
+#define FN_LOG_MAX_LOG_QUEUE_SIZE 100000
+
 #include "fn_log.h"
+#include <signal.h>
 
-
-
-
-static const std::string example_config_text =
+static const std::string default_config_text =
 R"----(
- # info and high priority print screen and all write file
+ # default is mult-thread async write channel.  
+ # the first device is write rollback file  
+ # the second device is print to screen.  
  - channel: 0
     sync: null
     -device: 0
         disable: false
         out_type: file
-        priority: trace
-        path: "./log/"
-        file: "$PNAME_$YEAR$MON$DAY"
-        rollback: 4
+        file: "$PNAME"
+        rollback: 1
         limit_size: 100 m #only support M byte
     -device:1
         disable: false
         out_type: screen
         priority: info
- # empty  
  - channel: 1
-
+    sync: sync
+    -device: 0
+        disable: false
+        out_type: file
+        file: "$PNAME_SYNC"
+        rollback: 1
+        limit_size: 100 m #only support M byte
+    -device:1
+        disable: false
+        out_type: screen
+        priority: info
 )----";
-
 
 
 enum State
@@ -58,25 +68,22 @@ void thread_proc(int index)
 const int WRITE_THREAD_COUNT = 6;
 std::thread g_multi_proc[WRITE_THREAD_COUNT];
 
+void Stop(int signo)
+{
+    printf("%s", "oops! stop!!!\n");
+    _exit(0);
+}
+
+
 int main(int argc, char* argv[])
 {
-    int ret = FNLog::FastStartDefaultLogger(example_config_text);
+    signal(SIGINT, Stop);
+    int ret = FNLog::FastStartDefaultLogger(default_config_text);
     if (ret != 0)
     {
         return ret;
     }
-    if (true)
-    {
-        char buf[10] = { 0 };
-        std::atomic_short * a = new(buf) std::atomic_short();
-        a->fetch_add(1);
-        memset(buf, 0, 10);
-        a->fetch_add(2);
-        int i = 0;
-    }
 
-    
-    constexpr int a = sizeof(std::atomic<int>);
     FNLog::Logger& logger = FNLog::GetDefaultLogger();
 
     int limit_second = 0;
@@ -85,10 +92,11 @@ int main(int argc, char* argv[])
 
     do
     {
-        long long last_writed = logger.channels_[0].devices_[0].log_fields_[FNLog::DEVICE_LOG_TOTAL_WRITE_LINE];
+        long long last_writed = logger.shm_->channels_[0].log_fields_[FNLog::CHANNEL_LOG_PROCESSED];
         std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-        long long now_writed = logger.channels_[0].devices_[0].log_fields_[FNLog::DEVICE_LOG_TOTAL_WRITE_LINE];
+        long long now_writed = logger.shm_->channels_[0].log_fields_[FNLog::CHANNEL_LOG_PROCESSED];
         LogInfo() << "now thread:" << thread_id+1 << ": writed:" << now_writed - last_writed ;
+        
         if (limit_second/3 > thread_id && thread_id+1 < WRITE_THREAD_COUNT)
         {
             thread_id++;
@@ -96,7 +104,7 @@ int main(int argc, char* argv[])
             g_multi_proc[thread_id] = std::thread(thread_proc, thread_id);
         }
         limit_second++;
-    } while (limit_second < 12);
+    } while (limit_second < 30);
 
     LogAlarm() << "finish";
     state = END;

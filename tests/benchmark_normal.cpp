@@ -1,12 +1,13 @@
+
+#define FN_LOG_MAX_CHANNEL_SIZE 4
+#define FN_LOG_MAX_LOG_SIZE 1000
+#define FN_LOG_MAX_LOG_QUEUE_SIZE 100000
 #include "fn_log.h"
-
-
-
 
 static const std::string example_config_text =
 R"----(
  # 压测配表  
- # 0通道为多线程文件输出和一个CATEGORY筛选的屏显输出 
+ # 0通道为异步模式写文件, info多线程文件输出和一个CATEGORY筛选的屏显输出 
  - channel: 0
     sync: null
     priority: trace
@@ -19,7 +20,7 @@ R"----(
         category: 0
         category_extend: 0
         path: "./log/"
-        file: "$PNAME_multi"
+        file: "$PNAME"
         rollback: 4
         limit_size: 100 m #only support M byte
     -device:1
@@ -27,20 +28,20 @@ R"----(
         out_type: screen
         category: 1
         category_extend: 1
- # 1通道为多线程不挂任何输出端 
+ # 1 异步空 
  - channel: 1
 
- # 2通道为单线程同步写文件 
+ # 2通道为同步写文件 
  - channel: 2
     sync: sync #only support single thread
     -device: 0
         disable: false
         out_type: file
-        file: "$PNAME_sync"
+        file: "$PNAME_$YEAR"
         rollback: 4
         limit_size: 100 m #only support M byte
 
- # 3通道为单线程无输出端 
+ # 3通道为同步空 
  - channel: 3
     sync: sync #only support single thread
 
@@ -69,7 +70,7 @@ int main(int argc, char *argv[])
     FNLog::Logger& logger = FNLog::GetDefaultLogger();
 
     unsigned int total_count = 0;
-    for (int i = 0; i < logger.channel_size_; i++)
+    for (int i = 0; i < logger.shm_->channel_size_; i++)
     {
         total_count = 0;
         do
@@ -85,8 +86,8 @@ int main(int argc, char *argv[])
                 if (total_count > 0)
                 {
                     LogInfoStream(0, 1) << "channel:<" << (long long)i << "> "
-                        << ChannelDesc(logger.channels_[i].channel_type_) << " <"
-                        << logger.channels_[i].device_size_ << "> test " << 1000000*1000 / (now - last) << " line/sec. ";
+                        << ChannelDesc(logger.shm_->channels_[i].channel_type_) << " <"
+                        << logger.shm_->channels_[i].device_size_ << "> test " << 1000000*1000 / (now - last) << " line/sec. ";
                     last = now;
                     break;
                 }

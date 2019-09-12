@@ -45,22 +45,30 @@
 #include "fn_file.h"
 
 #ifndef FN_LOG_MAX_CHANNEL_SIZE
-#define FN_LOG_MAX_CHANNEL_SIZE 6
+#define FN_LOG_MAX_CHANNEL_SIZE 2
 #endif
 
 #ifndef FN_LOG_MAX_LOG_SIZE
 #define FN_LOG_MAX_LOG_SIZE 1000
 #endif
+
 #ifndef FN_LOG_MAX_LOG_QUEUE_SIZE //the size need big than push log thread count
-#define FN_LOG_MAX_LOG_QUEUE_SIZE 50000
+#define FN_LOG_MAX_LOG_QUEUE_SIZE 10000
 #endif
-#ifndef FN_LOG_MAX_LOG_QUEUE_CACHE_SIZE
-#define FN_LOG_MAX_LOG_QUEUE_CACHE_SIZE FN_LOG_MAX_LOG_QUEUE_SIZE
-#endif
+
 
 #ifndef FN_LOG_HOTUPDATE_INTERVEL
 #define FN_LOG_HOTUPDATE_INTERVEL 5
 #endif
+
+#ifndef FN_LOG_USE_SHM
+#define FN_LOG_USE_SHM true
+#endif 
+
+#ifndef FN_LOG_SHM_KEY
+#define FN_LOG_SHM_KEY 0x9110
+#endif 
+
 
 namespace FNLog
 {
@@ -212,9 +220,7 @@ namespace FNLog
     struct RingBuffer
     {
     public:
-        static const int MAX_LOG_QUEUE_SIZE = FN_LOG_MAX_LOG_QUEUE_SIZE;//the size need big than push log thread count
-        static const int MAX_LOG_QUEUE_CACHE_SIZE = FN_LOG_MAX_LOG_QUEUE_CACHE_SIZE;
-        static_assert(FN_LOG_MAX_LOG_QUEUE_CACHE_SIZE >= FN_LOG_MAX_LOG_QUEUE_SIZE, "cache must big than use");
+        static const int MAX_LOG_QUEUE_SIZE = FN_LOG_MAX_LOG_QUEUE_SIZE;
     public:
         char chunk_1_[CHUNK_SIZE];
         std::atomic_int write_idx_;
@@ -225,7 +231,7 @@ namespace FNLog
         char chunk_4_[CHUNK_SIZE];
         std::atomic_int proc_idx_;
         char chunk_5_[CHUNK_SIZE];
-        LogData buffer_[MAX_LOG_QUEUE_CACHE_SIZE];
+        LogData buffer_[MAX_LOG_QUEUE_SIZE];
     };
 
     struct Channel
@@ -262,13 +268,23 @@ namespace FNLog
         LOGGER_STATE_CLOSING,
     };
     
+    struct SHMLogger
+    {
+        static const int MAX_CHANNEL_SIZE = FN_LOG_MAX_CHANNEL_SIZE;
+        using Channels = std::array<Channel, MAX_CHANNEL_SIZE>;
+        using RingBuffers = std::array<RingBuffer, MAX_CHANNEL_SIZE>;
+        int shm_id_;
+        int shm_size_; 
+        int channel_size_;
+        Channels channels_;
+        RingBuffers ring_buffers_;
+    };
+
     class Logger
     {
     public:
-        static const int MAX_CHANNEL_SIZE = FN_LOG_MAX_CHANNEL_SIZE;
+        static const int MAX_CHANNEL_SIZE = SHMLogger::MAX_CHANNEL_SIZE;
         static const int HOTUPDATE_INTERVEL = FN_LOG_HOTUPDATE_INTERVEL;
-        using Channels = std::array<Channel, MAX_CHANNEL_SIZE>;
-        using RingBuffers = std::array<RingBuffer, MAX_CHANNEL_SIZE>;
 
         using ReadLocks = std::array<std::mutex, MAX_CHANNEL_SIZE>;
         using ReadGuard = std::lock_guard<std::mutex>;
@@ -283,8 +299,6 @@ namespace FNLog
 
         using ScreenLock = std::mutex;
         using ScreenLockGuard = std::lock_guard<ScreenLock>;
-    public:
-        using ProcDevice = std::function<void(Logger&, int, int, LogData& log)>;
 
 
     public:
@@ -294,9 +308,9 @@ namespace FNLog
         std::string yaml_path_;
         unsigned int logger_state_;
         StateLock state_lock;
-        int channel_size_;
-        Channels channels_;
-        RingBuffers ring_buffers_;
+
+        SHMLogger* shm_;
+
         ReadLocks read_locks_;
         AsyncThreads async_threads;
         ScreenLock screen_lock_;

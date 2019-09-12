@@ -22,29 +22,27 @@ int main(int argc, char *argv[])
         return ret;
     }
 
-    FNLog::Logger& logger = FNLog::GetDefaultLogger();
-
     unsigned int total_count = 0;
 
-        total_count = 0;
-        do
-        {
-            LogDebug().write_buffer("rrrrrrrrrrrrrrrrrrrradfads33333333333333rrd",
-                                sizeof("rrrrrrrrrrrrrrrrrrrradfads33333333333333rrd") - 1)
-                << -23 << ": " << 32.2223 << (void*) nullptr;
+    total_count = 0;
+    do
+    {
+        LogDebug().write_buffer("rrrrrrrrrrrrrrrrrrrradfads33333333333333rrd",
+                            sizeof("rrrrrrrrrrrrrrrrrrrradfads33333333333333rrd") - 1)
+            << -23 << ": " << 32.2223 << (void*) nullptr;
             
-            if (total_count %10000000 == 0)
+        if (total_count %10000000 == 0)
+        {
+            static long long last = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+            long long now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+            if (total_count > 0)
             {
-                static long long last = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-                long long now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-                if (total_count > 0)
-                {
-                    LogAlarm() << " test " << 10000000*1000ULL / (now - last) << " line/sec.";
-                    last = now;
-                    break;
-                }
+                LogAlarm() << " test " << 10000000*1000ULL / (now - last) << " line/sec.";
+                last = now;
+                break;
             }
-        } while (++total_count);
+        }
+    } while (++total_count);
 
 
     LogAlarm() << "finish";

@@ -76,7 +76,7 @@ namespace FNLog
 
             try
             {
-                InitLogData(logger, logger.ring_buffers_[channel_id].buffer_[hold_idx], channel_id, priority, category, prefix);
+                InitLogData(logger, logger.shm_->ring_buffers_[channel_id].buffer_[hold_idx], channel_id, priority, category, prefix);
             }
             catch (const std::exception&)
             {
@@ -84,7 +84,7 @@ namespace FNLog
                 return;
             }
             logger_ = &logger;
-            log_data_ = &logger.ring_buffers_[channel_id].buffer_[hold_idx];
+            log_data_ = &logger.shm_->ring_buffers_[channel_id].buffer_[hold_idx];
             hold_idx_ = hold_idx;
             if (prefix == LOG_PREFIX_NULL)
             {
