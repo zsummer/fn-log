@@ -23,7 +23,8 @@ before_script:
   
 script:
   - df -m
-  - ipcs -lm
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then ipcs -M; fi 
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then ipcs -lm; fi 
   - ipcs -m
   - ipcs -mt
   - cmake --version
