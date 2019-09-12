@@ -43,8 +43,10 @@ script:
   - ./stress_multi-thread-env_main_reboot
   - ./stress_multi-thread-env_concurrent_reboot 50000 >/dev/null 2>&1
   - cd ..
+
   - find ./ -name "*.gc*"
   - if [[ "$TRAVIS_OS_NAME" == "linux" && "$TRAVIS_COMPILER" == "gcc" ]]; then coveralls; else echo "$TRAVIS_OS_NAME $TRAVIS_COMPILER"; fi 
+
   - ls -la
 
   - sh merge_header.sh
@@ -73,6 +75,31 @@ script:
   - ./benchmark_normal
   - ./benchmark_udp
   - ./benchmark_fast
+
+  - cd ..
+
+  - mkdir shm-build
+  - cd shm-build
+  - cmake -DCMAKE_BUILD_TYPE=Release -DUSE_SHM=True ..
+  - make -j4
+  - cd ..
+  - rm -fr shm-build
+  - ls bin/*
+  - cd bin
+  
+  - ./stress_multi-thread-env_concurrent_reboot >/dev/null 2>&1
+  - ./stress_multi-thread-env_main_reboot
+  - ./benchmark_multi-thread
+  - ./benchmark_multi-thread_nofile
+  - ./benchmark_multi-thread_sync
+  - ./benchmark_multi-thread_sync_nofile
+  - ./benchmark_serialize_integer
+  - ./benchmark_sync_bat_write
+  - ./benchmark_normal
+  - ./benchmark_udp
+  - ./benchmark_fast
+
+
   - find ./ -name "*.gc*"
   - cd ..
 

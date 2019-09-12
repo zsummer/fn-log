@@ -1,12 +1,10 @@
+#define FN_LOG_MAX_CHANNEL_SIZE 4
 #include "fn_log.h"
-
-
-
 
 static const std::string example_config_text =
 R"----(
  # 压测配表  
- # 0通道为多线程UDP输出和一个CATEGORY筛选的屏显输出 
+ # 异步UDP
  - channel: 0
     sync: null
     priority: trace
@@ -28,26 +26,11 @@ R"----(
         out_type: screen
         category: 1
         category_extend: 1
- # 1通道为多线程不挂任何输出端 
+ # 1通道为异步空设备
  - channel: 1
 
- # 2通道为单线程异步写UDP(回环队列) 
+ # 2通道为同步UDP
  - channel: 2
-    sync: ring #only support single thread
-    -device: 0
-        disable: false
-        out_type: udp
-        udp_addr: 127.0.0.1_9909
-        file: "$PNAME_$YEAR_ring"
-        rollback: 4
-        limit_size: 100 m #only support M byte
-
- # 3通道为单线程异步无输出端(回环队列) 
- - channel: 3
-    sync: ring #only support single thread
-
- # 4通道为单线程同步写UDP 
- - channel: 4
     sync: sync #only support single thread
     -device: 0
         disable: false
@@ -57,8 +40,8 @@ R"----(
         rollback: 4
         limit_size: 100 m #only support M byte
 
- # 5通道为单线程无输出端 
- - channel: 5
+ # 3通道为同步空设备
+ - channel: 3
     sync: sync #only support single thread
 
 )----";

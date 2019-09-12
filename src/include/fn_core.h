@@ -390,7 +390,7 @@ namespace FNLog
 
     inline void LoadSharedMemory(Logger& logger)
     {
-#if defined(FN_LOG_USE_SHM) && !defined(_WIN32)
+#if FN_LOG_USE_SHM && !defined(_WIN32)
         SHMLogger* shm = nullptr;
         int idx = shmget(FN_LOG_SHM_KEY, 0, 0);
         if (idx < 0 && errno != ENOENT)
@@ -476,7 +476,7 @@ namespace FNLog
     }
     inline void UnloadSharedMemory(Logger& logger)
     {
-#if defined(FN_LOG_USE_SHM) && !defined(_WIN32)
+#if FN_LOG_USE_SHM && !defined(_WIN32)
         if (logger.shm_)
         {
             int idx = logger.shm_->shm_id_;

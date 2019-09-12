@@ -62,7 +62,7 @@
 #endif
 
 #ifndef FN_LOG_USE_SHM
-//#define FN_LOG_USE_SHM true
+#define FN_LOG_USE_SHM 0
 #endif 
 
 #ifndef FN_LOG_SHM_KEY
