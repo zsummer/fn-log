@@ -14,7 +14,7 @@ int main(int argc, char* argv[])
         return ret;
     }
 
-    LogInfo() << "log init success:" << FNLog::GetChannelLog(FNLog::GetDefaultLogger(), 0, FNLog::CHANNEL_LOG_PUSH);
+    LogAlarm() << "log init success:" << FNLog::GetChannelLog(FNLog::GetDefaultLogger(), 0, FNLog::CHANNEL_LOG_PUSH);
     
     do
     {
@@ -25,7 +25,7 @@ int main(int argc, char* argv[])
         }
         else if (proc_count == 800001)
         {
-            LogInfo() << "now has dump:" << proc_count;
+            LogFatal() << "now has dump:" << proc_count;
             _exit(0);
         }
         else
@@ -34,12 +34,12 @@ int main(int argc, char* argv[])
         }
         if (proc_count > 1600000)
         {
-            LogInfo() << "now finish:" << proc_count;
+            LogAlarm() << "now finish:" << proc_count;
             return 0;
         }
     } while (true);
 
-    LogInfo() << "finish:" << FNLog::GetChannelLog(FNLog::GetDefaultLogger(), 0, FNLog::CHANNEL_LOG_PUSH);
+    LogAlarm() << "finish:" << FNLog::GetChannelLog(FNLog::GetDefaultLogger(), 0, FNLog::CHANNEL_LOG_PUSH);
 
     return 0;
 }
