@@ -23,6 +23,9 @@ before_script:
   
 script:
   - df -m
+  - ipcs -lm
+  - ipcs -m
+  - ipcs -mt
   - cmake --version
   - mkdir build
   - cd build
@@ -89,10 +92,13 @@ script:
   - cd bin
   
   - ipcs -m
+  - ipcs -mt
   - ./test_shm
   - ipcs -m
+  - ipcs -mt
   - ./test_shm
   - ipcs -m
+  - ipcs -mt
   
   - ./stress_multi-thread-env_concurrent_reboot >/dev/null 2>&1
   - ./stress_multi-thread-env_main_reboot
