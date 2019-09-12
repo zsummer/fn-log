@@ -1,6 +1,5 @@
+#define FN_LOG_MAX_CHANNEL_SIZE 4
 #include "fn_log.h"
-
-
 
 
 static const std::string example_config_text =

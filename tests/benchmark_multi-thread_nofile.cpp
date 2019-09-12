@@ -104,7 +104,7 @@ int main(int argc, char* argv[])
             g_multi_proc[thread_id] = std::thread(thread_proc, thread_id);
         }
         limit_second++;
-    } while (limit_second < 30);
+    } while (limit_second < 15);
 
     LogAlarm() << "finish";
     state = END;
