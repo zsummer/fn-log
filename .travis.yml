@@ -22,6 +22,7 @@ before_script:
   - if [[ "$TRAVIS_OS_NAME" == "linux" && "$TRAVIS_COMPILER" == "gcc" ]]; then ulimit -c unlimited -S; fi 
   
 script:
+  - df -m
   - cmake --version
   - mkdir build
   - cd build
