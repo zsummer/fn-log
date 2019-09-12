@@ -87,6 +87,12 @@ script:
   - ls bin/*
   - cd bin
   
+  - ipcs -m
+  - ./test_shm
+  - ipcs -m
+  - ./test_shm
+  - ipcs -m
+  
   - ./stress_multi-thread-env_concurrent_reboot >/dev/null 2>&1
   - ./stress_multi-thread-env_main_reboot
   - ./benchmark_multi-thread

@@ -203,7 +203,7 @@ namespace FNLog
 
     enum ChannelLogEnum
     {
-        CHANNEL_LOG_LOCKED,
+        CHANNEL_LOG_HOLD,
         CHANNEL_LOG_PUSH,
         CHANNEL_LOG_PROCESSED = CHANNEL_LOG_PUSH + 8,
         CHANNEL_LOG_MAX_ID

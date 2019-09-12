@@ -84,6 +84,17 @@ namespace FNLog
         logger.yaml_path_ = path;
         logger.hot_update_ = ls->hot_update_;
         logger.shm_->channel_size_ = ls->channel_size_;
+        for (int i = 0; i < ls->channel_size_; i++)
+        {
+            memcpy(&ls->channels_[i].log_fields_, &logger.shm_->channels_[i].log_fields_,
+                sizeof(ls->channels_[i].log_fields_));
+            for (int j = 0; j < ls->channels_[i].device_size_; j++)
+            {
+                memcpy(&ls->channels_[i].devices_[j].log_fields_, 
+                    &logger.shm_->channels_[i].devices_[j].log_fields_,
+                    sizeof(ls->channels_[i].devices_[j].log_fields_));
+            }
+        }
         memcpy(&logger.shm_->channels_, &ls->channels_, sizeof(logger.shm_->channels_));
 
         if (logger.shm_->channel_size_ > Logger::MAX_CHANNEL_SIZE || logger.shm_->channel_size_ <= 0)

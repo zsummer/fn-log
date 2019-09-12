@@ -170,7 +170,6 @@ namespace FNLog
                 std::this_thread::sleep_for(std::chrono::milliseconds(10));
             }
             
-            std::atomic_thread_fence(std::memory_order_acquire);
         } while (channel.channel_type_ == CHANNEL_ASYNC 
             && (channel.channel_state_ == CHANNEL_STATE_RUNNING || ring_buffer.write_idx_ != ring_buffer.read_idx_));
 
@@ -291,7 +290,7 @@ namespace FNLog
                 }
                 if (ring_buffer.hold_idx_.compare_exchange_strong(old_idx, hold_idx))
                 {
-                    channel.log_fields_[CHANNEL_LOG_LOCKED]++;
+                    channel.log_fields_[CHANNEL_LOG_HOLD]++;
                     ring_buffer.buffer_[old_idx].data_mark_ = MARK_HOLD;
                     return old_idx;
                 }
@@ -342,7 +341,10 @@ namespace FNLog
             {
                 break;
             }
-            ring_buffer.write_idx_.compare_exchange_strong(old_idx, next_idx);
+            if (ring_buffer.write_idx_.compare_exchange_strong(old_idx, next_idx))
+            {
+                channel.log_fields_[CHANNEL_LOG_PUSH]++;
+            }
         } while (channel.channel_state_ == CHANNEL_STATE_RUNNING);
 
         if (channel.channel_type_ == CHANNEL_SYNC && channel.channel_state_ == CHANNEL_STATE_RUNNING)
