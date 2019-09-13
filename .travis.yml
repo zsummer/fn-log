@@ -21,7 +21,9 @@ install:
 before_script:
   - if [[ "$TRAVIS_OS_NAME" == "linux" && "$TRAVIS_COMPILER" == "gcc" ]]; then ulimit -c unlimited -S; fi 
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then sudo sysctl -w kern.sysv.shmmax=419430400; fi 
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then sudo sysctl -w kern.sysv.shmall=419430400; fi 
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo sysctl -w kernel.shmmax=419430400; fi 
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo sysctl -w kernel.shmall=419430400; fi 
 
   - if [[ "$TRAVIS_OS_NAME" == "osx" || "$TRAVIS_OS_NAME" == "linux" ]]; then sysctl -a|grep shm; fi 
 
