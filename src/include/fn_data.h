@@ -45,22 +45,30 @@
 #include "fn_file.h"
 
 #ifndef FN_LOG_MAX_CHANNEL_SIZE
-#define FN_LOG_MAX_CHANNEL_SIZE 6
+#define FN_LOG_MAX_CHANNEL_SIZE 2
 #endif
 
 #ifndef FN_LOG_MAX_LOG_SIZE
 #define FN_LOG_MAX_LOG_SIZE 1000
 #endif
-#ifndef FN_LOG_MAX_LOG_QUEUE_SIZE
-#define FN_LOG_MAX_LOG_QUEUE_SIZE 50000
+
+#ifndef FN_LOG_MAX_LOG_QUEUE_SIZE //the size need big than push log thread count
+#define FN_LOG_MAX_LOG_QUEUE_SIZE 10000
 #endif
-#ifndef FN_LOG_MAX_LOG_QUEUE_CACHE_SIZE
-#define FN_LOG_MAX_LOG_QUEUE_CACHE_SIZE FN_LOG_MAX_LOG_QUEUE_SIZE
-#endif
+
 
 #ifndef FN_LOG_HOTUPDATE_INTERVEL
 #define FN_LOG_HOTUPDATE_INTERVEL 5
 #endif
+
+#ifndef FN_LOG_USE_SHM
+#define FN_LOG_USE_SHM 0
+#endif 
+
+#ifndef FN_LOG_SHM_KEY
+#define FN_LOG_SHM_KEY 0x9110
+#endif 
+
 
 namespace FNLog
 {
@@ -86,11 +94,6 @@ namespace FNLog
         LOG_PREFIX_ALL = 0xff
     };
 
-    union AnyVal
-    {
-        long long num_;
-        double float_;
-    };
 
     enum LogType
     {
@@ -98,11 +101,19 @@ namespace FNLog
         LOG_TYPE_MAX,
     };
 
+    enum LogState
+    {
+        MARK_INVALID,
+        MARK_HOLD,
+        MARK_READY
+    };
+
     struct LogData
     {
     public:
         static const int MAX_LOG_SIZE = FN_LOG_MAX_LOG_SIZE;
     public:
+        std::atomic_int    data_mark_; //0 invalid, 1 hold, 2 ready
         int    channel_id_;
         int    priority_;
         int    category_;
@@ -141,8 +152,9 @@ namespace FNLog
         DEVICE_LOG_CUR_FILE_SIZE, 
         DEVICE_LOG_CUR_FILE_CREATE_TIMESTAMP,  
         DEVICE_LOG_CUR_FILE_CREATE_DAY, 
-        DEVICE_LOG_LAST_TRY_CREATE_TIMESTAMP, 
-        DEVICE_LOG_TOTAL_WRITE_LINE,  
+        DEVICE_LOG_LAST_TRY_CREATE_TIMESTAMP,
+        DEVICE_LOG_LAST_TRY_CREATE_ERROR,
+        DEVICE_LOG_TOTAL_WRITE_LINE,
         DEVICE_LOG_TOTAL_WRITE_BYTE,  
         DEVICE_LOG_MAX_ID
     };
@@ -161,8 +173,8 @@ namespace FNLog
         static_assert(MAX_PATH_LEN + MAX_NAME_LEN + MAX_ROLLBACK_LEN < MAX_PATH_SYS_LEN, "");
         static_assert(LogData::MAX_LOG_SIZE > MAX_PATH_SYS_LEN*2, "unsafe size"); // promise format length: date, time, source file path, function length.
         static_assert(MAX_ROLLBACK_PATHS < 10, "");
-        using ConfigFields = std::array<AnyVal, DEVICE_CFG_MAX_ID>;
-        using LogFields = std::array<AnyVal, DEVICE_LOG_MAX_ID>;
+        using ConfigFields = std::array<std::atomic_llong, DEVICE_CFG_MAX_ID>;
+        using LogFields = std::array<std::atomic_llong, DEVICE_LOG_MAX_ID>;
 
     public:
         int device_id_;
@@ -173,30 +185,10 @@ namespace FNLog
         LogFields log_fields_;
     };
 
-    struct LogQueue
-    {
-    public:
-        using LogDataPtr = LogData *;
-        using SizeType = unsigned int;
-        static const int MAX_LOG_QUEUE_SIZE = FN_LOG_MAX_LOG_QUEUE_SIZE;
-        static const int MAX_LOG_QUEUE_CACHE_SIZE = FN_LOG_MAX_LOG_QUEUE_CACHE_SIZE;
-        static const int MAX_LOG_QUEUE_REAL_SIZE = MAX_LOG_QUEUE_SIZE > MAX_LOG_QUEUE_CACHE_SIZE ? MAX_LOG_QUEUE_SIZE : MAX_LOG_QUEUE_CACHE_SIZE;
-
-    public:
-        char chunk_1_[CHUNK_SIZE];
-        long long log_count_;
-        char chunk_2_[CHUNK_SIZE];
-        volatile SizeType write_count_;
-        char chunk_3_[CHUNK_SIZE];
-        volatile SizeType read_count_;
-        char chunk_4_[CHUNK_SIZE];
-        LogDataPtr log_queue_[MAX_LOG_QUEUE_REAL_SIZE];
-    };
    
     enum ChannelType
     {
-        CHANNEL_MULTI,
-        CHANNEL_RING,
+        CHANNEL_ASYNC,
         CHANNEL_SYNC,
     };
 
@@ -211,13 +203,9 @@ namespace FNLog
 
     enum ChannelLogEnum
     {
-        CHANNEL_LOG_ALLOC_CALL,
-        CHANNEL_LOG_ALLOC_REAL,
-        CHANNEL_LOG_ALLOC_CACHE,
-        CHANNEL_LOG_FREE_CALL,
-        CHANNEL_LOG_FREE_REAL,
-        CHANNEL_LOG_FREE_CACHE,
-        CHANNEL_LOG_PROCESSED,
+        CHANNEL_LOG_HOLD,
+        CHANNEL_LOG_PUSH,
+        CHANNEL_LOG_PROCESSED = CHANNEL_LOG_PUSH + 8,
         CHANNEL_LOG_MAX_ID
     };
 
@@ -229,12 +217,31 @@ namespace FNLog
         CHANNEL_STATE_FINISH,
     };
 
+    struct RingBuffer
+    {
+    public:
+        static const int MAX_LOG_QUEUE_SIZE = FN_LOG_MAX_LOG_QUEUE_SIZE;
+    public:
+        char chunk_1_[CHUNK_SIZE];
+        std::atomic_int write_idx_;
+        char chunk_2_[CHUNK_SIZE];
+        std::atomic_int hold_idx_;
+        char chunk_3_[CHUNK_SIZE];
+        std::atomic_int read_idx_;
+        char chunk_4_[CHUNK_SIZE];
+        std::atomic_int proc_idx_;
+        char chunk_5_[CHUNK_SIZE];
+        LogData buffer_[MAX_LOG_QUEUE_SIZE];
+    };
+
     struct Channel
     {
     public:
-        using ConfigFields = std::array<AnyVal, CHANNEL_CFG_MAX_ID>;
-        using LogFields = std::array<AnyVal, CHANNEL_LOG_MAX_ID>;
+        using ConfigFields = std::array<std::atomic_llong, CHANNEL_CFG_MAX_ID>;
+        using LogFields = std::array<std::atomic_llong, CHANNEL_LOG_MAX_ID>;
         static const int MAX_DEVICE_SIZE = 20;
+
+
     public:
         char chunk_1_[CHUNK_SIZE];
 
@@ -244,12 +251,6 @@ namespace FNLog
         time_t yaml_mtime_;
         time_t last_hot_check_;
 
-        char chunk_2_[CHUNK_SIZE];
-        int write_red_;
-        LogQueue red_black_queue_[2];
-        LogQueue log_pool_;
-        char chunk_3_[CHUNK_SIZE];
-
         int chunk_;
         int device_size_;
         Device devices_[MAX_DEVICE_SIZE];
@@ -257,15 +258,7 @@ namespace FNLog
         LogFields log_fields_;
     };
 
-    struct SyncGroup
-    {
-        char chunk_1_[CHUNK_SIZE];
-        std::thread log_thread_;
-        char chunk_2_[CHUNK_SIZE];
-        std::mutex write_lock_;
-        char chunk_3_[CHUNK_SIZE];
-        std::mutex pool_lock_;
-    };
+
 
     enum LoggerState
     {
@@ -275,40 +268,81 @@ namespace FNLog
         LOGGER_STATE_CLOSING,
     };
     
+    struct SHMLogger
+    {
+        static const int MAX_CHANNEL_SIZE = FN_LOG_MAX_CHANNEL_SIZE;
+        using Channels = std::array<Channel, MAX_CHANNEL_SIZE>;
+        using RingBuffers = std::array<RingBuffer, MAX_CHANNEL_SIZE>;
+        int shm_id_;
+        int shm_size_; 
+        int channel_size_;
+        Channels channels_;
+        RingBuffers ring_buffers_;
+    };
+
+    template<class Mutex>
+    class AutoGuard
+    {
+    public:
+        using mutex_type = Mutex;
+        inline explicit AutoGuard(Mutex& mtx, bool noop = false) : mutex_(mtx), noop_(noop) 
+        {
+            if (!noop_)
+            {
+                mutex_.lock();
+            }
+        }
+
+        inline ~AutoGuard() noexcept
+        { 
+            if (!noop_)
+            {
+                mutex_.unlock();
+            }
+        }
+        AutoGuard(const AutoGuard&) = delete;
+        AutoGuard& operator=(const AutoGuard&) = delete;
+    private:
+        Mutex& mutex_;
+        bool noop_;
+    };
+
     class Logger
     {
     public:
-        static const int MAX_CHANNEL_SIZE = FN_LOG_MAX_CHANNEL_SIZE;
+        static const int MAX_CHANNEL_SIZE = SHMLogger::MAX_CHANNEL_SIZE;
         static const int HOTUPDATE_INTERVEL = FN_LOG_HOTUPDATE_INTERVEL;
-        using Channels = std::array<Channel, MAX_CHANNEL_SIZE>;
-        using SyncGroups = std::array<SyncGroup, MAX_CHANNEL_SIZE>;
-        using Locks = std::array<std::mutex, MAX_CHANNEL_SIZE>;
+
+        using ReadLocks = std::array<std::mutex, MAX_CHANNEL_SIZE>;
+        using ReadGuard = AutoGuard<std::mutex>;
+
+        using AsyncThreads = std::array<std::thread, MAX_CHANNEL_SIZE>;
         using FileHandles = std::array<FileHandler, MAX_CHANNEL_SIZE* Channel::MAX_DEVICE_SIZE>;
         using UDPHandles = std::array<UDPHandler, MAX_CHANNEL_SIZE* Channel::MAX_DEVICE_SIZE>;
-    public:
-        using ProcDevice = std::function<void(Logger&, int, int, LogData& log)>;
-        using AllocLogData = std::function<LogData* ()>;
-        using FreeLogData = std::function<void(LogData*)>;
+
     public:
         using StateLock = std::recursive_mutex;
-        using StateLockGuard = std::lock_guard<StateLock>;
+        using StateLockGuard = AutoGuard<StateLock>;
+
+        using ScreenLock = std::mutex;
+        using ScreenLockGuard = AutoGuard<ScreenLock>;
+
+
     public:
         Logger();
         ~Logger();
-        std::atomic_int inner_error_;
         bool hot_update_;
         std::string yaml_path_;
         unsigned int logger_state_;
         StateLock state_lock;
-        int channel_size_;
-        Channels channels_;
-        SyncGroups syncs_;
-        SyncGroup screen_;
+
+        SHMLogger* shm_;
+
+        ReadLocks read_locks_;
+        AsyncThreads async_threads;
+        ScreenLock screen_lock_;
         FileHandles file_handles_;
         UDPHandles udp_handles_;
-    public:
-        AllocLogData sys_alloc_;
-        FreeLogData sys_free_;
     };
 
 

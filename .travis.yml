@@ -20,6 +20,20 @@ install:
 
 before_script:
   - if [[ "$TRAVIS_OS_NAME" == "linux" && "$TRAVIS_COMPILER" == "gcc" ]]; then ulimit -c unlimited -S; fi 
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then sudo sysctl -w kern.sysv.shmmax=419430400; fi 
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then sudo sysctl -w kern.sysv.shmall=419430400; fi 
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo sysctl -w kernel.shmmax=419430400; fi 
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo sysctl -w kernel.shmall=419430400; fi 
+
+  - if [[ "$TRAVIS_OS_NAME" == "osx" || "$TRAVIS_OS_NAME" == "linux" ]]; then sysctl -a|grep shm; fi 
+
+  - df -m
+  - ipcs -m
+  - ipcs -mt
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then ipcs -M; fi 
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then ipcs -lm; fi 
+  - ulimit -a
+
   
 script:
   - cmake --version
@@ -38,12 +52,15 @@ script:
   - ./test_fast_debug
   - ./test_fast_default
   - ./test_fast_simple
+  - ./test_coverage
   - ./test_channel_normal
   - ./stress_multi-thread-env_main_reboot
   - ./stress_multi-thread-env_concurrent_reboot 50000 >/dev/null 2>&1
   - cd ..
+
   - find ./ -name "*.gc*"
   - if [[ "$TRAVIS_OS_NAME" == "linux" && "$TRAVIS_COMPILER" == "gcc" ]]; then coveralls; else echo "$TRAVIS_OS_NAME $TRAVIS_COMPILER"; fi 
+
   - ls -la
 
   - sh merge_header.sh
@@ -63,13 +80,28 @@ script:
   
   - ./stress_multi-thread-env_concurrent_reboot >/dev/null 2>&1
   - ./stress_multi-thread-env_main_reboot
-  - ./benchmark_multi-thread_dynamic_inc
-  - ./benchmark_multi-thread_write_file
+  - ./benchmark_multi-thread
+  - ./benchmark_multi-thread_nofile
+  - ./benchmark_multi-thread_sync
+  - ./benchmark_multi-thread_sync_nofile
   - ./benchmark_serialize_integer
   - ./benchmark_sync_bat_write
   - ./benchmark_normal
   - ./benchmark_udp
   - ./benchmark_fast
+
+  - ipcs -m
+  - ipcs -mt
+  - ./test_shm
+  - ipcs -m
+  - ipcs -mt
+  - ./test_shm
+  - ipcs -m
+  - ipcs -mt
+  - ./benchmark_multi-thread_travis_shm
+  - cd ..
+
+
   - find ./ -name "*.gc*"
   - cd ..
 

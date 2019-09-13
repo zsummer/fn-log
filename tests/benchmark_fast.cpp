@@ -1,20 +1,17 @@
 
 
 
-#define FN_LOG_MAX_CHANNEL_SIZE 6
+#define FN_LOG_MAX_CHANNEL_SIZE 4
 #define FN_LOG_MAX_LOG_SIZE 1000
 #define FN_LOG_MAX_LOG_QUEUE_SIZE 100000
-#define FN_LOG_MAX_LOG_QUEUE_CACHE_SIZE FN_LOG_MAX_LOG_QUEUE_SIZE
 
 #include "fn_log.h"
-
-
 
 
 static const std::string example_config_text =
 R"----(
  # 压测配表  
- # 0通道为多线程文件输出和一个CATEGORY筛选的屏显输出 
+ # 0通道为异步模式写文件, info多线程文件输出和一个CATEGORY筛选的屏显输出 
  - channel: 0
     sync: null
     priority: trace
@@ -27,7 +24,7 @@ R"----(
         category: 0
         category_extend: 0
         path: "./log/"
-        file: "$PNAME_$YEAR$MON$DAY"
+        file: "$PNAME"
         rollback: 4
         limit_size: 100 m #only support M byte
     -device:1
@@ -35,25 +32,11 @@ R"----(
         out_type: screen
         category: 1
         category_extend: 1
- # 1通道为多线程不挂任何输出端 
+ # 1 异步空 
  - channel: 1
 
- # 2通道为单线程异步写文件(回环队列) 
+ # 2通道为同步写文件 
  - channel: 2
-    sync: ring #only support single thread
-    -device: 0
-        disable: false
-        out_type: file
-        file: "$PNAME_$YEAR_ring"
-        rollback: 4
-        limit_size: 100 m #only support M byte
-
- # 3通道为单线程异步无输出端(回环队列) 
- - channel: 3
-    sync: ring #only support single thread
-
- # 4通道为单线程同步写文件 
- - channel: 4
     sync: sync #only support single thread
     -device: 0
         disable: false
@@ -62,8 +45,8 @@ R"----(
         rollback: 4
         limit_size: 100 m #only support M byte
 
- # 5通道为单线程无输出端 
- - channel: 5
+ # 3通道为同步空 
+ - channel: 3
     sync: sync #only support single thread
 
 )----";
@@ -72,12 +55,10 @@ std::string ChannelDesc(int channel_type)
 {
     switch (channel_type)
     {
-        case FNLog::CHANNEL_MULTI:
-            return "async write";
-        case FNLog::CHANNEL_RING:
-            return "ring write";
-        case FNLog::CHANNEL_SYNC:
-            return "sync write";
+    case FNLog::CHANNEL_ASYNC:
+        return "async thread write";
+    case FNLog::CHANNEL_SYNC:
+        return "sync write";
     }
     return "invalid channel";
 }
@@ -93,7 +74,7 @@ int main(int argc, char *argv[])
     FNLog::Logger& logger = FNLog::GetDefaultLogger();
 
     unsigned int total_count = 0;
-    for (int i = 0; i < logger.channel_size_; i++)
+    for (int i = 0; i < logger.shm_->channel_size_; i++)
     {
         total_count = 0;
         do
@@ -109,10 +90,8 @@ int main(int argc, char *argv[])
                 if (total_count > 0)
                 {
                     LogInfoStream(0, 1) << "channel:<" << (long long)i << "> "
-                        << ChannelDesc(logger.channels_[i].channel_type_) << " has write file:<"
-                        << logger.channels_[i].device_size_ << "> test " << 1000000*1000 / (now - last) << " line/sec. cache hit:"
-                        << (double)logger.channels_[i].log_fields_[FNLog::CHANNEL_LOG_ALLOC_CACHE].num_ 
-                                / logger.channels_[i].log_fields_[FNLog::CHANNEL_LOG_ALLOC_CALL].num_ * 100 << "%";
+                        << ChannelDesc(logger.shm_->channels_[i].channel_type_) << " has write file:<"
+                        << logger.shm_->channels_[i].device_size_ << "> test " << 1000000*1000 / (now - last) << " line/sec. ";
                     last = now;
                     break;
                 }

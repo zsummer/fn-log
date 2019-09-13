@@ -68,20 +68,24 @@ namespace FNLog
         {
             logger_ = nullptr;
             log_data_ = nullptr;
-            if (CanPushLog(logger, channel_id, priority, category) != 0)
+            int hold_idx = HoldChannel(logger, channel_id, priority, category);
+            if (hold_idx < 0)
             {
                 return;
             }
-            logger_ = &logger;
+
             try
             {
-                log_data_ = AllocLogData(logger, channel_id, priority, category, prefix);
+                InitLogData(logger, logger.shm_->ring_buffers_[channel_id].buffer_[hold_idx], channel_id, priority, category, prefix);
             }
             catch (const std::exception&)
             {
                 printf("%s", "alloc log error. no more memory.");
                 return;
             }
+            logger_ = &logger;
+            log_data_ = &logger.shm_->ring_buffers_[channel_id].buffer_[hold_idx];
+            hold_idx_ = hold_idx;
             if (prefix == LOG_PREFIX_NULL)
             {
                 return;
@@ -122,7 +126,8 @@ namespace FNLog
         {
             if (log_data_) 
             {
-                PushLog(*logger_, log_data_);
+                PushLog(*logger_, log_data_->channel_id_, hold_idx_);
+                hold_idx_ = -1;
                 log_data_ = nullptr;
                 logger_ = nullptr;
             }
@@ -292,20 +297,20 @@ namespace FNLog
             write_buffer("(", 1);
             *this << container.size();
             write_buffer(")[", 2);
-            int inputCount = 0;
+            int input_count = 0;
             for (auto iter = container.begin(); iter != container.end(); iter++)
             {
-                if (inputCount >= MAX_CONTAINER_DEPTH)
+                if (input_count >= MAX_CONTAINER_DEPTH)
                 {
                     *this << "..., ";
                     break;
                 }
-                if(inputCount > 0)
+                if(input_count > 0)
                 {
                     *this << ", ";
                 }
                 *this << *iter;
-                inputCount++;
+                input_count++;
             }
             return *this << "]";
         }
@@ -332,6 +337,7 @@ namespace FNLog
     public:
         LogData * log_data_ = nullptr;
         Logger* logger_ = nullptr;
+        int hold_idx_ = -1;
     };
 }
 

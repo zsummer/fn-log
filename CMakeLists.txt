@@ -101,6 +101,10 @@ else()
     LINK_LIBRARIES(pthread m c)
 endif()
 
+if(USE_SHM)
+    ADD_DEFINITIONS(-DFN_LOG_USE_SHM=1)
+endif()
+
 #输出
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin)
 
@@ -119,7 +123,7 @@ FOREACH (FILE_NAME ${TEST_CPP})
         ) 
     ENDIF()
     MESSAGE("TEST " ${TEST_NAME} )
-endforeach()
+ENDFOREACH()
 
 
 

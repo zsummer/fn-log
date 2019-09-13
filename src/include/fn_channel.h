@@ -46,7 +46,6 @@
 #include "fn_out_file_device.h"
 #include "fn_out_screen_device.h"
 #include "fn_out_udp_device.h"
-#include "fn_mem.h"
 #include "fn_fmt.h"
 
 namespace FNLog
@@ -54,8 +53,10 @@ namespace FNLog
     
     inline void EnterProcDevice(Logger& logger, int channel_id, int device_id, LogData & log)
     {
-        Channel& channel = logger.channels_[channel_id];
+        Channel& channel = logger.shm_->channels_[channel_id];
         Device& device = channel.devices_[device_id];
+        //async promise only single thread proc. needn't lock.
+        Logger::ReadGuard rg(logger.read_locks_[channel_id], channel.channel_type_ == CHANNEL_ASYNC);
         switch (device.out_type_)
         {
         case DEVICE_OUT_FILE:
@@ -77,18 +78,18 @@ namespace FNLog
         for (int device_id = 0; device_id < channel.device_size_; device_id++)
         {
             Device& device = channel.devices_[device_id];
-            if (!device.config_fields_[DEVICE_CFG_ABLE].num_)
+            if (!device.config_fields_[DEVICE_CFG_ABLE])
             {
                 continue;
             }
-            if (log.priority_ < device.config_fields_[DEVICE_CFG_PRIORITY].num_)
+            if (log.priority_ < device.config_fields_[DEVICE_CFG_PRIORITY])
             {
                 continue;
             }
-            if (device.config_fields_[DEVICE_CFG_CATEGORY].num_ > 0)
+            if (device.config_fields_[DEVICE_CFG_CATEGORY] > 0)
             {
-                if (log.category_ < device.config_fields_[DEVICE_CFG_CATEGORY].num_
-                    || log.category_ > device.config_fields_[DEVICE_CFG_CATEGORY].num_ + device.config_fields_[DEVICE_CFG_CATEGORY_EXTEND].num_)
+                if (log.category_ < device.config_fields_[DEVICE_CFG_CATEGORY]
+                    || log.category_ > device.config_fields_[DEVICE_CFG_CATEGORY] + device.config_fields_[DEVICE_CFG_CATEGORY_EXTEND])
                 {
                     continue;
                 }
@@ -97,43 +98,64 @@ namespace FNLog
         }
     }
     
-    inline bool EnterProcAsyncChannel(Logger & logger, int channel_id)
-    {
-        Channel& channel = logger.channels_[channel_id];
-        std::mutex& write_lock = logger.syncs_[channel_id].write_lock_;
 
+    inline void EnterProcChannel(Logger& logger, int channel_id)
+    {
+        Channel& channel = logger.shm_->channels_[channel_id];
+        RingBuffer& ring_buffer = logger.shm_->ring_buffers_[channel_id];
         do
         {
-            if (channel.red_black_queue_[channel.write_red_].log_count_)
+            bool has_write_op = false;
+            do
             {
-                int revert_color = (channel.write_red_ + 1) % 2;
-
-                auto & local_que = channel.red_black_queue_[channel.write_red_];
-
-                write_lock.lock();
-                channel.write_red_ = revert_color;
-                write_lock.unlock();
-
-
-                //consume all log from local queue
-                for (int cur_log_id = 0; cur_log_id < local_que.log_count_; cur_log_id++)
+                int old_idx = ring_buffer.proc_idx_;
+                int next_idx = (ring_buffer.proc_idx_ + 1) % RingBuffer::MAX_LOG_QUEUE_SIZE;
+                if (old_idx == ring_buffer.write_idx_)
                 {
-                    auto& cur_log = local_que.log_queue_[cur_log_id];
-                    LogData& log = *cur_log;
-                    DispatchLog(logger, channel, log);
-                    FreeLogData(logger, channel_id, cur_log);
-                    channel.log_fields_[CHANNEL_LOG_PROCESSED].num_++;
+                    break;
                 }
-                local_que.log_count_ = 0;
-            }
+                if (!ring_buffer.proc_idx_.compare_exchange_strong(old_idx, next_idx))
+                {
+                    break;
+                }
+                auto& cur_log = ring_buffer.buffer_[old_idx];
+                DispatchLog(logger, channel, cur_log);
+                cur_log.data_mark_ = 0;
+                channel.log_fields_[CHANNEL_LOG_PROCESSED]++;
+                has_write_op = true;
+
+
+                do
+                {
+                    old_idx = ring_buffer.read_idx_;
+                    next_idx = (ring_buffer.read_idx_ + 1) % RingBuffer::MAX_LOG_QUEUE_SIZE;
+                    if (old_idx == ring_buffer.proc_idx_)
+                    {
+                        break;
+                    }
+                    if (ring_buffer.buffer_[old_idx].data_mark_ != MARK_INVALID)
+                    {
+                        break;
+                    }
+                    ring_buffer.read_idx_.compare_exchange_strong(old_idx, next_idx);
+                } while (true);
+
+            } while (true);
+
 
 
             if (channel.channel_state_ == CHANNEL_STATE_NULL)
             {
                 channel.channel_state_ = CHANNEL_STATE_RUNNING;
             }
+#ifdef _WIN32
+            if (channel.channel_type_ == CHANNEL_SYNC)
+            {
+                has_write_op = false;
+            }
+#endif // _WIN32
 
-            if (!channel.red_black_queue_[channel.write_red_].log_count_)
+            if (has_write_op)
             {
                 for (int i = 0; i < channel.device_size_; i++)
                 {
@@ -142,178 +164,195 @@ namespace FNLog
                         logger.file_handles_[channel_id + channel_id * i].flush();
                     }
                 }
-                HotUpdateLogger(logger, channel.channel_id_);
+            }
+            HotUpdateLogger(logger, channel.channel_id_);
+            if (channel.channel_type_ == CHANNEL_ASYNC)
+            {
                 std::this_thread::sleep_for(std::chrono::milliseconds(10));
-            }
-        } while (channel.channel_state_ == CHANNEL_STATE_RUNNING || channel.red_black_queue_[channel.write_red_].log_count_);
-        return true;
-    }
-    
-    
-    inline bool EnterProcSyncChannel(Logger & logger, int channel_id)
-    {
-        Channel& channel = logger.channels_[channel_id];
-        auto & local_que = channel.red_black_queue_[channel.write_red_];
-        
-        if (local_que.log_count_ > 0)
-        {
-            //consume all log from local queue
-            for (int cur_log_id = 0; cur_log_id < local_que.log_count_; cur_log_id++)
-            {
-                auto& cur_log = local_que.log_queue_[cur_log_id];
-                LogData& log = *cur_log;
-                DispatchLog(logger, channel, log);
-                FreeLogData(logger, channel_id, cur_log);
-                channel.log_fields_[CHANNEL_LOG_PROCESSED].num_++;
-            }
-            local_que.log_count_ = 0;
-        }
-        for (int i = 0; i < channel.device_size_; i++)
-        {
-            if (channel.devices_[i].out_type_ == DEVICE_OUT_FILE)
-            {
-                logger.file_handles_[channel_id + channel_id * i].flush();
-            }
-        }
-        HotUpdateLogger(logger, channel.channel_id_);
-        return true;
-    }
-    
-    inline void EnterProcRingChannel(Logger & logger, int channel_id)
-    {
-        Channel& channel = logger.channels_[channel_id];
-        auto & local_que = channel.red_black_queue_[channel.write_red_];
-        do
-        {
-            std::atomic_thread_fence(std::memory_order_acquire);
-            while (local_que.write_count_ != local_que.read_count_)
-            {
-                auto& cur_log = local_que.log_queue_[local_que.read_count_];
-                LogQueue::SizeType next_read = (local_que.read_count_ + 1) % LogQueue::MAX_LOG_QUEUE_SIZE;
-                LogData& log = *cur_log;
-                DispatchLog(logger, channel, log);
-                FreeLogData(logger, channel_id, cur_log);
-                std::atomic_thread_fence(std::memory_order_release);
-                local_que.read_count_ = next_read;
-                std::atomic_thread_fence(std::memory_order_release);
-                channel.log_fields_[CHANNEL_LOG_PROCESSED].num_++;
             }
             
-            if (channel.channel_state_ == CHANNEL_STATE_NULL)
-            {
-                channel.channel_state_ = CHANNEL_STATE_RUNNING;
-            }
-            std::atomic_thread_fence(std::memory_order_acquire);
-            if (local_que.write_count_ == local_que.read_count_)
-            {
-                for (int i = 0; i < channel.device_size_; i++)
-                {
-                    if (channel.devices_[i].out_type_ == DEVICE_OUT_FILE)
-                    {
-                        logger.file_handles_[channel_id + channel_id * i].flush();
-                    }
-                }
-                HotUpdateLogger(logger, channel.channel_id_);
-                std::this_thread::sleep_for(std::chrono::milliseconds(10));
-            }
-            std::atomic_thread_fence(std::memory_order_acquire);
-        } while (channel.channel_state_ == CHANNEL_STATE_RUNNING || local_que.write_count_ != local_que.read_count_);
+        } while (channel.channel_type_ == CHANNEL_ASYNC 
+            && (channel.channel_state_ == CHANNEL_STATE_RUNNING || ring_buffer.write_idx_ != ring_buffer.read_idx_));
+
+        if (channel.channel_type_ == CHANNEL_ASYNC)
+        {
+            channel.channel_state_ = CHANNEL_STATE_FINISH;
+        }
     }
     
-    inline void EnterProcChannel(Logger & logger, int channel_id)
-    {
-        Channel& channel = logger.channels_[channel_id];
-        switch (channel.channel_type_)
-        {
-            case CHANNEL_MULTI:
-                EnterProcAsyncChannel(logger, channel_id);
-                channel.channel_state_ = CHANNEL_STATE_FINISH;
-                break;
-            case CHANNEL_RING:
-                EnterProcRingChannel(logger, channel_id);
-                channel.channel_state_ = CHANNEL_STATE_FINISH;
-                break;
-            case CHANNEL_SYNC:
-                EnterProcSyncChannel(logger, channel_id);
-                break;
-            default:
-                break;
-        }
-        
-    }
     
 
-    inline int PushLogToChannel(Logger& logger, LogData* plog)
+    inline void InitLogData(Logger& logger, LogData& log, int channel_id, int priority, int category, unsigned int prefix)
     {
-        LogData& log = *plog;
-        Channel& channel = logger.channels_[log.channel_id_];
+        log.channel_id_ = channel_id;
+        log.priority_ = priority;
+        log.category_ = category;
+        log.content_len_ = 0;
+        log.content_[log.content_len_] = '\0';
+
+#ifdef _WIN32
+        FILETIME ft;
+        GetSystemTimeAsFileTime(&ft);
+        unsigned long long now = ft.dwHighDateTime;
+        now <<= 32;
+        now |= ft.dwLowDateTime;
+        now /= 10;
+        now -= 11644473600000000ULL;
+        now /= 1000;
+        log.timestamp_ = now / 1000;
+        log.precise_ = (unsigned int)(now % 1000);
+#else
+        struct timeval tm;
+        gettimeofday(&tm, nullptr);
+        log.timestamp_ = tm.tv_sec;
+        log.precise_ = tm.tv_usec / 1000;
+#endif
+        log.thread_ = 0;
+        if (prefix == LOG_PREFIX_NULL)
+        {
+            return;
+        }
+
+#ifdef _WIN32
+        static thread_local unsigned int therad_id = GetCurrentThreadId();
+        log.thread_ = therad_id;
+#elif defined(__APPLE__)
+        unsigned long long tid = 0;
+        pthread_threadid_np(nullptr, &tid);
+        log.thread_ = (unsigned int)tid;
+#else
+        static thread_local unsigned int therad_id = (unsigned int)syscall(SYS_gettid);
+        log.thread_ = therad_id;
+#endif
+        if (prefix & LOG_PREFIX_TIMESTAMP)
+        {
+            log.content_len_ += write_date_unsafe(log.content_ + log.content_len_, log.timestamp_, log.precise_);
+        }
+        if (prefix & LOG_PREFIX_PRIORITY)
+        {
+            log.content_len_ += write_log_priority_unsafe(log.content_ + log.content_len_, log.priority_);
+        }
+        if (prefix & LOG_PREFIX_THREAD)
+        {
+            log.content_len_ += write_log_thread_unsafe(log.content_ + log.content_len_, log.thread_);
+        }
+        log.content_[log.content_len_] = '\0';
+        return;
+    }
+
+    inline int HoldChannel(Logger& logger, int channel_id, int priority, int category)
+    {
+        if (channel_id >= logger.shm_->channel_size_ || channel_id < 0)
+        {
+            return -1;
+        }
+        if (logger.logger_state_ != LOGGER_STATE_RUNNING)
+        {
+            return -2;
+        }
+        Channel& channel = logger.shm_->channels_[channel_id];
+        RingBuffer& ring_buffer = logger.shm_->ring_buffers_[channel_id];
+        if (channel.channel_state_ != CHANNEL_STATE_RUNNING)
+        {
+            return -3;
+        }
+        if (priority < channel.config_fields_[CHANNEL_CFG_PRIORITY])
+        {
+            return -4;
+        }
+        if (channel.config_fields_[CHANNEL_CFG_CATEGORY] > 0)
+        {
+            if (category < channel.config_fields_[CHANNEL_CFG_CATEGORY]
+                || category > channel.config_fields_[CHANNEL_CFG_CATEGORY] + channel.config_fields_[CHANNEL_CFG_CATEGORY_EXTEND])
+            {
+                return -5;
+            }
+        }
+        int state = 0;
+        do
+        {
+            if (state > 0)
+            {
+                std::this_thread::sleep_for(std::chrono::milliseconds(10));
+            }
+            state++;
+
+            for (int i = 0; i < FN_MAX(RingBuffer::MAX_LOG_QUEUE_SIZE, 10); i++)
+            {
+                if (channel.channel_state_ != CHANNEL_STATE_RUNNING)
+                {
+                    break;
+                }
+                int old_idx = ring_buffer.hold_idx_;
+                int hold_idx = (old_idx + 1) % RingBuffer::MAX_LOG_QUEUE_SIZE;
+                if (hold_idx == ring_buffer.read_idx_)
+                {
+                    break;
+                }
+                if (ring_buffer.hold_idx_.compare_exchange_strong(old_idx, hold_idx))
+                {
+                    channel.log_fields_[CHANNEL_LOG_HOLD]++;
+                    ring_buffer.buffer_[old_idx].data_mark_ = MARK_HOLD;
+                    return old_idx;
+                }
+                continue;
+            }
+            if (channel.channel_state_ != CHANNEL_STATE_RUNNING)
+            {
+                break;
+            }
+        } while (true);
+        return -10;
+    }
+
+    inline int PushChannel(Logger& logger, int channel_id, int hold_idx)
+    {
+        if (channel_id >= logger.shm_->channel_size_ || channel_id < 0)
+        {
+            return -1;
+        }
+        if (hold_idx >= RingBuffer::MAX_LOG_QUEUE_SIZE || hold_idx < 0)
+        {
+            return -2;
+        }
+        Channel& channel = logger.shm_->channels_[channel_id];
+        RingBuffer& ring_buffer = logger.shm_->ring_buffers_[channel_id];
         if (channel.channel_state_ != CHANNEL_STATE_RUNNING)
         {
             return -1;
         }
-        switch (channel.channel_type_)
-        {
-        case CHANNEL_MULTI:
-        {
-            unsigned int state = 0;
-            do
-            {
-                if (state > 0)
-                {
-                    std::this_thread::sleep_for(std::chrono::milliseconds(10));
-                }
-                state++;
-                std::lock_guard<std::mutex> l(logger.syncs_[log.channel_id_].write_lock_);
-                LogQueue& local_que = channel.red_black_queue_[channel.write_red_];
-                if (local_que.log_count_ >= LogQueue::MAX_LOG_QUEUE_SIZE)
-                {
-                    continue;
-                }
-                local_que.log_queue_[local_que.log_count_++] = plog;
-                return 0;
-            } while (true);
-        }
-        break;
-        case CHANNEL_RING:
-        {
-            unsigned int state = 0;
-            do
-            {
-                if (state > 0)
-                {
-                    std::this_thread::sleep_for(std::chrono::milliseconds(10));
-                }
-                state++;
-                LogQueue& local_que = channel.red_black_queue_[channel.write_red_];
 
-                std::atomic_thread_fence(std::memory_order_acquire);
-                LogQueue::SizeType next_write = (local_que.write_count_ + 1) % LogQueue::MAX_LOG_QUEUE_SIZE;
-                LogQueue::SizeType current_read = local_que.read_count_;
-                if (next_write != current_read)
-                {
-                    local_que.log_queue_[local_que.write_count_] = plog;
-                    std::atomic_thread_fence(std::memory_order_release);
-                    local_que.write_count_ = next_write;
-                    std::atomic_thread_fence(std::memory_order_release);
-                    return 0;
-                }
-            } while (true);
-        }
-        break;
-        case CHANNEL_SYNC:
+        LogData& log = ring_buffer.buffer_[hold_idx];
+        log.content_len_ = FN_MIN(log.content_len_, LogData::MAX_LOG_SIZE - 2);
+        log.content_[log.content_len_++] = '\n';
+        log.content_[log.content_len_] = '\0';
+
+        log.data_mark_ = 2;
+
+
+        do
         {
-            LogQueue& local_que = channel.red_black_queue_[channel.write_red_];
-            if (local_que.log_count_ >= LogQueue::MAX_LOG_QUEUE_SIZE)
+            int old_idx = ring_buffer.write_idx_;
+            int next_idx = (old_idx + 1) % RingBuffer::MAX_LOG_QUEUE_SIZE;
+            if (old_idx == ring_buffer.hold_idx_)
             {
-                return -3;
+                break;
             }
-            local_que.log_queue_[local_que.log_count_++] = plog;
-            EnterProcChannel(logger, log.channel_id_);
-            return 0;
+            if (ring_buffer.buffer_[old_idx].data_mark_ != 2)
+            {
+                break;
+            }
+            if (ring_buffer.write_idx_.compare_exchange_strong(old_idx, next_idx))
+            {
+                channel.log_fields_[CHANNEL_LOG_PUSH]++;
+            }
+        } while (channel.channel_state_ == CHANNEL_STATE_RUNNING);
+
+        if (channel.channel_type_ == CHANNEL_SYNC && channel.channel_state_ == CHANNEL_STATE_RUNNING)
+        {
+            EnterProcChannel(logger, channel_id); //no affect channel.single_thread_write_
         }
-        break;
-        }
-        return -2;
+        return 0;
     }
 }
 
