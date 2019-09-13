@@ -1,6 +1,6 @@
 #define FN_LOG_USE_SHM 1
 #define FN_LOG_MAX_LOG_SIZE 1000
-#define FN_LOG_MAX_LOG_QUEUE_SIZE 15000
+#define FN_LOG_MAX_LOG_QUEUE_SIZE 100000
 
 #include "fn_log.h"
 #include <signal.h>
