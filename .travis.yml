@@ -28,7 +28,7 @@ before_script:
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then ipcs -M; fi 
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then ipcs -lm; fi 
   - ulimit -a
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then sysctl -w kern.sysv.shmmax=419430400; fi 
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then sudo sysctl -w kern.sysv.shmmax=419430400; fi 
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then sysctl -a|grep shm; fi 
   
 script:
