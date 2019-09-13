@@ -20,13 +20,18 @@ install:
 
 before_script:
   - if [[ "$TRAVIS_OS_NAME" == "linux" && "$TRAVIS_COMPILER" == "gcc" ]]; then ulimit -c unlimited -S; fi 
-  
-script:
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then sysctl -a|grep shm; fi 
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sysctl -a|grep shm; fi 
   - df -m
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then ipcs -M; fi 
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then ipcs -lm; fi 
   - ipcs -m
   - ipcs -mt
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then ipcs -M; fi 
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then ipcs -lm; fi 
+  - ulimit -a
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then sysctl -w kern.sysv.shmmax=419430400; fi 
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then sysctl -a|grep shm; fi 
+  
+script:
   - cmake --version
   - mkdir build
   - cd build
