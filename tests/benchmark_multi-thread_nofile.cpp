@@ -1,22 +1,40 @@
+
+#define FN_LOG_MAX_LOG_SIZE 1000
+#define FN_LOG_MAX_LOG_QUEUE_SIZE 100000
 #include "fn_log.h"
 #include <signal.h>
 
 
-
-static const std::string example_config_text =
+static const std::string default_config_text =
 R"----(
- # info and high priority log print to screen  
+ # default is mult-thread async write channel.  
+ # the first device is write rollback file  
+ # the second device is print to screen.  
  - channel: 0
     sync: null
-    -device:0
+    -device: 0
+        disable: false
+        out_type: file
+        file: "$PNAME"
+        rollback: 1
+        limit_size: 100 m #only support M byte
+    -device:1
         disable: false
         out_type: screen
         priority: info
-        
  - channel: 1
-
+    sync: sync
+    -device: 0
+        disable: false
+        out_type: file
+        file: "$PNAME_SYNC"
+        rollback: 1
+        limit_size: 100 m #only support M byte
+    -device:1
+        disable: false
+        out_type: screen
+        priority: info
 )----";
-
 
 
 enum State
@@ -60,26 +78,24 @@ void Stop(int signo)
 int main(int argc, char* argv[])
 {
     signal(SIGINT, Stop);
-    int ret = FNLog::FastStartDefaultLogger(example_config_text);
+    int ret = FNLog::FastStartDefaultLogger(default_config_text);
     if (ret != 0)
     {
         return ret;
     }
 
     FNLog::Logger& logger = FNLog::GetDefaultLogger();
-
+    FNLog::UnsafeChangeDeviceConfig(logger, 0, 0, FNLog::DEVICE_CFG_ABLE, 0);
     int limit_second = 0;
     int thread_id = 0;
     g_multi_proc[thread_id] = std::thread(thread_proc, thread_id);
 
     do
     {
-        long long last_writed = logger.channels_[0].log_fields_[FNLog::CHANNEL_LOG_PROCESSED].num_;
+        long long last_writed = logger.shm_->channels_[0].log_fields_[FNLog::CHANNEL_LOG_PROCESSED];
         std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-        long long now_writed = logger.channels_[0].log_fields_[FNLog::CHANNEL_LOG_PROCESSED].num_;
-        LogInfo() << "now thread:" << thread_id+1 << ": writed:" << now_writed - last_writed << ", cache hit:"
-            << (double)logger.channels_[0].log_fields_[FNLog::CHANNEL_LOG_ALLOC_CACHE].num_
-            / logger.channels_[0].log_fields_[FNLog::CHANNEL_LOG_ALLOC_CALL].num_ * 100.0;
+        long long now_writed = logger.shm_->channels_[0].log_fields_[FNLog::CHANNEL_LOG_PROCESSED];
+        LogInfo() << "now thread:" << thread_id+1 << ": writed:" << now_writed - last_writed ;
         
         if (limit_second/3 > thread_id && thread_id+1 < WRITE_THREAD_COUNT)
         {
@@ -88,7 +104,7 @@ int main(int argc, char* argv[])
             g_multi_proc[thread_id] = std::thread(thread_proc, thread_id);
         }
         limit_second++;
-    } while (limit_second < 12);
+    } while (limit_second < 15);
 
     LogAlarm() << "finish";
     state = END;

@@ -98,6 +98,19 @@ namespace FNLog
         disable: false
         out_type: screen
         priority: info
+ - channel: 1
+    sync: sync
+    -device: 0
+        disable: false
+        out_type: file
+        file: "$PNAME_$YEAR$MON$DAY_SYNC"
+        rollback: 4
+        limit_size: 100 m #only support M byte
+    -device:1
+        disable: false
+        out_type: screen
+        priority: info
+
 )----";
         return FastStartDefaultLogger(default_config_text);
     }
@@ -121,6 +134,18 @@ namespace FNLog
         disable: false
         out_type: screen
         priority: info
+ - channel: 1
+    sync: sync
+    -device: 0
+        disable: false
+        out_type: file
+        file: "$PNAME_SYNC"
+        rollback: 1
+        limit_size: 100 m #only support M byte
+    -device:1
+        disable: false
+        out_type: screen
+        priority: info
 )----";
         return FastStartDefaultLogger(default_config_text);
     }
@@ -138,6 +163,18 @@ namespace FNLog
         disable: false
         out_type: file
         file: "$PNAME"
+        rollback: 1
+        limit_size: 100 m #only support M byte
+    -device:1
+        disable: false
+        out_type: screen
+        priority: null
+ - channel: 1
+    sync: sync
+    -device: 0
+        disable: false
+        out_type: file
+        file: "$PNAME_SYNC"
         rollback: 1
         limit_size: 100 m #only support M byte
     -device:1

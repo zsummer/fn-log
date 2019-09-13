@@ -1,7 +1,7 @@
 sudo: true
 language: cpp
 compiler: 
-  - g++ 
+  - gcc
   - clang
 os:
   - linux
@@ -14,18 +14,27 @@ env:
 before_install:
   - echo -n | openssl s_client -connect https://scan.coverity.com:443 | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' | sudo tee -a /etc/ssl/certs/ca-
   - pip install --user cpp-coveralls
-  - echo "ENV IS $TRAVIS_OS_NAME $TRAVIS_COMPILER"
 
 install:
-  #- sudo apt-get install -y gdb
+  - if [[ "$TRAVIS_OS_NAME" == "linux" && "$TRAVIS_COMPILER" == "gcc" ]]; then sudo apt-get install -y gdb; fi 
 
 before_script:
-  - ulimit -c unlimited -S
+  - if [[ "$TRAVIS_OS_NAME" == "linux" && "$TRAVIS_COMPILER" == "gcc" ]]; then ulimit -c unlimited -S; fi 
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then sudo sysctl -w kern.sysv.shmmax=419430400; fi 
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then sudo sysctl -w kern.sysv.shmall=419430400; fi 
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo sysctl -w kernel.shmmax=419430400; fi 
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo sysctl -w kernel.shmall=419430400; fi 
 
-after_failure:
-  #- COREFILE=$(find . -maxdepth 1 -name "core*" | head -n 1) # find core file
-  #- if [[ -f "$COREFILE" ]]; then gdb -c "$COREFILE" example -ex "thread apply all bt" -ex "set pagination 0" -batch; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" || "$TRAVIS_OS_NAME" == "linux" ]]; then sysctl -a|grep shm; fi 
 
+  - df -m
+  - ipcs -m
+  - ipcs -mt
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then ipcs -M; fi 
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then ipcs -lm; fi 
+  - ulimit -a
+
+  
 script:
   - cmake --version
   - mkdir build
@@ -43,12 +52,16 @@ script:
   - ./test_fast_debug
   - ./test_fast_default
   - ./test_fast_simple
+  - ./test_coverage
   - ./test_channel_normal
   - ./stress_multi-thread-env_main_reboot
   - ./stress_multi-thread-env_concurrent_reboot 50000 >/dev/null 2>&1
   - cd ..
 
+  - find ./ -name "*.gc*"
+  - if [[ "$TRAVIS_OS_NAME" == "linux" && "$TRAVIS_COMPILER" == "gcc" ]]; then coveralls; else echo "$TRAVIS_OS_NAME $TRAVIS_COMPILER"; fi 
 
+  - ls -la
 
   - sh merge_header.sh
   - mv src/include src/bak
@@ -58,8 +71,8 @@ script:
   - cd benchmarke-build
   - cmake -DCMAKE_BUILD_TYPE=Release ..
   - make -j4
-  - rm -fr * 
   - cd ..
+  - rm -fr benchmarke-build
   - rm -fr src/include
   - mv src/bak src/include
   - ls bin/*
@@ -67,22 +80,36 @@ script:
   
   - ./stress_multi-thread-env_concurrent_reboot >/dev/null 2>&1
   - ./stress_multi-thread-env_main_reboot
-  - ./benchmark_multi-thread_dynamic_inc
-  - ./benchmark_multi-thread_write_file
+  - ./benchmark_multi-thread
+  - ./benchmark_multi-thread_nofile
+  - ./benchmark_multi-thread_sync
+  - ./benchmark_multi-thread_sync_nofile
   - ./benchmark_serialize_integer
   - ./benchmark_sync_bat_write
   - ./benchmark_normal
   - ./benchmark_udp
   - ./benchmark_fast
+
+  - ipcs -m
+  - ipcs -mt
+  - ./test_shm
+  - ipcs -m
+  - ipcs -mt
+  - ./test_shm
+  - ipcs -m
+  - ipcs -mt
+  - ./benchmark_multi-thread_travis_shm
+  - cd ..
+
+
   - find ./ -name "*.gc*"
   - cd ..
 
 
 after_success:
-  - pwd
-  - ls
-  - echo "ENV IS $TRAVIS_OS_NAME $TRAVIS_COMPILER"
-  - if [[ "$TRAVIS_OS_NAME" != "osx" && "$TRAVIS_COMPILER" != "clang" ]]; then coveralls -E "build.*"; fi
+after_failure:
+  #- COREFILE=$(find . -maxdepth 1 -name "core*" | head -n 1) # find core file
+  #- if [[ -f "$COREFILE" ]]; then gdb -c "$COREFILE" example -ex "thread apply all bt" -ex "set pagination 0" -batch; fi
 
 addons:
   coverity_scan:

@@ -8,7 +8,8 @@ int main(int argc, char* argv[])
         return ret;
     }
 
-    LogAlarm() << "log init success";
+    LogAlarm() << "log init success. shm size:" 
+        << sizeof(FNLog::SHMLogger) << ", logger size:" << sizeof(FNLog::Logger);
 
     LogTrace() << "now time:" << time(nullptr) << ";";
     LogDebug() << "now time:" << time(nullptr) << ";";

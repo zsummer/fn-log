@@ -56,6 +56,11 @@ namespace FNLog
             printf("init from ymal:<%s> text error\n", path.c_str());
             return -1;
         }
+        if (logger.shm_ == nullptr)
+        {
+            printf("%s", "init from ymal text error. no shm.\n");
+            return -2;
+        }
         std::unique_ptr<LexState> ls(new LexState);
         int ret = ParseLogger(*ls, text);
         if (ret != 0)
@@ -78,10 +83,21 @@ namespace FNLog
 
         logger.yaml_path_ = path;
         logger.hot_update_ = ls->hot_update_;
-        logger.channel_size_ = ls->channel_size_;
-        memcpy(&logger.channels_, &ls->channels_, sizeof(logger.channels_));
+        logger.shm_->channel_size_ = ls->channel_size_;
+        for (int i = 0; i < ls->channel_size_; i++)
+        {
+            memcpy(&ls->channels_[i].log_fields_, &logger.shm_->channels_[i].log_fields_,
+                sizeof(ls->channels_[i].log_fields_));
+            for (int j = 0; j < ls->channels_[i].device_size_; j++)
+            {
+                memcpy(&ls->channels_[i].devices_[j].log_fields_, 
+                    &logger.shm_->channels_[i].devices_[j].log_fields_,
+                    sizeof(ls->channels_[i].devices_[j].log_fields_));
+            }
+        }
+        memcpy(&logger.shm_->channels_, &ls->channels_, sizeof(logger.shm_->channels_));
 
-        if (logger.channel_size_ > Logger::MAX_CHANNEL_SIZE || logger.channel_size_ <= 0)
+        if (logger.shm_->channel_size_ > Logger::MAX_CHANNEL_SIZE || logger.shm_->channel_size_ <= 0)
         {
             printf("start error 2");
             return -2;
@@ -93,8 +109,8 @@ namespace FNLog
     {
         std::unique_ptr<LexState> ls(new LexState);
         FileHandler config;
-        static_assert(std::is_same<decltype(logger.channels_), decltype(ls->channels_)>::value, "");
-        //static_assert(std::is_trivial<decltype(logger.channels_)>::value, "");
+        static_assert(std::is_same<decltype(logger.shm_->channels_), decltype(ls->channels_)>::value, "");
+        //static_assert(std::is_trivial<decltype(logger.shm_->channels_)>::value, "");
 
         struct stat file_stat;
         config.open(path.c_str(), "rb", file_stat);
@@ -110,16 +126,16 @@ namespace FNLog
             return ret;
         }
 
-        for (int i = 0; i < logger.channel_size_; i++)
+        for (int i = 0; i < logger.shm_->channel_size_; i++)
         {
-            logger.channels_[i].yaml_mtime_ = file_stat.st_mtime;
+            logger.shm_->channels_[i].yaml_mtime_ = file_stat.st_mtime;
         }
         return 0;
     }
 
     inline int HotUpdateLogger(Logger& logger, int channel_id)
     {
-        if (logger.channel_size_ <= channel_id)
+        if (logger.shm_->channel_size_ <= channel_id)
         {
             return -1;
         }
@@ -132,7 +148,7 @@ namespace FNLog
             return -3;
         }
 
-        Channel& dst_chl = logger.channels_[channel_id];
+        Channel& dst_chl = logger.shm_->channels_[channel_id];
         time_t now = time(nullptr);
         if (now - dst_chl.last_hot_check_ < Logger::HOTUPDATE_INTERVEL)
         {
@@ -161,8 +177,8 @@ namespace FNLog
         dst_chl.yaml_mtime_ = file_stat.st_mtime;
 
         std::unique_ptr<LexState> ls(new LexState);
-        static_assert(std::is_same<decltype(logger.channels_), decltype(ls->channels_)>::value, "");
-        //static_assert(std::is_trivial<decltype(logger.channels_)>::value, "");
+        static_assert(std::is_same<decltype(logger.shm_->channels_), decltype(ls->channels_)>::value, "");
+        //static_assert(std::is_trivial<decltype(logger.shm_->channels_)>::value, "");
 
         std::string text = config.read_content();
         int ret = ParseLogger(*ls, text);
@@ -172,7 +188,7 @@ namespace FNLog
         }
         logger.hot_update_ = ls->hot_update_;
 
-        static_assert(std::is_same<decltype(logger.channels_[channel_id].config_fields_), decltype(ls->channels_[channel_id].config_fields_)>::value, "");
+        static_assert(std::is_same<decltype(logger.shm_->channels_[channel_id].config_fields_), decltype(ls->channels_[channel_id].config_fields_)>::value, "");
         
 
 
@@ -184,7 +200,7 @@ namespace FNLog
         for (int field_id = 0; field_id < CHANNEL_CFG_MAX_ID; field_id++)
         {
             //this is multi-thread safe op. 
-            dst_chl.config_fields_[field_id] = src_chl.config_fields_[field_id];
+            dst_chl.config_fields_[field_id] = src_chl.config_fields_[field_id].load();
         }
 
         //single thread op.
