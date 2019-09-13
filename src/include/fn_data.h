@@ -280,6 +280,33 @@ namespace FNLog
         RingBuffers ring_buffers_;
     };
 
+    template<class Mutex>
+    class AutoGuard
+    {
+    public:
+        using mutex_type = Mutex;
+        inline explicit AutoGuard(Mutex& mtx, bool noop = false) : mutex_(mtx), noop_(noop) 
+        {
+            if (!noop_)
+            {
+                mutex_.lock();
+            }
+        }
+
+        inline ~AutoGuard() noexcept
+        { 
+            if (!noop_)
+            {
+                mutex_.unlock();
+            }
+        }
+        AutoGuard(const AutoGuard&) = delete;
+        AutoGuard& operator=(const AutoGuard&) = delete;
+    private:
+        Mutex& mutex_;
+        bool noop_;
+    };
+
     class Logger
     {
     public:
@@ -287,7 +314,7 @@ namespace FNLog
         static const int HOTUPDATE_INTERVEL = FN_LOG_HOTUPDATE_INTERVEL;
 
         using ReadLocks = std::array<std::mutex, MAX_CHANNEL_SIZE>;
-        using ReadGuard = std::lock_guard<std::mutex>;
+        using ReadGuard = AutoGuard<std::mutex>;
 
         using AsyncThreads = std::array<std::thread, MAX_CHANNEL_SIZE>;
         using FileHandles = std::array<FileHandler, MAX_CHANNEL_SIZE* Channel::MAX_DEVICE_SIZE>;
@@ -295,10 +322,10 @@ namespace FNLog
 
     public:
         using StateLock = std::recursive_mutex;
-        using StateLockGuard = std::lock_guard<StateLock>;
+        using StateLockGuard = AutoGuard<StateLock>;
 
         using ScreenLock = std::mutex;
-        using ScreenLockGuard = std::lock_guard<ScreenLock>;
+        using ScreenLockGuard = AutoGuard<ScreenLock>;
 
 
     public:

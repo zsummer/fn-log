@@ -83,7 +83,7 @@ int main(int argc, char* argv[])
     }
 
     FNLog::Logger& logger = FNLog::GetDefaultLogger();
-    FNLog::UnsafeChangeDeviceConfig(logger, 0, 1, FNLog::DEVICE_CFG_ABLE, 0);
+    FNLog::UnsafeChangeDeviceConfig(logger, 1, 0, FNLog::DEVICE_CFG_ABLE, 0);
 
     int limit_second = 0;
     int thread_id = 0;

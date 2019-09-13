@@ -55,7 +55,8 @@ namespace FNLog
     {
         Channel& channel = logger.shm_->channels_[channel_id];
         Device& device = channel.devices_[device_id];
-        Logger::ReadGuard rg(logger.read_locks_[channel_id]);
+        //async promise only single thread proc. needn't lock.
+        Logger::ReadGuard rg(logger.read_locks_[channel_id], channel.channel_type_ == CHANNEL_ASYNC);
         switch (device.out_type_)
         {
         case DEVICE_OUT_FILE:
