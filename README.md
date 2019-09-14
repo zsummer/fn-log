@@ -204,65 +204,78 @@ cd ../bin
   > option: true false  
   > default: false  
   > desc: moniter yaml file modify and update logger option.  
+
 ### Channel Option: (channel.)   
 - [x] sync
-  > option: async syncring  
+  > option: async sync 
   > default: async  
-  > desc: async support multi-thread write, other not.  
-  > desc: sync is sync write file and flush file every write op.  
-  > desc: ring is async write file but only support single thread write, it's ring-buffer channel impl.  
+  > desc: async mod will open thread to async write log  
+  > desc: sync mod all operator in master thread  
+
 - [x] priority  
   > option: trace debug info warn error alarm fatal   
   > default: trace  
   > desc: log will discard when log priority less than filter priority.  
-- [x] category
+
+- [x] category  
 - [x] category_extend
   > option:  
   > default: 0, invalid value.  
   > desc: log will reserve when category in set [category, category+category_extend], and other not.   
+  > desc: mark content category to filter or write diff device
+
 ### Device Option: (channel.device.)  
 - [x] disable  
   > option: true, false  
   > default: true  
   > desc: the device will ignore in proc log when this option is disable state.  
+
 - [x] out_type  
   > option: null, file, udp, screen  
   > default: null  
   > desc: as the option name.  
+
 - [x] priority  
   > option: trace debug info warn error alarm fatal   
   > default: trace  
   > desc: log will not process when log priority less than filter priority.  
+
 - [x] category
 - [x] category_extend
   > option:  
   > default: 0, invalid value.  
   > desc: log will process when category in set [category, category+category_extend], and other not.   
+
 - [x] udp_addr  
   > option:  
   > default:  
   > desc: in out_type:udp valid.  
   > desc: example format 127.0.0.1_8080   
+
 - [x] path  
   > option:  
   > default: "./"  
   > desc: in out_type:file valid.  
   > desc: out file path.  
+
 - [x] file 
   > option:   
   > ```default: "$PNAME_$YEAR$MON$DAY_$PID."```  
   > desc: in out_type:file valid.  
   > desc: diy out file name. support escape string: $PNAME $PID $YEAR $MON $DAY $HOUR $MIN $SEC  
+
 - [x] rollback
   > option: 
   > default: 0  
   > desc: in out_type:file valid.  
   > desc: 0 is no rollback op, and other number is rollback file count.   
+
 - [x] limit_size
   > option: 
   > default: 0  
   > desc: in out_type:file valid.  
   > desc: 0 is no limit, and other number is rollback file limit size (M byte).   
+  
   ```
   stress_test_2019.log
   stress_test_2019.log.1
