@@ -63,7 +63,7 @@ namespace FNLog
         }
         std::unique_ptr<LexState> ls(new LexState);
         int ret = ParseLogger(*ls, text);
-        if (ret != 0)
+        if (ret != PEC_NONE)
         {
             std::stringstream os;
             os << "load has error:<" << ret << "> in line:[" << ls->line_number_ << "], line type:" << ls->line_.line_type_;
@@ -182,9 +182,9 @@ namespace FNLog
 
         std::string text = config.read_content();
         int ret = ParseLogger(*ls, text);
-        if (ret != 0)
+        if (ret != PEC_NONE)
         {
-            return ret+100;
+            return ret;
         }
         logger.hot_update_ = ls->hot_update_;
 

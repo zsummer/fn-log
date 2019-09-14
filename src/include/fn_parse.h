@@ -47,12 +47,37 @@
 
 namespace FNLog
 {
+    enum ParseErrorCode
+    {
+        PEC_NONE, 
+        PEC_ERROR,
+        PEC_ILLEGAL_CHARACTER,
+        PEC_ILLEGAL_KEY,
+        PEC_NOT_CLOSURE,
+        PEC_ILLEGAL_ADDR_IP,
+        PEC_ILLEGAL_ADDR_PORT,
+
+        PEC_UNDEFINED_DEVICE_KEY,
+        PEC_UNDEFINED_DEVICE_TYPE,
+        PEC_UNDEFINED_CHANNEL_KEY,
+        PEC_UNDEFINED_GLOBAL_KEY,
+
+        PEC_DEVICE_NOT_ARRAY,
+        PEC_DEVICE_INDEX_OUT_MAX,
+        PEC_DEVICE_INDEX_NOT_SEQUENCE,
+ 
+
+        PEC_CHANNEL_NOT_ARRAY,
+        PEC_CHANNEL_INDEX_OUT_MAX,
+        PEC_CHANNEL_INDEX_NOT_SEQUENCE,
+        PEC_NO_ANY_CHANNEL,
+    };
+
     enum LineType
     {
         LINE_NULL,
         LINE_ARRAY,
         LINE_BLANK,
-        LINE_ERROR,
         LINE_EOF,
     };
     enum BlockType
@@ -305,8 +330,7 @@ namespace FNLog
                 ls.line_.key_ = ParseReserve(ls.line_.key_begin_, ls.line_.key_end_);
                 if (ls.line_.key_ == RK_NULL)
                 {
-                    ls.line_.line_type_ = LINE_ERROR;
-                    return ls.line_.line_type_;
+                    return PEC_ILLEGAL_KEY;
                 }
             }
             if (ls.line_.block_type_ == BLOCK_VAL)
@@ -331,8 +355,7 @@ namespace FNLog
                 }
                 if (ls.line_.block_type_ != BLOCK_CLEAN)
                 {
-                    ls.line_.line_type_ = LINE_ERROR;
-                    return ls.line_.line_type_;
+                    return PEC_NOT_CLOSURE;
                 }
                 break;
             }
@@ -353,17 +376,17 @@ namespace FNLog
                 {
                     ls.current_++; //skip '\n\r' or '\r\n'
                 }
-                return ls.line_.line_type_;
+                return PEC_NONE;
             case '\0':
                 if (ls.line_.line_type_ != LINE_BLANK)
                 {
                     ls.current_--;
-                    return ls.line_.line_type_;
+                    return PEC_NONE;
                 }
                 else
                 {
                     ls.line_.line_type_ = LINE_EOF;
-                    return ls.line_.line_type_;
+                    return PEC_NONE;
                 }
                 
             case '-':
@@ -375,8 +398,7 @@ namespace FNLog
                 }
                 else if (ls.line_.block_type_ != BLOCK_VAL)
                 {
-                    ls.line_.line_type_ = LINE_ERROR;
-                    return ls.line_.line_type_;
+                    return PEC_ILLEGAL_CHARACTER;
                 }
                 break;
             case ':':
@@ -387,8 +409,7 @@ namespace FNLog
                 }
                 else if (ls.line_.block_type_ != BLOCK_VAL)
                 {
-                    ls.line_.line_type_ = LINE_ERROR;
-                    return ls.line_.line_type_;
+                    return PEC_ILLEGAL_CHARACTER;
                 }
                 break;
             default:
@@ -410,20 +431,17 @@ namespace FNLog
                         ls.line_.val_begin_ = ls.current_ - 1;
                         break;
                     default:
-                        ls.line_.line_type_ = LINE_ERROR;
-                        return ls.line_.line_type_;
+                        return PEC_ILLEGAL_CHARACTER;
                     }
                     break;
                 }
                 else if (ls.line_.block_type_ != BLOCK_CLEAN)
                 {
-                    ls.line_.line_type_ = LINE_ERROR;
-                    return ls.line_.line_type_;
+                    return PEC_ILLEGAL_CHARACTER;
                 }
             }
         }
-        ls.line_.line_type_ = LINE_ERROR;
-        return ls.line_.line_type_;
+        return PEC_ERROR;
     }
 
     inline int ParseDevice(LexState& ls, Device& device, int indent)
@@ -431,29 +449,38 @@ namespace FNLog
         do
         {
             const char* current = ls.current_;
-            int line_state = Lex(ls);
-            if (line_state == LINE_ERROR)
+            int ret = Lex(ls);
+            if (ret != PEC_NONE)
             {
-                return line_state;
+                ls.current_ = current;
+                ls.line_number_--;
+                return ret;
             }
-            if (line_state == LINE_EOF)
+            if (ls.line_.line_type_ == LINE_EOF)
             {
-                return LINE_EOF;
+                return ret;
             }
             if (ls.line_.line_type_ == LINE_BLANK)
             {
                 continue;
             }
+            
             if (ls.line_.blank_ <= indent)
             {
                 ls.current_ = current;
                 ls.line_number_--;
+                ls.line_.line_type_ = LINE_BLANK;
                 return 0;
             }
+
             switch (ls.line_.key_)
             {
             case RK_OUT_TYPE:
                 device.out_type_ = ParseOutType(ls.line_.val_begin_, ls.line_.val_end_);
+                if (device.out_type_ == DEVICE_OUT_NULL)
+                {
+                    return PEC_UNDEFINED_DEVICE_TYPE;
+                }
                 break;
             case RK_DISABLE:
                 device.config_fields_[DEVICE_CFG_ABLE] = !ParseBool(ls.line_.val_begin_, ls.line_.val_end_); //"disable"
@@ -491,11 +518,19 @@ namespace FNLog
                 break;
             case RK_UDP_ADDR:
                 ParseAddres(ls.line_.val_begin_, ls.line_.val_end_, device.config_fields_[DEVICE_CFG_UDP_IP], device.config_fields_[DEVICE_CFG_UDP_PORT]);
+                if (device.config_fields_[DEVICE_CFG_UDP_IP] == 0)
+                {
+                    return PEC_ILLEGAL_ADDR_IP;
+                }
+                if (device.config_fields_[DEVICE_CFG_UDP_PORT] == 0)
+                {
+                    return PEC_ILLEGAL_ADDR_PORT;
+                }
                 break;
             default:
-                return LINE_ERROR;
+                return PEC_UNDEFINED_DEVICE_KEY;
             }
-        } while (true);
+        } while (ls.line_.line_type_ != LINE_EOF);
         return 0;
     }
     inline int ParseChannel(LexState& ls, Channel& channel, int indent)
@@ -503,25 +538,30 @@ namespace FNLog
         do
         {
             const char* current = ls.current_;
-            int line_state = Lex(ls);
-            if (line_state == LINE_ERROR)
+            int ret = Lex(ls);
+            if (ret != PEC_NONE)
             {
-                return line_state;
+                ls.current_ = current;
+                ls.line_number_--;
+                return ret;
             }
-            if (line_state == LINE_EOF)
+            if (ls.line_.line_type_ == LINE_EOF)
             {
-                return LINE_EOF;
+                return ret;
             }
             if (ls.line_.line_type_ == LINE_BLANK)
             {
                 continue;
             }
+
             if (ls.line_.blank_ <= indent)
             {
                 ls.current_ = current;
                 ls.line_number_--;
+                ls.line_.line_type_ = LINE_BLANK;
                 return 0;
             }
+
             switch (ls.line_.key_)
             {
             case RK_SYNC:
@@ -539,33 +579,34 @@ namespace FNLog
             case RK_DEVICE:
                 if (ls.line_.line_type_ != LINE_ARRAY)
                 {
-                    ls.line_.line_type_ = LINE_ERROR;
-                    return ls.line_.line_type_;
+                    return PEC_DEVICE_NOT_ARRAY;
                 }
                 else
                 {
                     int device_id = atoi(ls.line_.val_begin_);
-                    if (channel.device_size_ >= Channel::MAX_DEVICE_SIZE || device_id != channel.device_size_)
+                    if (channel.device_size_ >= Channel::MAX_DEVICE_SIZE)
                     {
-                        ls.line_.line_type_ = LINE_ERROR;
-                        return ls.line_.line_type_;
+                        return PEC_DEVICE_INDEX_OUT_MAX;
                     }
-
+                    if (device_id != channel.device_size_)
+                    {
+                        return PEC_DEVICE_INDEX_NOT_SEQUENCE;
+                    }
                     Device& device = channel.devices_[channel.device_size_++];
                     memset(&device, 0, sizeof(device));
                     device.device_id_ = device_id;
-                    line_state = ParseDevice(ls, device, ls.line_.blank_);
-                    if (line_state == LINE_EOF || line_state == LINE_ERROR)
+                    ret = ParseDevice(ls, device, ls.line_.blank_);
+                    if (ret != PEC_NONE || ls.line_.line_type_ == LINE_EOF)
                     {
-                        return line_state;
+                        return ret;
                     }
                 }
                 break;
             default:
-                return LINE_ERROR;
+                return PEC_UNDEFINED_CHANNEL_KEY;
             }
 
-        } while (true);
+        } while (ls.line_.line_type_ != LINE_EOF);
         return 0;
     }
     inline int ParseLogger(LexState& ls, const std::string& text)
@@ -585,17 +626,21 @@ namespace FNLog
         ls.channel_size_ = 0;
         ls.hot_update_ = false;
         ls.current_ = ls.first_;
+        ls.line_.line_type_ = LINE_NULL;
         ls.line_number_ = 1;
         do
         {
-            int line_state = Lex(ls);
-            if (line_state == LINE_ERROR)
+            const char* current = ls.current_;
+            int ret = Lex(ls);
+            if (ret != PEC_NONE)
             {
-                return line_state;
+                ls.current_ = current;
+                ls.line_number_--;
+                return ret;
             }
-            if (line_state == LINE_EOF)
+            if (ls.line_.line_type_ == LINE_EOF)
             {
-                return 0;
+                break;
             }
             if (ls.line_.line_type_ == LINE_BLANK)
             {
@@ -610,37 +655,38 @@ namespace FNLog
             case RK_CHANNEL:
                 if (ls.line_.line_type_ != LINE_ARRAY)
                 {
-                    ls.line_.line_type_ = LINE_ERROR;
-                    return ls.line_.line_type_;
+                    return PEC_CHANNEL_NOT_ARRAY;
                 }
                 else
                 {
                     int channel_id = atoi(ls.line_.val_begin_);
-                    if (ls.channel_size_ >= Logger::MAX_CHANNEL_SIZE || ls.channel_size_ != channel_id)
+                    if (ls.channel_size_ >= Logger::MAX_CHANNEL_SIZE)
                     {
-                        ls.line_.line_type_ = LINE_ERROR;
-                        return ls.line_.line_type_;
+                        return PEC_CHANNEL_INDEX_OUT_MAX;
                     }
-
+                    if (ls.channel_size_ != channel_id)
+                    {
+                        return PEC_CHANNEL_INDEX_NOT_SEQUENCE;
+                    }
                     Channel& channel = ls.channels_[ls.channel_size_++];
                     memset(&channel, 0, sizeof(channel));
                     channel.channel_id_ = channel_id;
-                    line_state = ParseChannel(ls, channel, ls.line_.blank_);
-                    if (line_state == LINE_EOF)
+                    ret = ParseChannel(ls, channel, ls.line_.blank_);
+                    if (ret != 0)
                     {
-                        return 0;
-                    }
-                    if (line_state == LINE_ERROR)
-                    {
-                        return ls.line_.line_type_;
+                        return ret;
                     }
                 }
                 break;
             default:
-                return LINE_ERROR;
+                return PEC_UNDEFINED_GLOBAL_KEY;
             }
-        } while (true);
-        return 0;
+        } while (ls.line_.line_type_ != LINE_EOF);
+        if (ls.channel_size_ == 0)
+        {
+            return PEC_NO_ANY_CHANNEL;
+        }
+        return PEC_NONE;
     }
 
 }
