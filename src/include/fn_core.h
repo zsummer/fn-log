@@ -449,6 +449,21 @@ namespace FNLog
             {
                 return;
             }
+
+            while (shm->ring_buffers_[i].write_idx_.load() != shm->ring_buffers_[i].hold_idx_.load())
+            {
+                auto& log = shm->ring_buffers_[i].buffer_[shm->ring_buffers_[i].write_idx_];
+                log.data_mark_ = 2;
+                log.priority_ = PRIORITY_FATAL;
+                std::string core_desc = "!!!core recover!!!";
+                log.content_len_ = FN_MIN(log.content_len_, LogData::MAX_LOG_SIZE - core_desc.length() -2 );
+                memcpy(&log.content_[log.content_len_], core_desc.c_str(), core_desc.length());
+                log.content_len_ += core_desc.length();
+                log.content_[log.content_len_++] = '\n';
+                log.content_[log.content_len_] = '\0';
+
+                shm->ring_buffers_[i].write_idx_ = (shm->ring_buffers_[i].write_idx_ + 1) % RingBuffer::MAX_LOG_QUEUE_SIZE;
+            }
             shm->ring_buffers_[i].hold_idx_ = shm->ring_buffers_[i].write_idx_.load();
 
             if (shm->ring_buffers_[i].read_idx_ >= RingBuffer::MAX_LOG_QUEUE_SIZE
@@ -467,6 +482,7 @@ namespace FNLog
 #else
         logger.shm_ = new SHMLogger();
         memset(logger.shm_, 0, sizeof(SHMLogger));
+        
 #endif
     }
     inline void UnloadSharedMemory(Logger& logger)

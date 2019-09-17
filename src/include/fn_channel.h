@@ -148,12 +148,6 @@ namespace FNLog
             {
                 channel.channel_state_ = CHANNEL_STATE_RUNNING;
             }
-#ifdef _WIN32
-            if (channel.channel_type_ == CHANNEL_SYNC)
-            {
-                has_write_op = false;
-            }
-#endif // _WIN32
 
             if (has_write_op)
             {
@@ -161,7 +155,7 @@ namespace FNLog
                 {
                     if (channel.devices_[i].out_type_ == DEVICE_OUT_FILE)
                     {
-                        logger.file_handles_[channel_id + channel_id * i].flush();
+                        logger.file_handles_[channel_id * Channel::MAX_DEVICE_SIZE + i].flush();
                     }
                 }
             }

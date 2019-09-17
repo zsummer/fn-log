@@ -58,8 +58,10 @@ namespace FNLog
         {
             logger_ = ls.logger_;
             log_data_ = ls.log_data_;
+            hold_idx_ = ls.hold_idx_;
             ls.logger_ = nullptr;
             ls.log_data_ = nullptr;
+            ls.hold_idx_ = -1;
         }
 
         explicit LogStream(Logger& logger, int channel_id, int priority, int category, 

@@ -249,7 +249,7 @@ namespace FNLog
     {
         Channel& channel = logger.shm_->channels_[channel_id];
         Device& device = channel.devices_[device_id];
-        FileHandler& writer = logger.file_handles_[channel_id + channel_id * device_id];
+        FileHandler& writer = logger.file_handles_[channel_id * Channel::MAX_DEVICE_SIZE + device_id];
 
         if (!writer.is_open() && AtomicLoadL(device, DEVICE_LOG_LAST_TRY_CREATE_TIMESTAMP) + 5 > log.timestamp_)
         {
