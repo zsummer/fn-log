@@ -79,22 +79,36 @@ namespace FNLog
         return 0;
     }
 
+
     inline int FastStartDefaultLogger()
     {
         static const std::string default_config_text =
             R"----(
- # default is mult-thread async write channel.  
- # the first device is write rollback file  
- # the second device is print to screen.  
+ # default channel 0
+   # write full log to pname.log 
+   # write info log to pname_info.log 
+   # view  info log to screen 
+ # sync channel 1 
+   # write full log to pname.log
+   # write info log to pname_info.log
+   # view  info log to screen 
+
  - channel: 0
-    sync: null
+    sync: async
     -device: 0
         disable: false
         out_type: file
-        file: "$PNAME_$YEAR$MON$DAY"
+        file: "$PNAME"
         rollback: 4
         limit_size: 100 m #only support M byte
-    -device:1
+    -device: 1
+        disable: false
+        out_type: file
+        priority: info
+        file: "$PNAME_info"
+        rollback: 4
+        limit_size: 100 m #only support M byte
+    -device:2
         disable: false
         out_type: screen
         priority: info
@@ -103,14 +117,20 @@ namespace FNLog
     -device: 0
         disable: false
         out_type: file
-        file: "$PNAME_$YEAR$MON$DAY_SYNC"
+        file: "$PNAME_sync"
         rollback: 4
         limit_size: 100 m #only support M byte
-    -device:1
+    -device: 1
+        disable: false
+        out_type: file
+        priority: info
+        file: "$PNAME_sync_info"
+        rollback: 4
+        limit_size: 100 m #only support M byte
+    -device:2
         disable: false
         out_type: screen
-        priority: info
-
+        priority: info 
 )----";
         return FastStartDefaultLogger(default_config_text);
     }
@@ -119,16 +139,20 @@ namespace FNLog
     {
         static const std::string default_config_text =
             R"----(
- # default is mult-thread async write channel.  
- # the first device is write rollback file  
- # the second device is print to screen.  
+ # default channel 0
+   # write full log to pname.log 
+   # view  info log to screen 
+ # sync channel 1 
+   # write full log to pname.log
+   # view  info log to screen 
+
  - channel: 0
-    sync: null
+    sync: async
     -device: 0
         disable: false
         out_type: file
         file: "$PNAME"
-        rollback: 1
+        rollback: 4
         limit_size: 100 m #only support M byte
     -device:1
         disable: false
@@ -139,50 +163,26 @@ namespace FNLog
     -device: 0
         disable: false
         out_type: file
-        file: "$PNAME_SYNC"
-        rollback: 1
+        file: "$PNAME_sync"
+        rollback: 4
         limit_size: 100 m #only support M byte
     -device:1
         disable: false
         out_type: screen
-        priority: info
+        priority: info 
 )----";
         return FastStartDefaultLogger(default_config_text);
     }
 
     inline int FastStartDebugLogger()
     {
-        static const std::string default_config_text =
-            R"----(
- # default is async write channel.  
- # the first device is write rollback file  
- # the second device is print to screen.  
- - channel: 0
-    sync: null
-    -device: 0
-        disable: false
-        out_type: file
-        file: "$PNAME"
-        rollback: 1
-        limit_size: 100 m #only support M byte
-    -device:1
-        disable: false
-        out_type: screen
-        priority: null
- - channel: 1
-    sync: sync
-    -device: 0
-        disable: false
-        out_type: file
-        file: "$PNAME_SYNC"
-        rollback: 1
-        limit_size: 100 m #only support M byte
-    -device:1
-        disable: false
-        out_type: screen
-        priority: null
-)----";
-        return FastStartDefaultLogger(default_config_text);
+        int ret = FastStartSimpleLogger();
+        if (ret == 0)
+        {
+            SetDeviceConfig(GetDefaultLogger(), 0, 1, DEVICE_CFG_PRIORITY, PRIORITY_TRACE);
+            SetDeviceConfig(GetDefaultLogger(), 1, 1, DEVICE_CFG_PRIORITY, PRIORITY_TRACE);
+        }
+        return ret;
     }
 }
 

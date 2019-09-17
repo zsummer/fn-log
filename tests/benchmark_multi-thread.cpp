@@ -1,24 +1,37 @@
 
 #define FN_LOG_MAX_LOG_SIZE 1000
 #define FN_LOG_MAX_LOG_QUEUE_SIZE 100000
-
 #include "fn_log.h"
 #include <signal.h>
 
+
 static const std::string default_config_text =
 R"----(
- # default is mult-thread async write channel.  
- # the first device is write rollback file  
- # the second device is print to screen.  
+ # default channel 0
+   # write full log to pname.log 
+   # write info log to pname_info.log 
+   # view  info log to screen 
+ # sync channel 1 
+   # write full log to pname.log
+   # write info log to pname_info.log
+   # view  info log to screen 
+
  - channel: 0
-    sync: null
+    sync: async
     -device: 0
         disable: false
         out_type: file
         file: "$PNAME"
-        rollback: 1
+        rollback: 4
         limit_size: 100 m #only support M byte
-    -device:1
+    -device: 1
+        disable: false
+        out_type: file
+        priority: info
+        file: "$PNAME_info"
+        rollback: 4
+        limit_size: 100 m #only support M byte
+    -device:2
         disable: false
         out_type: screen
         priority: info
@@ -27,13 +40,20 @@ R"----(
     -device: 0
         disable: false
         out_type: file
-        file: "$PNAME_SYNC"
-        rollback: 1
+        file: "$PNAME_sync"
+        rollback: 4
         limit_size: 100 m #only support M byte
-    -device:1
+    -device: 1
+        disable: false
+        out_type: file
+        priority: info
+        file: "$PNAME_sync_info"
+        rollback: 4
+        limit_size: 100 m #only support M byte
+    -device:2
         disable: false
         out_type: screen
-        priority: info
+        priority: info 
 )----";
 
 
@@ -51,16 +71,11 @@ void thread_proc(int index)
     LogInfo() << "thread:<" << index << "> begin.";
     while (state != END)
     {
-        if (state == WRITE)
-        {
-            LogDebug().write_buffer("rrrrrrrrrrrrrrrrrrrradfads33333333333333rrd",
-                sizeof("rrrrrrrrrrrrrrrrrrrradfads33333333333333rrd") - 1)
-                << -23 << ": " << 32.2223 << (void*) nullptr;
-        }
-        else
-        {
-            std::this_thread::sleep_for(std::chrono::milliseconds(100));
-        }
+
+        LogDebug().write_buffer("rrrrrrrrrrrrrrrrrrrradfads33333333333333rrd",
+            sizeof("rrrrrrrrrrrrrrrrrrrradfads33333333333333rrd") - 1)
+            << -23 << ": " << 32.2223 << (void*) nullptr;
+
     }
     LogInfo() << "thread:<" << index << "> end.";
 }
@@ -85,7 +100,6 @@ int main(int argc, char* argv[])
     }
 
     FNLog::Logger& logger = FNLog::GetDefaultLogger();
-
     int limit_second = 0;
     int thread_id = 0;
     g_multi_proc[thread_id] = std::thread(thread_proc, thread_id);
@@ -95,9 +109,9 @@ int main(int argc, char* argv[])
         long long last_writed = logger.shm_->channels_[0].log_fields_[FNLog::CHANNEL_LOG_PROCESSED];
         std::this_thread::sleep_for(std::chrono::milliseconds(1000));
         long long now_writed = logger.shm_->channels_[0].log_fields_[FNLog::CHANNEL_LOG_PROCESSED];
-        LogInfo() << "now thread:" << thread_id+1 << ": writed:" << now_writed - last_writed ;
-        
-        if (limit_second/3 > thread_id && thread_id+1 < WRITE_THREAD_COUNT)
+        LogInfo() << "now thread:" << thread_id + 1 << ": writed:" << now_writed - last_writed;
+
+        if (limit_second / 3 > thread_id && thread_id + 1 < WRITE_THREAD_COUNT)
         {
             thread_id++;
             LogInfo() << "add new thread:" << thread_id;

@@ -317,10 +317,10 @@ namespace FNLog
         {
             return 0;
         }
-        return channel.log_fields_[field];
+        return AtomicLoadL(channel, field);
     }
 
-    inline void UnsafeChangeChannelConfig(Logger& logger, int channel_id, ChannelConfigEnum field, long long val)
+    inline void SetChannelConfig(Logger& logger, int channel_id, ChannelConfigEnum field, long long val)
     {
         if (logger.shm_->channel_size_ <= channel_id || channel_id < 0)
         {
@@ -349,10 +349,10 @@ namespace FNLog
         {
             return 0;
         }
-        return channel.devices_[device_id].log_fields_[field];
+        return AtomicLoadL(channel.devices_[device_id], field);
     }
 
-    inline void UnsafeChangeDeviceConfig(Logger& logger, int channel_id, int device_id, DeviceConfigEnum field, long long val)
+    inline void SetDeviceConfig(Logger& logger, int channel_id, int device_id, DeviceConfigEnum field, long long val)
     {
         if (logger.shm_->channel_size_ <= channel_id || channel_id < 0)
         {
@@ -385,7 +385,7 @@ namespace FNLog
         {
             return 0;
         }
-        return channel.devices_[device_id].config_fields_[field];
+        return  AtomicLoadC(channel.devices_[device_id], field);
     }
 
     inline void LoadSharedMemory(Logger& logger)

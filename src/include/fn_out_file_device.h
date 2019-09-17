@@ -159,22 +159,22 @@ namespace FNLog
     inline void OpenFileDevice(Logger & logger, Channel & channel, Device & device, FileHandler & writer, LogData & log)
     {
         bool sameday = true;
-        if (log.timestamp_ < device.log_fields_[DEVICE_LOG_CUR_FILE_CREATE_DAY]
-            || log.timestamp_ >= device.log_fields_[DEVICE_LOG_CUR_FILE_CREATE_DAY] + 24 * 3600)
+        if (log.timestamp_ < AtomicLoadL(device, DEVICE_LOG_CUR_FILE_CREATE_DAY)
+            || log.timestamp_ >= AtomicLoadL(device, DEVICE_LOG_CUR_FILE_CREATE_DAY) + 24 * 3600)
         {
             sameday = false;
         }
 
         bool file_over = false;
-        if (device.config_fields_[DEVICE_CFG_FILE_LIMIT_SIZE] > 0 && device.config_fields_[DEVICE_CFG_FILE_ROLLBACK] > 0
-            && device.log_fields_[DEVICE_LOG_CUR_FILE_SIZE] + log.content_len_ > device.config_fields_[DEVICE_CFG_FILE_LIMIT_SIZE])
+        if (AtomicLoadC(device, DEVICE_CFG_FILE_LIMIT_SIZE) > 0 && AtomicLoadC(device, DEVICE_CFG_FILE_ROLLBACK) > 0
+            && AtomicLoadL(device, DEVICE_LOG_CUR_FILE_SIZE) + log.content_len_ > AtomicLoadC(device, DEVICE_CFG_FILE_LIMIT_SIZE))
         {
             file_over = true;
         }
 
         if (!sameday || file_over)
         {
-            device.log_fields_[DEVICE_LOG_CUR_FILE_SIZE] = 0;
+            AtomicStoreL(device, DEVICE_LOG_CUR_FILE_SIZE, 0);
             if (writer.is_open())
             {
                 writer.close();
@@ -215,12 +215,12 @@ namespace FNLog
 
         if (path.length() >= Device::MAX_PATH_LEN + Device::MAX_NAME_LEN)
         {
-            device.log_fields_[DEVICE_LOG_LAST_TRY_CREATE_ERROR] = 1;
-            device.log_fields_[DEVICE_LOG_LAST_TRY_CREATE_TIMESTAMP] = log.timestamp_;
+            AtomicStoreL(device, DEVICE_LOG_LAST_TRY_CREATE_ERROR, 1);
+            AtomicStoreL(device, DEVICE_LOG_LAST_TRY_CREATE_TIMESTAMP, log.timestamp_);
             return;
         }
 
-        if (device.config_fields_[DEVICE_CFG_FILE_ROLLBACK] > 0 || device.config_fields_[DEVICE_CFG_FILE_LIMIT_SIZE] > 0)
+        if (AtomicLoadC(device, DEVICE_CFG_FILE_ROLLBACK) > 0 || AtomicLoadC(device, DEVICE_CFG_FILE_LIMIT_SIZE) > 0)
         {
             //when no rollback but has limit size. need try rollback once.
             long long limit_roll = device.config_fields_[DEVICE_CFG_FILE_ROLLBACK];
@@ -232,16 +232,15 @@ namespace FNLog
         long writed_byte = writer.open(path.c_str(), "ab", file_stat);
         if (!writer.is_open())
         {
-            device.log_fields_[DEVICE_LOG_LAST_TRY_CREATE_ERROR] = 2;
-            device.log_fields_[DEVICE_LOG_LAST_TRY_CREATE_TIMESTAMP] = log.timestamp_;
+            AtomicStoreL(device, DEVICE_LOG_LAST_TRY_CREATE_ERROR, 2);
+            AtomicStoreL(device, DEVICE_LOG_LAST_TRY_CREATE_TIMESTAMP, log.timestamp_);
             return;
         }
-
-        device.log_fields_[DEVICE_LOG_LAST_TRY_CREATE_ERROR] = 0;
-        device.log_fields_[DEVICE_LOG_LAST_TRY_CREATE_TIMESTAMP] = 0;
-        device.log_fields_[DEVICE_LOG_CUR_FILE_CREATE_TIMESTAMP] = log.timestamp_;
-        device.log_fields_[DEVICE_LOG_CUR_FILE_CREATE_DAY] = create_day;
-        device.log_fields_[DEVICE_LOG_CUR_FILE_SIZE] = writed_byte;
+        AtomicStoreL(device, DEVICE_LOG_LAST_TRY_CREATE_ERROR, 0);
+        AtomicStoreL(device, DEVICE_LOG_LAST_TRY_CREATE_TIMESTAMP, 0);
+        AtomicStoreL(device, DEVICE_LOG_CUR_FILE_CREATE_TIMESTAMP, log.timestamp_);
+        AtomicStoreL(device, DEVICE_LOG_CUR_FILE_CREATE_DAY, create_day);
+        AtomicStoreL(device, DEVICE_LOG_CUR_FILE_SIZE, writed_byte);
     }
 
 
@@ -252,7 +251,7 @@ namespace FNLog
         Device& device = channel.devices_[device_id];
         FileHandler& writer = logger.file_handles_[channel_id + channel_id * device_id];
 
-        if (!writer.is_open() && device.log_fields_[DEVICE_LOG_LAST_TRY_CREATE_TIMESTAMP] + 5 > log.timestamp_)
+        if (!writer.is_open() && AtomicLoadL(device, DEVICE_LOG_LAST_TRY_CREATE_TIMESTAMP) + 5 > log.timestamp_)
         {
             return;
         }
@@ -262,9 +261,9 @@ namespace FNLog
             return;
         }
         writer.write(log.content_, log.content_len_);
-        device.log_fields_[DEVICE_LOG_TOTAL_WRITE_LINE]++;
-        device.log_fields_[DEVICE_LOG_TOTAL_WRITE_BYTE] += log.content_len_;
-        device.log_fields_[DEVICE_LOG_CUR_FILE_SIZE] += log.content_len_;
+        AtomicAddL(device, DEVICE_LOG_TOTAL_WRITE_LINE);
+        AtomicAddLV(device, DEVICE_LOG_TOTAL_WRITE_BYTE, log.content_len_);
+        AtomicAddLV(device, DEVICE_LOG_CUR_FILE_SIZE, log.content_len_);
     }
 
 

@@ -258,7 +258,11 @@ namespace FNLog
         LogFields log_fields_;
     };
 
-
+#define AtomicLoadC(data, eid) data.config_fields_[eid].load(std::memory_order_relaxed)
+#define AtomicLoadL(data, eid) data.log_fields_[eid].load(std::memory_order_relaxed)
+#define AtomicAddL(data, eid) data.log_fields_[eid].fetch_add(1, std::memory_order_relaxed)
+#define AtomicAddLV(data, eid, v) data.log_fields_[eid].fetch_add(v, std::memory_order_relaxed)
+#define AtomicStoreL(data, eid, v) data.log_fields_[eid].store(v, std::memory_order_relaxed)
 
     enum LoggerState
     {

@@ -78,18 +78,18 @@ namespace FNLog
         for (int device_id = 0; device_id < channel.device_size_; device_id++)
         {
             Device& device = channel.devices_[device_id];
-            if (!device.config_fields_[DEVICE_CFG_ABLE])
+            if (!AtomicLoadC(device, DEVICE_CFG_ABLE))
             {
                 continue;
             }
-            if (log.priority_ < device.config_fields_[DEVICE_CFG_PRIORITY])
+            if (log.priority_ < AtomicLoadC(device, DEVICE_CFG_PRIORITY))
             {
                 continue;
             }
-            if (device.config_fields_[DEVICE_CFG_CATEGORY] > 0)
+            if (AtomicLoadC(device, DEVICE_CFG_CATEGORY) > 0)
             {
-                if (log.category_ < device.config_fields_[DEVICE_CFG_CATEGORY]
-                    || log.category_ > device.config_fields_[DEVICE_CFG_CATEGORY] + device.config_fields_[DEVICE_CFG_CATEGORY_EXTEND])
+                if (log.category_ < AtomicLoadC(device, DEVICE_CFG_CATEGORY)
+                    || log.category_ > AtomicLoadC(device, DEVICE_CFG_CATEGORY) + AtomicLoadC(device, DEVICE_CFG_CATEGORY_EXTEND))
                 {
                     continue;
                 }
@@ -108,9 +108,9 @@ namespace FNLog
             bool has_write_op = false;
             do
             {
-                int old_idx = ring_buffer.proc_idx_;
-                int next_idx = (ring_buffer.proc_idx_ + 1) % RingBuffer::MAX_LOG_QUEUE_SIZE;
-                if (old_idx == ring_buffer.write_idx_)
+                int old_idx = ring_buffer.proc_idx_.load(std::memory_order_acquire);
+                int next_idx = (old_idx + 1) % RingBuffer::MAX_LOG_QUEUE_SIZE;
+                if (old_idx == ring_buffer.write_idx_.load(std::memory_order_acquire))
                 {
                     break;
                 }
@@ -121,19 +121,19 @@ namespace FNLog
                 auto& cur_log = ring_buffer.buffer_[old_idx];
                 DispatchLog(logger, channel, cur_log);
                 cur_log.data_mark_ = 0;
-                channel.log_fields_[CHANNEL_LOG_PROCESSED]++;
+                AtomicAddL(channel, CHANNEL_LOG_PROCESSED);
                 has_write_op = true;
 
 
                 do
                 {
-                    old_idx = ring_buffer.read_idx_;
-                    next_idx = (ring_buffer.read_idx_ + 1) % RingBuffer::MAX_LOG_QUEUE_SIZE;
-                    if (old_idx == ring_buffer.proc_idx_)
+                    old_idx = ring_buffer.read_idx_.load(std::memory_order_acquire);
+                    next_idx = (old_idx + 1) % RingBuffer::MAX_LOG_QUEUE_SIZE;
+                    if (old_idx == ring_buffer.proc_idx_.load(std::memory_order_acquire))
                     {
                         break;
                     }
-                    if (ring_buffer.buffer_[old_idx].data_mark_ != MARK_INVALID)
+                    if (ring_buffer.buffer_[old_idx].data_mark_.load(std::memory_order_acquire) != MARK_INVALID)
                     {
                         break;
                     }
@@ -256,14 +256,14 @@ namespace FNLog
         {
             return -3;
         }
-        if (priority < channel.config_fields_[CHANNEL_CFG_PRIORITY])
+        if (priority < AtomicLoadC(channel, CHANNEL_CFG_PRIORITY))
         {
             return -4;
         }
-        if (channel.config_fields_[CHANNEL_CFG_CATEGORY] > 0)
+        if (AtomicLoadC(channel, CHANNEL_CFG_CATEGORY) > 0)
         {
-            if (category < channel.config_fields_[CHANNEL_CFG_CATEGORY]
-                || category > channel.config_fields_[CHANNEL_CFG_CATEGORY] + channel.config_fields_[CHANNEL_CFG_CATEGORY_EXTEND])
+            if (category < AtomicLoadC(channel, CHANNEL_CFG_CATEGORY)
+                || category > AtomicLoadC(channel, CHANNEL_CFG_CATEGORY) + AtomicLoadC(channel, CHANNEL_CFG_CATEGORY_EXTEND))
             {
                 return -5;
             }
@@ -283,16 +283,16 @@ namespace FNLog
                 {
                     break;
                 }
-                int old_idx = ring_buffer.hold_idx_;
+                int old_idx = ring_buffer.hold_idx_.load(std::memory_order_acquire);
                 int hold_idx = (old_idx + 1) % RingBuffer::MAX_LOG_QUEUE_SIZE;
-                if (hold_idx == ring_buffer.read_idx_)
+                if (hold_idx == ring_buffer.read_idx_.load(std::memory_order_acquire))
                 {
                     break;
                 }
                 if (ring_buffer.hold_idx_.compare_exchange_strong(old_idx, hold_idx))
                 {
-                    channel.log_fields_[CHANNEL_LOG_HOLD]++;
-                    ring_buffer.buffer_[old_idx].data_mark_ = MARK_HOLD;
+                    AtomicAddL(channel, CHANNEL_LOG_HOLD);
+                    ring_buffer.buffer_[old_idx].data_mark_.store(MARK_HOLD, std::memory_order_release);
                     return old_idx;
                 }
                 continue;
@@ -332,19 +332,19 @@ namespace FNLog
 
         do
         {
-            int old_idx = ring_buffer.write_idx_;
+            int old_idx = ring_buffer.write_idx_.load(std::memory_order_acquire);
             int next_idx = (old_idx + 1) % RingBuffer::MAX_LOG_QUEUE_SIZE;
-            if (old_idx == ring_buffer.hold_idx_)
+            if (old_idx == ring_buffer.hold_idx_.load(std::memory_order_acquire))
             {
                 break;
             }
-            if (ring_buffer.buffer_[old_idx].data_mark_ != 2)
+            if (ring_buffer.buffer_[old_idx].data_mark_.load(std::memory_order_acquire) != 2)
             {
                 break;
             }
             if (ring_buffer.write_idx_.compare_exchange_strong(old_idx, next_idx))
             {
-                channel.log_fields_[CHANNEL_LOG_PUSH]++;
+                AtomicAddL(channel, CHANNEL_LOG_PUSH);
             }
         } while (channel.channel_state_ == CHANNEL_STATE_RUNNING);
 

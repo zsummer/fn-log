@@ -60,11 +60,11 @@ namespace FNLog
             return;
         }
         Device& device = logger.shm_->channels_[channel_id].devices_[device_id];
-        long long ip = device.config_fields_[DEVICE_CFG_UDP_IP];
-        long long port = device.config_fields_[DEVICE_CFG_UDP_PORT];
+        long long ip = AtomicLoadC(device, DEVICE_CFG_UDP_IP);
+        long long port = AtomicLoadC(device, DEVICE_CFG_UDP_PORT);
         udp.write((unsigned long)ip, (unsigned short)port, log.content_, log.content_len_);
-        device.log_fields_[DEVICE_LOG_TOTAL_WRITE_LINE]++;
-        device.log_fields_[DEVICE_LOG_TOTAL_WRITE_BYTE] += log.content_len_;
+        AtomicAddL(device, DEVICE_LOG_TOTAL_WRITE_LINE);
+        AtomicAddLV(device, DEVICE_LOG_TOTAL_WRITE_BYTE, log.content_len_);
     }
 }
 
