@@ -36,7 +36,7 @@ int main(int argc, char* argv[])
         ls << "log begin test buffer";
         int rd = 0;
         int last_len = 0;
-        for (int j = 0; j < FNLog::LogData::MAX_LOG_SIZE; j++)
+        for (int j = 0; j < FNLog::LogData::LOG_SIZE; j++)
         {
             rd = rand() % 10;
             last_len = ls.log_data_->content_len_;
@@ -76,7 +76,7 @@ int main(int argc, char* argv[])
                 break;
             }
             int length = ls.log_data_->content_len_;
-            if (length > FNLog::LogData::MAX_LOG_SIZE)
+            if (length > FNLog::LogData::LOG_SIZE)
             {
                 LogFatal() << "error len:" << length;
                 return -1;

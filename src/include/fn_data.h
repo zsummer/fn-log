@@ -111,7 +111,7 @@ namespace FNLog
     struct LogData
     {
     public:
-        static const int MAX_LOG_SIZE = FN_LOG_MAX_LOG_SIZE;
+        static const int LOG_SIZE = FN_LOG_MAX_LOG_SIZE;
     public:
         std::atomic_int    data_mark_; //0 invalid, 1 hold, 2 ready
         int    channel_id_;
@@ -121,7 +121,7 @@ namespace FNLog
         int precise_; //create time millionsecond suffix
         unsigned int thread_;
         int content_len_;
-        char content_[MAX_LOG_SIZE]; //content
+        char content_[LOG_SIZE]; //content
     };
 
 
@@ -171,7 +171,7 @@ namespace FNLog
         static const int MAX_ROLLBACK_LEN = 4;
         static const int MAX_ROLLBACK_PATHS = 5;
         static_assert(MAX_PATH_LEN + MAX_NAME_LEN + MAX_ROLLBACK_LEN < MAX_PATH_SYS_LEN, "");
-        static_assert(LogData::MAX_LOG_SIZE > MAX_PATH_SYS_LEN*2, "unsafe size"); // promise format length: date, time, source file path, function length.
+        static_assert(LogData::LOG_SIZE > MAX_PATH_SYS_LEN*2, "unsafe size"); // promise format length: date, time, source file path, function length.
         static_assert(MAX_ROLLBACK_PATHS < 10, "");
         using ConfigFields = std::array<std::atomic_llong, DEVICE_CFG_MAX_ID>;
         using LogFields = std::array<std::atomic_llong, DEVICE_LOG_MAX_ID>;
@@ -220,7 +220,7 @@ namespace FNLog
     struct RingBuffer
     {
     public:
-        static const int MAX_LOG_QUEUE_SIZE = FN_LOG_MAX_LOG_QUEUE_SIZE;
+        static const int BUFFER_LEN = FN_LOG_MAX_LOG_QUEUE_SIZE;
     public:
         char chunk_1_[CHUNK_SIZE];
         std::atomic_int write_idx_;
@@ -231,7 +231,7 @@ namespace FNLog
         char chunk_4_[CHUNK_SIZE];
         std::atomic_int proc_idx_;
         char chunk_5_[CHUNK_SIZE];
-        LogData buffer_[MAX_LOG_QUEUE_SIZE];
+        LogData buffer_[BUFFER_LEN];
     };
 
     struct Channel
@@ -258,11 +258,6 @@ namespace FNLog
         LogFields log_fields_;
     };
 
-#define AtomicLoadC(data, eid) data.config_fields_[eid].load(std::memory_order_relaxed)
-#define AtomicLoadL(data, eid) data.log_fields_[eid].load(std::memory_order_relaxed)
-#define AtomicAddL(data, eid) data.log_fields_[eid].fetch_add(1, std::memory_order_relaxed)
-#define AtomicAddLV(data, eid, v) data.log_fields_[eid].fetch_add(v, std::memory_order_relaxed)
-#define AtomicStoreL(data, eid, v) data.log_fields_[eid].store(v, std::memory_order_relaxed)
 
     enum LoggerState
     {
@@ -350,9 +345,46 @@ namespace FNLog
     };
 
 
-#define FN_MIN(x, y) ((y) < (x) ? (y) :(x))
-#define FN_MAX(x, y) ((x) < (y) ? (y) :(x))
 
+    template<class V>
+    inline V FN_MIN(V x, V y) 
+    {
+        return y < x ? y : x;
+    }
+    template<class V>
+    inline V FN_MAX(V x, V y)
+    {
+        return x < y ? y : x;
+    }
+
+    template <class M>
+    inline long long AtomicLoadC(M& m, unsigned eid)
+    {
+        return m.config_fields_[eid].load(std::memory_order_relaxed);
+    }
+
+    template <class M>
+    inline long long AtomicLoadL(M& m, unsigned eid)
+    {
+        return m.log_fields_[eid].load(std::memory_order_relaxed);
+    }
+
+    template <class M>
+    inline void AtomicAddL(M& m, unsigned eid)
+    {
+        m.log_fields_[eid].fetch_add(1, std::memory_order_relaxed);
+    }
+    template <class M>
+    inline void AtomicAddLV(M& m, unsigned eid, long long v)
+    {
+        m.log_fields_[eid].fetch_add(v, std::memory_order_relaxed);
+    }
+
+    template <class M>
+    inline void AtomicStoreL(M& m, unsigned eid, long long v)
+    {
+        m.log_fields_[eid].store(v, std::memory_order_relaxed);
+    }
 }
 
 

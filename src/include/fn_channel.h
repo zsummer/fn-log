@@ -105,11 +105,11 @@ namespace FNLog
         RingBuffer& ring_buffer = logger.shm_->ring_buffers_[channel_id];
         do
         {
-            bool has_write_op = false;
+            int local_write_count = 0;
             do
             {
                 int old_idx = ring_buffer.proc_idx_.load(std::memory_order_acquire);
-                int next_idx = (old_idx + 1) % RingBuffer::MAX_LOG_QUEUE_SIZE;
+                int next_idx = (old_idx + 1) % RingBuffer::BUFFER_LEN;
                 if (old_idx == ring_buffer.write_idx_.load(std::memory_order_acquire))
                 {
                     break;
@@ -122,13 +122,13 @@ namespace FNLog
                 DispatchLog(logger, channel, cur_log);
                 cur_log.data_mark_ = 0;
                 AtomicAddL(channel, CHANNEL_LOG_PROCESSED);
-                has_write_op = true;
+                local_write_count ++;
 
 
                 do
                 {
                     old_idx = ring_buffer.read_idx_.load(std::memory_order_acquire);
-                    next_idx = (old_idx + 1) % RingBuffer::MAX_LOG_QUEUE_SIZE;
+                    next_idx = (old_idx + 1) % RingBuffer::BUFFER_LEN;
                     if (old_idx == ring_buffer.proc_idx_.load(std::memory_order_acquire))
                     {
                         break;
@@ -139,9 +139,18 @@ namespace FNLog
                     }
                     ring_buffer.read_idx_.compare_exchange_strong(old_idx, next_idx);
                 } while (true);
-
+                if (local_write_count > 10000)
+                {
+                    local_write_count = 0;
+                    for (int i = 0; i < channel.device_size_; i++)
+                    {
+                        if (channel.devices_[i].out_type_ == DEVICE_OUT_FILE)
+                        {
+                            logger.file_handles_[channel_id * Channel::MAX_DEVICE_SIZE + i].flush();
+                        }
+                    }
+                }
             } while (true);
-
 
 
             if (channel.channel_state_ == CHANNEL_STATE_NULL)
@@ -149,7 +158,7 @@ namespace FNLog
                 channel.channel_state_ = CHANNEL_STATE_RUNNING;
             }
 
-            if (has_write_op)
+            if (local_write_count)
             {
                 for (int i = 0; i < channel.device_size_; i++)
                 {
@@ -271,14 +280,14 @@ namespace FNLog
             }
             state++;
 
-            for (int i = 0; i < FN_MAX(RingBuffer::MAX_LOG_QUEUE_SIZE, 10); i++)
+            for (int i = 0; i < FN_MAX(RingBuffer::BUFFER_LEN, 10); i++)
             {
                 if (channel.channel_state_ != CHANNEL_STATE_RUNNING)
                 {
                     break;
                 }
                 int old_idx = ring_buffer.hold_idx_.load(std::memory_order_acquire);
-                int hold_idx = (old_idx + 1) % RingBuffer::MAX_LOG_QUEUE_SIZE;
+                int hold_idx = (old_idx + 1) % RingBuffer::BUFFER_LEN;
                 if (hold_idx == ring_buffer.read_idx_.load(std::memory_order_acquire))
                 {
                     break;
@@ -305,7 +314,7 @@ namespace FNLog
         {
             return -1;
         }
-        if (hold_idx >= RingBuffer::MAX_LOG_QUEUE_SIZE || hold_idx < 0)
+        if (hold_idx >= RingBuffer::BUFFER_LEN || hold_idx < 0)
         {
             return -2;
         }
@@ -317,7 +326,7 @@ namespace FNLog
         }
 
         LogData& log = ring_buffer.buffer_[hold_idx];
-        log.content_len_ = FN_MIN(log.content_len_, LogData::MAX_LOG_SIZE - 2);
+        log.content_len_ = FN_MIN(log.content_len_, LogData::LOG_SIZE - 2);
         log.content_[log.content_len_++] = '\n';
         log.content_[log.content_len_] = '\0';
 
@@ -327,7 +336,7 @@ namespace FNLog
         do
         {
             int old_idx = ring_buffer.write_idx_.load(std::memory_order_acquire);
-            int next_idx = (old_idx + 1) % RingBuffer::MAX_LOG_QUEUE_SIZE;
+            int next_idx = (old_idx + 1) % RingBuffer::BUFFER_LEN;
             if (old_idx == ring_buffer.hold_idx_.load(std::memory_order_acquire))
             {
                 break;

@@ -151,9 +151,9 @@ namespace FNLog
 
         LogStream& write_buffer(const char* src, int src_len)
         {
-            if (log_data_ && src && src_len > 0 && log_data_->content_len_ < LogData::MAX_LOG_SIZE)
+            if (log_data_ && src && src_len > 0 && log_data_->content_len_ < LogData::LOG_SIZE)
             {
-                src_len = FN_MIN(src_len, LogData::MAX_LOG_SIZE - log_data_->content_len_);
+                src_len = FN_MIN(src_len, LogData::LOG_SIZE - log_data_->content_len_);
                 memcpy(log_data_->content_ + log_data_->content_len_, src, src_len);
                 log_data_->content_len_ += src_len;
             }
@@ -162,7 +162,7 @@ namespace FNLog
 
         LogStream& write_pointer(const void* ptr)
         {
-            if (log_data_ && log_data_->content_len_ + 30 <= LogData::MAX_LOG_SIZE)
+            if (log_data_ && log_data_->content_len_ + 30 <= LogData::LOG_SIZE)
             {
                 log_data_->content_len_ += FNLog::write_pointer_unsafe(log_data_->content_ + log_data_->content_len_, ptr);
             }
@@ -195,14 +195,14 @@ namespace FNLog
                     }
                 }
                 write_buffer("\r\n\t[", sizeof("\r\n\t[") - 1);
-                if (log_data_->content_len_ + sizeof(void*) <= LogData::MAX_LOG_SIZE)
+                if (log_data_->content_len_ + sizeof(void*) <= LogData::LOG_SIZE)
                 {
                     write_pointer(dst + (size_t)i * 32);
                 }
                 write_buffer(": ", sizeof(": ") - 1);
                 for (int j = i * 32; j < (i + 1) * 32 && j < len; j++)
                 {
-                    if (log_data_->content_len_ + 30 >= LogData::MAX_LOG_SIZE)
+                    if (log_data_->content_len_ + 30 >= LogData::LOG_SIZE)
                     {
                         break;
                     }
@@ -255,7 +255,7 @@ namespace FNLog
         
         LogStream& operator << (long long integer)
         {
-            if (log_data_ && log_data_->content_len_ + 30 <= LogData::MAX_LOG_SIZE)
+            if (log_data_ && log_data_->content_len_ + 30 <= LogData::LOG_SIZE)
             {
                 log_data_->content_len_ += write_dec_unsafe<0>(log_data_->content_ + log_data_->content_len_, (long long)integer);
             }
@@ -264,7 +264,7 @@ namespace FNLog
 
         LogStream& operator << (unsigned long long integer)
         {
-            if (log_data_ && log_data_->content_len_ + 30 <= LogData::MAX_LOG_SIZE)
+            if (log_data_ && log_data_->content_len_ + 30 <= LogData::LOG_SIZE)
             {
                 log_data_->content_len_ += write_dec_unsafe<0>(log_data_->content_ + log_data_->content_len_, (unsigned long long)integer);
             }
@@ -273,7 +273,7 @@ namespace FNLog
 
         LogStream& operator << (float f)
         {
-            if (log_data_ && log_data_->content_len_ + 30 <= LogData::MAX_LOG_SIZE)
+            if (log_data_ && log_data_->content_len_ + 30 <= LogData::LOG_SIZE)
             {
                 log_data_->content_len_ += write_float_unsafe(log_data_->content_ + log_data_->content_len_, f);
             }
@@ -281,7 +281,7 @@ namespace FNLog
         }
         LogStream& operator << (double df)
         {
-            if (log_data_ && log_data_->content_len_ + 30 <= LogData::MAX_LOG_SIZE)
+            if (log_data_ && log_data_->content_len_ + 30 <= LogData::LOG_SIZE)
             {
                 log_data_->content_len_ += write_double_unsafe(log_data_->content_ + log_data_->content_len_, df);
             }
