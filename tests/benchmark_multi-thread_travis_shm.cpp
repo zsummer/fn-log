@@ -92,9 +92,9 @@ int main(int argc, char* argv[])
 
     do
     {
-        long long last_writed = logger.shm_->channels_[0].log_fields_[FNLog::CHANNEL_LOG_PROCESSED];
+        long long last_writed = AtomicLoadL(logger.shm_->channels_[0], FNLog::CHANNEL_LOG_PROCESSED);
         std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-        long long now_writed = logger.shm_->channels_[0].log_fields_[FNLog::CHANNEL_LOG_PROCESSED];
+        long long now_writed = AtomicLoadL(logger.shm_->channels_[0], FNLog::CHANNEL_LOG_PROCESSED);
         LogInfo() << "now thread:" << thread_id+1 << ": writed:" << now_writed - last_writed ;
         
         if (limit_second/3 > thread_id && thread_id+1 < WRITE_THREAD_COUNT)

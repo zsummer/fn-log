@@ -70,7 +70,7 @@ int main(int argc, char* argv[])
 
     last_channel_write = ChannelWrite(0);
     last_device_write = DeviceWrite(0, 0);
-    UnsafeChangeDeviceConfig(GetDefaultLogger(), 0, 0, DEVICE_CFG_PRIORITY, PRIORITY_ERROR);
+    SetDeviceConfig(GetDefaultLogger(), 0, 0, DEVICE_CFG_PRIORITY, PRIORITY_ERROR);
     LogTraceStream(0, 0);
     LogDebugStream(0, 1);
     LogInfoStream(0, 2);
@@ -81,8 +81,8 @@ int main(int argc, char* argv[])
     FNLOG_ASSERT(ChannelWrite(0) - last_channel_write == 7, "priority test ");
     FNLOG_ASSERT(DeviceWrite(0, 0) - last_device_write == 3, "priority test ");
 
-    UnsafeChangeDeviceConfig(GetDefaultLogger(), 0, 0, DEVICE_CFG_PRIORITY, PRIORITY_TRACE);
-    UnsafeChangeDeviceConfig(GetDefaultLogger(), 0, 0, DEVICE_CFG_CATEGORY, 1);
+    SetDeviceConfig(GetDefaultLogger(), 0, 0, DEVICE_CFG_PRIORITY, PRIORITY_TRACE);
+    SetDeviceConfig(GetDefaultLogger(), 0, 0, DEVICE_CFG_CATEGORY, 1);
     last_channel_write = ChannelWrite(0);
     last_device_write = DeviceWrite(0, 0);
     LogTraceStream(0, 0);
@@ -91,7 +91,7 @@ int main(int argc, char* argv[])
     FNLOG_ASSERT(ChannelWrite(0) - last_channel_write == 3, "category test ");
     FNLOG_ASSERT(DeviceWrite(0, 0) - last_device_write == 1, "category test ");
 
-    UnsafeChangeDeviceConfig(GetDefaultLogger(), 0, 0, DEVICE_CFG_CATEGORY_EXTEND, 1);
+    SetDeviceConfig(GetDefaultLogger(), 0, 0, DEVICE_CFG_CATEGORY_EXTEND, 1);
     last_channel_write = ChannelWrite(0);
     last_device_write = DeviceWrite(0, 0);
     LogTraceStream(0, 0);
@@ -100,7 +100,7 @@ int main(int argc, char* argv[])
     FNLOG_ASSERT(ChannelWrite(0) - last_channel_write == 3, "category test ");
     FNLOG_ASSERT(DeviceWrite(0, 0) - last_device_write == 2, "category test ");
 
-    UnsafeChangeDeviceConfig(GetDefaultLogger(), 0, 0, DEVICE_CFG_CATEGORY, 0);
+    SetDeviceConfig(GetDefaultLogger(), 0, 0, DEVICE_CFG_CATEGORY, 0);
     last_channel_write = ChannelWrite(0);
     last_device_write = DeviceWrite(0, 0);
     LogTraceStream(0, 0);
@@ -109,9 +109,9 @@ int main(int argc, char* argv[])
     FNLOG_ASSERT(ChannelWrite(0) - last_channel_write == 3, "category test ");
     FNLOG_ASSERT(DeviceWrite(0, 0) - last_device_write == 3, "category test ");
 
-    UnsafeChangeChannelConfig(GetDefaultLogger(), 0, CHANNEL_CFG_CATEGORY, 2);
-    UnsafeChangeChannelConfig(GetDefaultLogger(), 0, CHANNEL_CFG_CATEGORY_EXTEND, 2);
-    UnsafeChangeChannelConfig(GetDefaultLogger(), 0, CHANNEL_CFG_PRIORITY, PRIORITY_ERROR);
+    SetChannelConfig(GetDefaultLogger(), 0, CHANNEL_CFG_CATEGORY, 2);
+    SetChannelConfig(GetDefaultLogger(), 0, CHANNEL_CFG_CATEGORY_EXTEND, 2);
+    SetChannelConfig(GetDefaultLogger(), 0, CHANNEL_CFG_PRIORITY, PRIORITY_ERROR);
     last_channel_write = ChannelWrite(0);
     last_device_write = DeviceWrite(0, 0);
     LogTraceStream(0, 0);
@@ -124,8 +124,8 @@ int main(int argc, char* argv[])
     FNLOG_ASSERT(ChannelWrite(0) - last_channel_write == 1, "channel category and priority test ");
     FNLOG_ASSERT(DeviceWrite(0, 0) - last_device_write == 1, "channel category and priority test ");
 
-    UnsafeChangeChannelConfig(GetDefaultLogger(), 0, CHANNEL_CFG_CATEGORY, 0);
-    UnsafeChangeChannelConfig(GetDefaultLogger(), 0, CHANNEL_CFG_PRIORITY, PRIORITY_TRACE);
+    SetChannelConfig(GetDefaultLogger(), 0, CHANNEL_CFG_CATEGORY, 0);
+    SetChannelConfig(GetDefaultLogger(), 0, CHANNEL_CFG_PRIORITY, PRIORITY_TRACE);
 
 
     last_channel_write = ChannelWrite(0);
