@@ -52,9 +52,8 @@ namespace FNLog
     {
         Logger::ScreenLockGuard l(logger.screen_lock_);
         Device& device = logger.shm_->channels_[channel_id].devices_[device_id];
-        device.log_fields_[DEVICE_LOG_TOTAL_WRITE_LINE]++;
-        device.log_fields_[DEVICE_LOG_TOTAL_WRITE_BYTE] += log.content_len_;
-
+        AtomicAddL(device, DEVICE_LOG_TOTAL_WRITE_LINE);
+        AtomicAddLV(device, DEVICE_LOG_TOTAL_WRITE_BYTE, log.content_len_);
         int priority = log.priority_;
         if (log.priority_ < PRIORITY_INFO)
         {
@@ -70,7 +69,11 @@ namespace FNLog
 #else
 
         HANDLE sc_handle = ::GetStdHandle(STD_OUTPUT_HANDLE);
-        if (sc_handle == INVALID_HANDLE_VALUE) return;
+        if (sc_handle == INVALID_HANDLE_VALUE)
+        {
+            printf("%s", log.content_);
+            return;
+        }
         CONSOLE_SCREEN_BUFFER_INFO old_info;
         if (!GetConsoleScreenBufferInfo(sc_handle, &old_info))
         {

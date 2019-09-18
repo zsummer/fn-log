@@ -88,7 +88,7 @@ namespace FNLog
     {
         for (int channel_id = 0; channel_id < logger.shm_->channel_size_; channel_id++)
         {
-            static_assert(LogData::MAX_LOG_SIZE > Device::MAX_PATH_SYS_LEN * 2 + 100, "");
+            static_assert(LogData::LOG_SIZE > Device::MAX_PATH_SYS_LEN * 2 + 100, "");
             Channel& channel = logger.shm_->channels_[channel_id];
             std::thread& thd = logger.async_threads[channel_id];
             switch (channel.channel_type_)
@@ -134,7 +134,7 @@ namespace FNLog
     {
         for (int channel_id = 0; channel_id < logger.shm_->channel_size_; channel_id++)
         {
-            static_assert(LogData::MAX_LOG_SIZE > Device::MAX_PATH_SYS_LEN * 2 + 100, "");
+            static_assert(LogData::LOG_SIZE > Device::MAX_PATH_SYS_LEN * 2 + 100, "");
             Channel& channel = logger.shm_->channels_[channel_id];
             std::thread& thd = logger.async_threads[channel_id];
             switch (channel.channel_type_)
@@ -206,7 +206,7 @@ namespace FNLog
             while (ring_buffer.read_idx_ != ring_buffer.write_idx_)
             {
                 ring_buffer.buffer_[ring_buffer.read_idx_].data_mark_ = 0;
-                ring_buffer.read_idx_ = (ring_buffer.read_idx_ + 1) % RingBuffer::MAX_LOG_QUEUE_SIZE;
+                ring_buffer.read_idx_ = (ring_buffer.read_idx_ + 1) % RingBuffer::BUFFER_LEN;
             }
             ring_buffer.read_idx_ = 0;
             ring_buffer.proc_idx_ = 0;
@@ -317,10 +317,10 @@ namespace FNLog
         {
             return 0;
         }
-        return channel.log_fields_[field];
+        return AtomicLoadL(channel, field);
     }
 
-    inline void UnsafeChangeChannelConfig(Logger& logger, int channel_id, ChannelConfigEnum field, long long val)
+    inline void SetChannelConfig(Logger& logger, int channel_id, ChannelConfigEnum field, long long val)
     {
         if (logger.shm_->channel_size_ <= channel_id || channel_id < 0)
         {
@@ -349,10 +349,10 @@ namespace FNLog
         {
             return 0;
         }
-        return channel.devices_[device_id].log_fields_[field];
+        return AtomicLoadL(channel.devices_[device_id], field);
     }
 
-    inline void UnsafeChangeDeviceConfig(Logger& logger, int channel_id, int device_id, DeviceConfigEnum field, long long val)
+    inline void SetDeviceConfig(Logger& logger, int channel_id, int device_id, DeviceConfigEnum field, long long val)
     {
         if (logger.shm_->channel_size_ <= channel_id || channel_id < 0)
         {
@@ -385,7 +385,7 @@ namespace FNLog
         {
             return 0;
         }
-        return channel.devices_[device_id].config_fields_[field];
+        return  AtomicLoadC(channel.devices_[device_id], field);
     }
 
     inline void LoadSharedMemory(Logger& logger)
@@ -444,14 +444,29 @@ namespace FNLog
                 return;
             }
 
-            if (shm->ring_buffers_[i].write_idx_ >= RingBuffer::MAX_LOG_QUEUE_SIZE
+            if (shm->ring_buffers_[i].write_idx_ >= RingBuffer::BUFFER_LEN
                 || shm->ring_buffers_[i].write_idx_ < 0)
             {
                 return;
             }
+
+            while (shm->ring_buffers_[i].write_idx_.load() != shm->ring_buffers_[i].hold_idx_.load())
+            {
+                auto& log = shm->ring_buffers_[i].buffer_[shm->ring_buffers_[i].write_idx_];
+                log.data_mark_ = 2;
+                log.priority_ = PRIORITY_FATAL;
+                std::string core_desc = "!!!core recover!!!";
+                log.content_len_ = FN_MIN(log.content_len_, LogData::LOG_SIZE - (int)core_desc.length() -2 );
+                memcpy(&log.content_[log.content_len_], core_desc.c_str(), core_desc.length());
+                log.content_len_ += core_desc.length();
+                log.content_[log.content_len_++] = '\n';
+                log.content_[log.content_len_] = '\0';
+
+                shm->ring_buffers_[i].write_idx_ = (shm->ring_buffers_[i].write_idx_ + 1) % RingBuffer::BUFFER_LEN;
+            }
             shm->ring_buffers_[i].hold_idx_ = shm->ring_buffers_[i].write_idx_.load();
 
-            if (shm->ring_buffers_[i].read_idx_ >= RingBuffer::MAX_LOG_QUEUE_SIZE
+            if (shm->ring_buffers_[i].read_idx_ >= RingBuffer::BUFFER_LEN
                 || shm->ring_buffers_[i].read_idx_ < 0)
             {
                 return;
@@ -467,6 +482,7 @@ namespace FNLog
 #else
         logger.shm_ = new SHMLogger();
         memset(logger.shm_, 0, sizeof(SHMLogger));
+        
 #endif
     }
     inline void UnloadSharedMemory(Logger& logger)

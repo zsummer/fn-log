@@ -21,20 +21,21 @@ int main(int argc, char* argv[])
         long long proc_count = FNLog::GetChannelLog(FNLog::GetDefaultLogger(), 0, FNLog::CHANNEL_LOG_PUSH);
         if (proc_count % 100000 == 0)
         {
-            LogInfo() << "now write:" << proc_count;
-        }
-        else if (proc_count == 800001)
-        {
-            LogFatal() << "now has dump:" << proc_count;
-            _exit(0);
+            auto ss(LogInfo());
+            ss << "now write:" << proc_count;
+            if (proc_count == 800000)
+            {
+                _exit(0);
+            }
+            ss << " line.";
         }
         else
         {
-            LogDebug() << "now write:" << proc_count;
+            LogDebug() << "now write:" << proc_count << " line.";
         }
         if (proc_count > 1600000)
         {
-            LogAlarm() << "now finish:" << proc_count;
+            LogAlarm() << "now finish:" << proc_count << " line.";
             return 0;
         }
     } while (true);
