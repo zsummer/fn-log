@@ -1207,12 +1207,12 @@ namespace FNLog
     inline void InitState(LexState& state)
     {
         //static_assert(std::is_trivial<LexState>::value, "");
-        memset(&state, 0, sizeof(state));
+        memset((void*)&state, 0, sizeof(state));
     }
 
     inline int Lex(LexState& ls)
     {
-        memset(&ls.line_, 0, sizeof(ls.line_));
+        memset((void*)&ls.line_, 0, sizeof(ls.line_));
         while (true)
         {
             char ch = *ls.current_++;
@@ -1492,7 +1492,7 @@ namespace FNLog
                         return PEC_DEVICE_INDEX_NOT_SEQUENCE;
                     }
                     Device& device = channel.devices_[channel.device_size_++];
-                    memset(&device, 0, sizeof(device));
+                    memset((void*)&device, 0, sizeof(device));
                     device.device_id_ = device_id;
                     ret = ParseDevice(ls, device, ls.line_.blank_);
                     if (ret != PEC_NONE || ls.line_.line_type_ == LINE_EOF)
@@ -1521,7 +1521,7 @@ namespace FNLog
         }
         ls.first_ = first;
         ls.end_ = first + text.length();
-        memset(&ls.channels_, 0, sizeof(ls.channels_));
+        memset((void*)&ls.channels_, 0, sizeof(ls.channels_));
         ls.channel_size_ = 0;
         ls.hot_update_ = false;
         ls.current_ = ls.first_;
@@ -1568,7 +1568,7 @@ namespace FNLog
                         return PEC_CHANNEL_INDEX_NOT_SEQUENCE;
                     }
                     Channel& channel = ls.channels_[ls.channel_size_++];
-                    memset(&channel, 0, sizeof(channel));
+                    memset((void*)&channel, 0, sizeof(channel));
                     channel.channel_id_ = channel_id;
                     ret = ParseChannel(ls, channel, ls.line_.blank_);
                     if (ret != 0)
@@ -2206,16 +2206,16 @@ namespace FNLog
         logger.shm_->channel_size_ = ls->channel_size_;
         for (int i = 0; i < ls->channel_size_; i++)
         {
-            memcpy(&ls->channels_[i].log_fields_, &logger.shm_->channels_[i].log_fields_,
+            memcpy((void *)&ls->channels_[i].log_fields_, (void*)&logger.shm_->channels_[i].log_fields_,
                 sizeof(ls->channels_[i].log_fields_));
             for (int j = 0; j < ls->channels_[i].device_size_; j++)
             {
-                memcpy(&ls->channels_[i].devices_[j].log_fields_, 
-                    &logger.shm_->channels_[i].devices_[j].log_fields_,
+                memcpy((void*) &ls->channels_[i].devices_[j].log_fields_,
+                    (void*)&logger.shm_->channels_[i].devices_[j].log_fields_,
                     sizeof(ls->channels_[i].devices_[j].log_fields_));
             }
         }
-        memcpy(&logger.shm_->channels_, &ls->channels_, sizeof(logger.shm_->channels_));
+        memcpy((void*) &logger.shm_->channels_, &ls->channels_, sizeof(logger.shm_->channels_));
 
         if (logger.shm_->channel_size_ > Logger::MAX_CHANNEL_SIZE || logger.shm_->channel_size_ <= 0)
         {
@@ -2338,14 +2338,14 @@ namespace FNLog
                 {
                     return -9;
                 }
-                memcpy(&dst_dvc.config_fields_, &src_dvc.config_fields_, sizeof(dst_dvc.config_fields_));
+                memcpy((void*)&dst_dvc.config_fields_, (void*)&src_dvc.config_fields_, sizeof(dst_dvc.config_fields_));
                 continue;
             }
             if (dst_chl.device_size_ != device_id)
             {
                 return -10;
             }
-            memcpy(&dst_chl.devices_[dst_chl.device_size_++], &src_dvc, sizeof(src_dvc));
+            memcpy((void*)&dst_chl.devices_[dst_chl.device_size_++], (void*)&src_dvc, sizeof(src_dvc));
         }
 
         return 0;
@@ -2444,7 +2444,7 @@ namespace FNLog
             case 'Y':
                 if (name.substr(pos + 2, 3) == "EAR")
                 {
-                    char buff[8] = { 0 };
+                    char buff[15] = { 0 };
                     sprintf(buff, "%04d", t.tm_year + 1900);
                     name.replace(pos, 5, buff);
                     break;
@@ -2454,14 +2454,14 @@ namespace FNLog
             case 'M':
                 if (name.substr(pos + 2, 2) == "ON")
                 {
-                    char buff[8] = { 0 };
+                    char buff[15] = { 0 };
                     sprintf(buff, "%02d", t.tm_mon + 1);
                     name.replace(pos, 4, buff);
                     break;
                 }
                 if (name.substr(pos + 2, 2) == "IN")
                 {
-                    char buff[8] = { 0 };
+                    char buff[15] = { 0 };
                     sprintf(buff, "%02d", t.tm_min);
                     name.replace(pos, 4, buff);
                     break;
@@ -2471,7 +2471,7 @@ namespace FNLog
             case 'D':
                 if (name.substr(pos + 2, 2) == "AY")
                 {
-                    char buff[8] = { 0 };
+                    char buff[15] = { 0 };
                     sprintf(buff, "%02d", t.tm_mday);
                     name.replace(pos, 4, buff);
                     break;
@@ -2481,7 +2481,7 @@ namespace FNLog
             case 'H':
                 if (name.substr(pos + 2, 3) == "OUR")
                 {
-                    char buff[8] = { 0 };
+                    char buff[15] = { 0 };
                     sprintf(buff, "%02d", t.tm_hour);
                     name.replace(pos, 5, buff);
                     break;
@@ -2491,7 +2491,7 @@ namespace FNLog
             case 'S':
                 if (name.substr(pos + 2, 2) == "EC")
                 {
-                    char buff[8] = { 0 };
+                    char buff[15] = { 0 };
                     sprintf(buff, "%02d", t.tm_sec);
                     name.replace(pos, 4, buff);
                     break;
@@ -3631,7 +3631,7 @@ namespace FNLog
         logger.shm_ = shm;
 #else
         logger.shm_ = new SHMLogger();
-        memset(logger.shm_, 0, sizeof(SHMLogger));
+        memset((void*)logger.shm_, 0, sizeof(SHMLogger));
         
 #endif
     }

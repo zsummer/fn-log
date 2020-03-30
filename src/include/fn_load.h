@@ -86,16 +86,16 @@ namespace FNLog
         logger.shm_->channel_size_ = ls->channel_size_;
         for (int i = 0; i < ls->channel_size_; i++)
         {
-            memcpy(&ls->channels_[i].log_fields_, &logger.shm_->channels_[i].log_fields_,
+            memcpy((void *)&ls->channels_[i].log_fields_, (void*)&logger.shm_->channels_[i].log_fields_,
                 sizeof(ls->channels_[i].log_fields_));
             for (int j = 0; j < ls->channels_[i].device_size_; j++)
             {
-                memcpy(&ls->channels_[i].devices_[j].log_fields_, 
-                    &logger.shm_->channels_[i].devices_[j].log_fields_,
+                memcpy((void*) &ls->channels_[i].devices_[j].log_fields_,
+                    (void*)&logger.shm_->channels_[i].devices_[j].log_fields_,
                     sizeof(ls->channels_[i].devices_[j].log_fields_));
             }
         }
-        memcpy(&logger.shm_->channels_, &ls->channels_, sizeof(logger.shm_->channels_));
+        memcpy((void*) &logger.shm_->channels_, &ls->channels_, sizeof(logger.shm_->channels_));
 
         if (logger.shm_->channel_size_ > Logger::MAX_CHANNEL_SIZE || logger.shm_->channel_size_ <= 0)
         {
@@ -218,14 +218,14 @@ namespace FNLog
                 {
                     return -9;
                 }
-                memcpy(&dst_dvc.config_fields_, &src_dvc.config_fields_, sizeof(dst_dvc.config_fields_));
+                memcpy((void*)&dst_dvc.config_fields_, (void*)&src_dvc.config_fields_, sizeof(dst_dvc.config_fields_));
                 continue;
             }
             if (dst_chl.device_size_ != device_id)
             {
                 return -10;
             }
-            memcpy(&dst_chl.devices_[dst_chl.device_size_++], &src_dvc, sizeof(src_dvc));
+            memcpy((void*)&dst_chl.devices_[dst_chl.device_size_++], (void*)&src_dvc, sizeof(src_dvc));
         }
 
         return 0;

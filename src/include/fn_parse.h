@@ -308,12 +308,12 @@ namespace FNLog
     inline void InitState(LexState& state)
     {
         //static_assert(std::is_trivial<LexState>::value, "");
-        memset(&state, 0, sizeof(state));
+        memset((void*)&state, 0, sizeof(state));
     }
 
     inline int Lex(LexState& ls)
     {
-        memset(&ls.line_, 0, sizeof(ls.line_));
+        memset((void*)&ls.line_, 0, sizeof(ls.line_));
         while (true)
         {
             char ch = *ls.current_++;
@@ -593,7 +593,7 @@ namespace FNLog
                         return PEC_DEVICE_INDEX_NOT_SEQUENCE;
                     }
                     Device& device = channel.devices_[channel.device_size_++];
-                    memset(&device, 0, sizeof(device));
+                    memset((void*)&device, 0, sizeof(device));
                     device.device_id_ = device_id;
                     ret = ParseDevice(ls, device, ls.line_.blank_);
                     if (ret != PEC_NONE || ls.line_.line_type_ == LINE_EOF)
@@ -622,7 +622,7 @@ namespace FNLog
         }
         ls.first_ = first;
         ls.end_ = first + text.length();
-        memset(&ls.channels_, 0, sizeof(ls.channels_));
+        memset((void*)&ls.channels_, 0, sizeof(ls.channels_));
         ls.channel_size_ = 0;
         ls.hot_update_ = false;
         ls.current_ = ls.first_;
@@ -669,7 +669,7 @@ namespace FNLog
                         return PEC_CHANNEL_INDEX_NOT_SEQUENCE;
                     }
                     Channel& channel = ls.channels_[ls.channel_size_++];
-                    memset(&channel, 0, sizeof(channel));
+                    memset((void*)&channel, 0, sizeof(channel));
                     channel.channel_id_ = channel_id;
                     ret = ParseChannel(ls, channel, ls.line_.blank_);
                     if (ret != 0)

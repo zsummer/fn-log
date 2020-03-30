@@ -481,7 +481,7 @@ namespace FNLog
         logger.shm_ = shm;
 #else
         logger.shm_ = new SHMLogger();
-        memset(logger.shm_, 0, sizeof(SHMLogger));
+        memset((void*)logger.shm_, 0, sizeof(SHMLogger));
         
 #endif
     }
