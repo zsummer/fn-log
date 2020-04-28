@@ -60,7 +60,7 @@ void Stop(int signo)
 int main(int argc, char* argv[])
 {
     signal(SIGINT, Stop);
-    int ret = FNLog::FastStartSimpleLogger();
+    int ret = FNLog::FastStartDefaultLogger();
     if (ret != 0)
     {
         return ret;
@@ -88,7 +88,7 @@ int main(int argc, char* argv[])
             {
                 return -1;
             }
-            ret = FNLog::FastStartSimpleLogger();
+            ret = FNLog::FastStartDefaultLogger();
             if (ret != 0)
             {
                 return -2;

@@ -51,7 +51,6 @@ script:
   - ./test_buffer_correct
   - ./test_fast_debug
   - ./test_fast_default
-  - ./test_fast_simple
   - ./test_coverage
   - ./test_channel_normal
   - ./stress_multi-thread-env_main_reboot

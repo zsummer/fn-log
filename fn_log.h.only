@@ -2838,7 +2838,6 @@ namespace FNLog
 
 namespace FNLog
 {
-    
     inline void EnterProcDevice(Logger& logger, int channel_id, int device_id, LogData & log)
     {
         Channel& channel = logger.shm_->channels_[channel_id];
@@ -2861,6 +2860,7 @@ namespace FNLog
         }
     }
     
+
     inline void DispatchLog(Logger & logger, Channel& channel, LogData& log)
     {
         for (int device_id = 0; device_id < channel.device_size_; device_id++)
@@ -2886,7 +2886,7 @@ namespace FNLog
         }
     }
     
-
+ 
     inline void EnterProcChannel(Logger& logger, int channel_id)
     {
         Channel& channel = logger.shm_->channels_[channel_id];
@@ -2900,10 +2900,14 @@ namespace FNLog
                 int next_idx = (old_idx + 1) % RingBuffer::BUFFER_LEN;
                 if (old_idx == ring_buffer.write_idx_.load(std::memory_order_acquire))
                 {
+                    //empty branch    
                     break;
                 }
+
+                //set proc index  
                 if (!ring_buffer.proc_idx_.compare_exchange_strong(old_idx, next_idx))
                 {
+                    //only one thread get log. this branch will not hit.   
                     break;
                 }
                 auto& cur_log = ring_buffer.buffer_[old_idx];
@@ -2915,6 +2919,7 @@ namespace FNLog
 
                 do
                 {
+                    //set read index to proc index  
                     old_idx = ring_buffer.read_idx_.load(std::memory_order_acquire);
                     next_idx = (old_idx + 1) % RingBuffer::BUFFER_LEN;
                     if (old_idx == ring_buffer.proc_idx_.load(std::memory_order_acquire))
@@ -2926,7 +2931,9 @@ namespace FNLog
                         break;
                     }
                     ring_buffer.read_idx_.compare_exchange_strong(old_idx, next_idx);
-                } while (true);
+                } while (true);  
+
+                //if want the high log security can reduce this threshold or enable shared memory queue.  
                 if (local_write_count > 10000)
                 {
                     local_write_count = 0;
@@ -2938,7 +2945,7 @@ namespace FNLog
                         }
                     }
                 }
-            } while (true);
+            } while (true);  
 
 
             if (channel.channel_state_ == CHANNEL_STATE_NULL)
@@ -3538,6 +3545,32 @@ namespace FNLog
         return  AtomicLoadC(channel.devices_[device_id], field);
     }
 
+    inline void BatchSetChannelConfig(Logger& logger, ChannelConfigEnum cce, long long v)
+    {
+        for (int i = 0; i < logger.shm_->channel_size_; i++)
+        {
+            auto& channel = logger.shm_->channels_[i];
+            channel.config_fields_[cce].store(v);
+        }
+    }
+
+    inline void BatchSetDeviceConfig(Logger& logger, DeviceOutType out_type, DeviceConfigEnum dce, long long v)
+    {
+        for (int i = 0; i < logger.shm_->channel_size_; i++)
+        {
+            auto& channel = logger.shm_->channels_[i];
+            for (size_t j = 0; j < channel.device_size_; j++)
+            {
+                auto& device = channel.devices_[j];
+                if (device.out_type_ == out_type || out_type == DEVICE_OUT_NULL)
+                {
+                    device.config_fields_[dce].store(v);
+                }
+            }
+        }
+    }
+
+
     inline void LoadSharedMemory(Logger& logger)
     {
 #if FN_LOG_USE_SHM && !defined(_WIN32)
@@ -3750,14 +3783,14 @@ namespace FNLog
     public:
         static const int MAX_CONTAINER_DEPTH = 5;
     public:
-        explicit LogStream(LogStream&& ls) noexcept
+        explicit LogStream(LogStream&& other) noexcept
         {
-            logger_ = ls.logger_;
-            log_data_ = ls.log_data_;
-            hold_idx_ = ls.hold_idx_;
-            ls.logger_ = nullptr;
-            ls.log_data_ = nullptr;
-            ls.hold_idx_ = -1;
+            logger_ = other.logger_;
+            log_data_ = other.log_data_;
+            hold_idx_ = other.hold_idx_;
+            other.logger_ = nullptr;
+            other.log_data_ = nullptr;
+            other.hold_idx_ = -1;
         }
 
         explicit LogStream(Logger& logger, int channel_id, int priority, int category, 
@@ -3856,6 +3889,36 @@ namespace FNLog
             return *this;
         }
 
+
+        template<size_t Wide>
+        LogStream& write_longlong(long long n)
+        {
+            if (log_data_ && log_data_->content_len_ + 30 <= LogData::LOG_SIZE)
+            {
+                log_data_->content_len_ += write_dec_unsafe<Wide>(log_data_->content_ + log_data_->content_len_, n);
+            }
+            return *this;
+        }
+        template<size_t Wide>
+        LogStream& write_ulonglong(unsigned long long n)
+        {
+            if (log_data_ && log_data_->content_len_ + 30 <= LogData::LOG_SIZE)
+            {
+                log_data_->content_len_ += write_dec_unsafe<Wide>(log_data_->content_ + log_data_->content_len_, n);
+            }
+            return *this;
+        }
+
+        template<size_t Wide, class N>
+        LogStream& write_number(N n)
+        {
+            if (std::is_signed<N>::value)
+            {
+                return write_longlong<Wide>((long long)n);
+            }
+            return write_ulonglong<Wide>((unsigned long long)n);
+        }
+
         LogStream& write_pointer(const void* ptr)
         {
             if (log_data_ && log_data_->content_len_ + 30 <= LogData::LOG_SIZE)
@@ -3949,23 +4012,9 @@ namespace FNLog
         LogStream & operator << (long val) { return (*this << (long long)val); }
         LogStream & operator << (unsigned long val) { return (*this << (unsigned long long)val); }
         
-        LogStream& operator << (long long integer)
-        {
-            if (log_data_ && log_data_->content_len_ + 30 <= LogData::LOG_SIZE)
-            {
-                log_data_->content_len_ += write_dec_unsafe<0>(log_data_->content_ + log_data_->content_len_, (long long)integer);
-            }
-            return *this;
-        }
+        LogStream& operator << (long long integer){ return write_longlong<0>(integer);}
 
-        LogStream& operator << (unsigned long long integer)
-        {
-            if (log_data_ && log_data_->content_len_ + 30 <= LogData::LOG_SIZE)
-            {
-                log_data_->content_len_ += write_dec_unsafe<0>(log_data_->content_ + log_data_->content_len_, (unsigned long long)integer);
-            }
-            return *this;
-        }
+        LogStream& operator << (unsigned long long integer){return write_ulonglong<0>(integer);}
 
         LogStream& operator << (float f)
         {
@@ -4035,7 +4084,7 @@ namespace FNLog
     public:
         LogData * log_data_ = nullptr;
         Logger* logger_ = nullptr;
-        int hold_idx_ = -1;
+        int hold_idx_ = -1;//ring buffer  
     };
 }
 
@@ -4124,7 +4173,7 @@ namespace FNLog
             R"----(
  # default channel 0
    # write full log to pname.log 
-   # write info log to pname_info.log 
+   # write error log to pname_error.log 
    # view  info log to screen 
  # sync channel 1 
    # write full log to pname.log
@@ -4142,8 +4191,8 @@ namespace FNLog
     -device: 1
         disable: false
         out_type: file
-        priority: info
-        file: "$PNAME_info"
+        priority: error
+        file: "$PNAME_error"
         rollback: 4
         limit_size: 100 m #only support M byte
     -device:2
@@ -4173,52 +4222,14 @@ namespace FNLog
         return FastStartDefaultLogger(default_config_text);
     }
 
-    inline int FastStartSimpleLogger()
-    {
-        static const std::string default_config_text =
-            R"----(
- # default channel 0
-   # write full log to pname.log 
-   # view  info log to screen 
- # sync channel 1 
-   # write full log to pname.log
-   # view  info log to screen 
-
- - channel: 0
-    sync: async
-    -device: 0
-        disable: false
-        out_type: file
-        file: "$PNAME"
-        rollback: 4
-        limit_size: 100 m #only support M byte
-    -device:1
-        disable: false
-        out_type: screen
-        priority: info
- - channel: 1
-    sync: sync
-    -device: 0
-        disable: false
-        out_type: file
-        file: "$PNAME_sync"
-        rollback: 4
-        limit_size: 100 m #only support M byte
-    -device:1
-        disable: false
-        out_type: screen
-        priority: info 
-)----";
-        return FastStartDefaultLogger(default_config_text);
-    }
-
     inline int FastStartDebugLogger()
     {
-        int ret = FastStartSimpleLogger();
+        int ret = FastStartDefaultLogger();
         if (ret == 0)
         {
-            SetDeviceConfig(GetDefaultLogger(), 0, 1, DEVICE_CFG_PRIORITY, PRIORITY_TRACE);
-            SetDeviceConfig(GetDefaultLogger(), 1, 1, DEVICE_CFG_PRIORITY, PRIORITY_TRACE);
+            BatchSetDeviceConfig(GetDefaultLogger(), DEVICE_OUT_FILE, DEVICE_CFG_PRIORITY, PRIORITY_TRACE);
+            SetDeviceConfig(GetDefaultLogger(), 0, 1, DEVICE_CFG_PRIORITY, PRIORITY_ERROR); //error file is still error file    
+            BatchSetDeviceConfig(GetDefaultLogger(), DEVICE_OUT_SCREEN, DEVICE_CFG_PRIORITY, PRIORITY_DEBUG);
         }
         return ret;
     }
@@ -4394,6 +4405,32 @@ do{ \
 
 namespace FNLog   
 {
+
+    //inline void EnableAllChannel(Logger& logger, bool enable);
+    inline void EnableAllFileDevice(Logger& logger, bool enable) { BatchSetDeviceConfig(logger, DEVICE_OUT_FILE, DEVICE_CFG_ABLE, enable); }
+    inline void EnableAllScreenDevice(Logger& logger, bool enable) { BatchSetDeviceConfig(logger, DEVICE_OUT_SCREEN, DEVICE_CFG_ABLE, enable); }
+    inline void EnableAllUDPDevice(Logger& logger, bool enable) { BatchSetDeviceConfig(logger, DEVICE_OUT_UDP, DEVICE_CFG_ABLE, enable); }
+
+    inline void SetAllChannelPriority(Logger& logger, LogPriority priority) { BatchSetChannelConfig(logger, CHANNEL_CFG_PRIORITY, priority); }
+    inline void SetAllFilePriority(Logger& logger, LogPriority priority) { BatchSetDeviceConfig(logger, DEVICE_OUT_FILE, DEVICE_CFG_PRIORITY, priority); }
+    inline void SetAllScreenPriority(Logger& logger, LogPriority priority) { BatchSetDeviceConfig(logger, DEVICE_OUT_SCREEN, DEVICE_CFG_PRIORITY, priority); }
+    inline void SetAllUDPPriority(Logger& logger, LogPriority priority) { BatchSetDeviceConfig(logger, DEVICE_OUT_UDP, DEVICE_CFG_PRIORITY, priority); }
+
+#define BatchSetChannelCategoryMacro(begin, count) \
+    BatchSetChannelConfig(logger, CHANNEL_CFG_CATEGORY, begin);\
+    BatchSetChannelConfig(logger, CHANNEL_CFG_CATEGORY_EXTEND, count);
+#define BatchSetDeviceCategoryMacro(out_type, begin, count) \
+    BatchSetDeviceConfig(logger, out_type, DEVICE_CFG_CATEGORY, begin); \
+    BatchSetDeviceConfig(logger, out_type, DEVICE_CFG_CATEGORY_EXTEND, count);
+
+
+    inline void SetAllChannelCategory(Logger& logger, int begin, int count) { BatchSetChannelCategoryMacro(begin, count);}
+    inline void SetAllFilePriority(Logger& logger, int begin, int count) { BatchSetDeviceCategoryMacro(DEVICE_OUT_FILE, begin, count); }
+    inline void SetAllScreenCategory(Logger& logger, int begin, int count) { BatchSetDeviceCategoryMacro(DEVICE_OUT_SCREEN, begin, count); }
+    inline void SetAllUDPCategory(Logger& logger, int begin, int count) { BatchSetDeviceCategoryMacro(DEVICE_OUT_UDP, begin, count); }
+
+    inline void SetAllFileLimitSize(Logger& logger, int limit) { BatchSetDeviceConfig(logger, DEVICE_OUT_FILE, DEVICE_CFG_FILE_LIMIT_SIZE, limit); }
+    inline void SetAllFileRollbackCount(Logger& logger, int rb_count) { BatchSetDeviceConfig(logger, DEVICE_OUT_FILE, DEVICE_CFG_FILE_ROLLBACK, rb_count); }
 
 }
 

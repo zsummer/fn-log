@@ -86,7 +86,7 @@ namespace FNLog
             R"----(
  # default channel 0
    # write full log to pname.log 
-   # write info log to pname_info.log 
+   # write error log to pname_error.log 
    # view  info log to screen 
  # sync channel 1 
    # write full log to pname.log
@@ -104,8 +104,8 @@ namespace FNLog
     -device: 1
         disable: false
         out_type: file
-        priority: info
-        file: "$PNAME_info"
+        priority: error
+        file: "$PNAME_error"
         rollback: 4
         limit_size: 100 m #only support M byte
     -device:2
@@ -135,52 +135,14 @@ namespace FNLog
         return FastStartDefaultLogger(default_config_text);
     }
 
-    inline int FastStartSimpleLogger()
-    {
-        static const std::string default_config_text =
-            R"----(
- # default channel 0
-   # write full log to pname.log 
-   # view  info log to screen 
- # sync channel 1 
-   # write full log to pname.log
-   # view  info log to screen 
-
- - channel: 0
-    sync: async
-    -device: 0
-        disable: false
-        out_type: file
-        file: "$PNAME"
-        rollback: 4
-        limit_size: 100 m #only support M byte
-    -device:1
-        disable: false
-        out_type: screen
-        priority: info
- - channel: 1
-    sync: sync
-    -device: 0
-        disable: false
-        out_type: file
-        file: "$PNAME_sync"
-        rollback: 4
-        limit_size: 100 m #only support M byte
-    -device:1
-        disable: false
-        out_type: screen
-        priority: info 
-)----";
-        return FastStartDefaultLogger(default_config_text);
-    }
-
     inline int FastStartDebugLogger()
     {
-        int ret = FastStartSimpleLogger();
+        int ret = FastStartDefaultLogger();
         if (ret == 0)
         {
-            SetDeviceConfig(GetDefaultLogger(), 0, 1, DEVICE_CFG_PRIORITY, PRIORITY_TRACE);
-            SetDeviceConfig(GetDefaultLogger(), 1, 1, DEVICE_CFG_PRIORITY, PRIORITY_TRACE);
+            BatchSetDeviceConfig(GetDefaultLogger(), DEVICE_OUT_FILE, DEVICE_CFG_PRIORITY, PRIORITY_TRACE);
+            SetDeviceConfig(GetDefaultLogger(), 0, 1, DEVICE_CFG_PRIORITY, PRIORITY_ERROR); //error file is still error file    
+            BatchSetDeviceConfig(GetDefaultLogger(), DEVICE_OUT_SCREEN, DEVICE_CFG_PRIORITY, PRIORITY_DEBUG);
         }
         return ret;
     }

@@ -388,6 +388,32 @@ namespace FNLog
         return  AtomicLoadC(channel.devices_[device_id], field);
     }
 
+    inline void BatchSetChannelConfig(Logger& logger, ChannelConfigEnum cce, long long v)
+    {
+        for (int i = 0; i < logger.shm_->channel_size_; i++)
+        {
+            auto& channel = logger.shm_->channels_[i];
+            channel.config_fields_[cce].store(v);
+        }
+    }
+
+    inline void BatchSetDeviceConfig(Logger& logger, DeviceOutType out_type, DeviceConfigEnum dce, long long v)
+    {
+        for (int i = 0; i < logger.shm_->channel_size_; i++)
+        {
+            auto& channel = logger.shm_->channels_[i];
+            for (size_t j = 0; j < channel.device_size_; j++)
+            {
+                auto& device = channel.devices_[j];
+                if (device.out_type_ == out_type || out_type == DEVICE_OUT_NULL)
+                {
+                    device.config_fields_[dce].store(v);
+                }
+            }
+        }
+    }
+
+
     inline void LoadSharedMemory(Logger& logger)
     {
 #if FN_LOG_USE_SHM && !defined(_WIN32)

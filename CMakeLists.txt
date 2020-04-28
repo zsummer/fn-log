@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.0)
 project(fn-log)
-enable_language(ASM)
+#enable_language(ASM)
 
 #from github.com/zsummer
 
