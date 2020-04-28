@@ -47,6 +47,11 @@
 namespace FNLog
 {
 
+#ifdef __GNUC__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wclass-memaccess"
+#endif
+
     inline int PushLog(Logger& logger, int channel_id, int hold_idx, bool state_safly_env = false)
     {
         return PushChannel(logger, channel_id, hold_idx);
@@ -402,7 +407,7 @@ namespace FNLog
         for (int i = 0; i < logger.shm_->channel_size_; i++)
         {
             auto& channel = logger.shm_->channels_[i];
-            for (size_t j = 0; j < channel.device_size_; j++)
+            for (int j = 0; j < channel.device_size_; j++)
             {
                 auto& device = channel.devices_[j];
                 if (device.out_type_ == out_type || out_type == DEVICE_OUT_NULL)
@@ -484,6 +489,7 @@ namespace FNLog
                 std::string core_desc = "!!!core recover!!!";
                 log.content_len_ = FN_MIN(log.content_len_, LogData::LOG_SIZE - (int)core_desc.length() -2 );
                 memcpy(&log.content_[log.content_len_], core_desc.c_str(), core_desc.length());
+
                 log.content_len_ += core_desc.length();
                 log.content_[log.content_len_++] = '\n';
                 log.content_[log.content_len_] = '\0';
@@ -569,6 +575,10 @@ namespace FNLog
         } ;
         UnloadSharedMemory(*this);
     }
+
+#ifdef __GNUC__
+#pragma GCC diagnostic pop
+#endif
 
 }
 

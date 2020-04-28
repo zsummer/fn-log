@@ -1007,6 +1007,13 @@ namespace FNLog
         RK_ROLLBACK,
         RK_UDP_ADDR,
     };
+
+#ifdef __GNUC__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wclass-memaccess"
+#endif
+
+
     inline ReseveKey ParseReserve(const char* begin, const char* end)
     {
         if (end - begin < 2)
@@ -1588,6 +1595,10 @@ namespace FNLog
         return PEC_NONE;
     }
 
+#ifdef __GNUC__
+#pragma GCC diagnostic pop
+#endif
+
 }
 
 
@@ -2167,6 +2178,11 @@ namespace FNLog
 
 namespace FNLog
 {
+#ifdef __GNUC__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wclass-memaccess"
+#endif
+    
 
     inline int InitFromYMAL(Logger& logger, const std::string& text, const std::string& path)
     {
@@ -2346,10 +2362,15 @@ namespace FNLog
                 return -10;
             }
             memcpy(&dst_chl.devices_[dst_chl.device_size_++], &src_dvc, sizeof(src_dvc));
+            
         }
 
         return 0;
     }
+
+#ifdef __GNUC__
+#pragma GCC diagnostic pop
+#endif
 }
 
 
@@ -2444,7 +2465,7 @@ namespace FNLog
             case 'Y':
                 if (name.substr(pos + 2, 3) == "EAR")
                 {
-                    char buff[8] = { 0 };
+                    char buff[30] = { 0 };
                     sprintf(buff, "%04d", t.tm_year + 1900);
                     name.replace(pos, 5, buff);
                     break;
@@ -2454,14 +2475,14 @@ namespace FNLog
             case 'M':
                 if (name.substr(pos + 2, 2) == "ON")
                 {
-                    char buff[8] = { 0 };
+                    char buff[30] = { 0 };
                     sprintf(buff, "%02d", t.tm_mon + 1);
                     name.replace(pos, 4, buff);
                     break;
                 }
                 if (name.substr(pos + 2, 2) == "IN")
                 {
-                    char buff[8] = { 0 };
+                    char buff[30] = { 0 };
                     sprintf(buff, "%02d", t.tm_min);
                     name.replace(pos, 4, buff);
                     break;
@@ -2471,7 +2492,7 @@ namespace FNLog
             case 'D':
                 if (name.substr(pos + 2, 2) == "AY")
                 {
-                    char buff[8] = { 0 };
+                    char buff[30] = { 0 };
                     sprintf(buff, "%02d", t.tm_mday);
                     name.replace(pos, 4, buff);
                     break;
@@ -2481,7 +2502,7 @@ namespace FNLog
             case 'H':
                 if (name.substr(pos + 2, 3) == "OUR")
                 {
-                    char buff[8] = { 0 };
+                    char buff[30] = { 0 };
                     sprintf(buff, "%02d", t.tm_hour);
                     name.replace(pos, 5, buff);
                     break;
@@ -2491,7 +2512,7 @@ namespace FNLog
             case 'S':
                 if (name.substr(pos + 2, 2) == "EC")
                 {
-                    char buff[8] = { 0 };
+                    char buff[30] = { 0 };
                     sprintf(buff, "%02d", t.tm_sec);
                     name.replace(pos, 4, buff);
                     break;
@@ -3204,6 +3225,11 @@ namespace FNLog
 namespace FNLog
 {
 
+#ifdef __GNUC__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wclass-memaccess"
+#endif
+
     inline int PushLog(Logger& logger, int channel_id, int hold_idx, bool state_safly_env = false)
     {
         return PushChannel(logger, channel_id, hold_idx);
@@ -3559,7 +3585,7 @@ namespace FNLog
         for (int i = 0; i < logger.shm_->channel_size_; i++)
         {
             auto& channel = logger.shm_->channels_[i];
-            for (size_t j = 0; j < channel.device_size_; j++)
+            for (int j = 0; j < channel.device_size_; j++)
             {
                 auto& device = channel.devices_[j];
                 if (device.out_type_ == out_type || out_type == DEVICE_OUT_NULL)
@@ -3641,6 +3667,7 @@ namespace FNLog
                 std::string core_desc = "!!!core recover!!!";
                 log.content_len_ = FN_MIN(log.content_len_, LogData::LOG_SIZE - (int)core_desc.length() -2 );
                 memcpy(&log.content_[log.content_len_], core_desc.c_str(), core_desc.length());
+
                 log.content_len_ += core_desc.length();
                 log.content_[log.content_len_++] = '\n';
                 log.content_[log.content_len_] = '\0';
@@ -3727,6 +3754,10 @@ namespace FNLog
         UnloadSharedMemory(*this);
     }
 
+#ifdef __GNUC__
+#pragma GCC diagnostic pop
+#endif
+
 }
 
 
@@ -3783,7 +3814,8 @@ namespace FNLog
     public:
         static const int MAX_CONTAINER_DEPTH = 5;
     public:
-        explicit LogStream(LogStream&& other) noexcept
+        LogStream(const LogStream& other) = delete;
+        LogStream(LogStream&& other) noexcept
         {
             logger_ = other.logger_;
             log_data_ = other.log_data_;

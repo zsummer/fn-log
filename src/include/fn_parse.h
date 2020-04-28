@@ -108,6 +108,13 @@ namespace FNLog
         RK_ROLLBACK,
         RK_UDP_ADDR,
     };
+
+#ifdef __GNUC__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wclass-memaccess"
+#endif
+
+
     inline ReseveKey ParseReserve(const char* begin, const char* end)
     {
         if (end - begin < 2)
@@ -688,6 +695,10 @@ namespace FNLog
         }
         return PEC_NONE;
     }
+
+#ifdef __GNUC__
+#pragma GCC diagnostic pop
+#endif
 
 }
 

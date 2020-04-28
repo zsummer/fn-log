@@ -54,7 +54,8 @@ namespace FNLog
     public:
         static const int MAX_CONTAINER_DEPTH = 5;
     public:
-        explicit LogStream(LogStream&& other) noexcept
+        LogStream(const LogStream& other) = delete;
+        LogStream(LogStream&& other) noexcept
         {
             logger_ = other.logger_;
             log_data_ = other.log_data_;

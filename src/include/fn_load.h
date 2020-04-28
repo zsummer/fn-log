@@ -47,6 +47,11 @@
 
 namespace FNLog
 {
+#ifdef __GNUC__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wclass-memaccess"
+#endif
+    
 
     inline int InitFromYMAL(Logger& logger, const std::string& text, const std::string& path)
     {
@@ -226,10 +231,15 @@ namespace FNLog
                 return -10;
             }
             memcpy(&dst_chl.devices_[dst_chl.device_size_++], &src_dvc, sizeof(src_dvc));
+            
         }
 
         return 0;
     }
+
+#ifdef __GNUC__
+#pragma GCC diagnostic pop
+#endif
 }
 
 
