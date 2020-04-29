@@ -41,7 +41,7 @@ void thread_proc(int index)
         }
         if (logger.logger_state_ == FNLog::LOGGER_STATE_UNINIT)
         {
-            FNLog::FastStartSimpleLogger();
+            FNLog::FastStartDefaultLogger();
         }
     }
     LogInfo() << "thread:<" << index << "> end.";

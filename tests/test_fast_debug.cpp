@@ -10,7 +10,8 @@ int main(int argc, char* argv[])
 
     LogAlarm() << "log init success. shm size:" 
         << sizeof(FNLog::SHMLogger) << ", logger size:" << sizeof(FNLog::Logger);
-
+    //FNLog::SetAllChannelCategory(FNLog::GetDefaultLogger(), 100, 1);
+    //FNLog::SetAllScreenCategory(FNLog::GetDefaultLogger(), 100, 1);
     LogTrace() << "now time:" << time(nullptr) << ";";
     LogDebug() << "now time:" << time(nullptr) << ";";
     LogInfo() << "now time:" << time(nullptr) << ";";
@@ -18,7 +19,8 @@ int main(int argc, char* argv[])
     LogError() << "now time:" << time(nullptr) << ";";
     LogAlarm() << "now time:" << time(nullptr) << ";";
     LogFatal() << "now time:" << time(nullptr) << ";";
-
+    //FNLog::SetAllChannelCategory(FNLog::GetDefaultLogger(), 0, 0);
+    //FNLog::SetAllScreenCategory(FNLog::GetDefaultLogger(), 0, 0);
     LOGT("now time:" << time(nullptr) << ";");
     LOGD("now time:" << time(nullptr) << ";");
     LOGI("now time:" << time(nullptr) << ";");

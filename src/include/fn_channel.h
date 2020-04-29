@@ -50,7 +50,6 @@
 
 namespace FNLog
 {
-    
     inline void EnterProcDevice(Logger& logger, int channel_id, int device_id, LogData & log)
     {
         Channel& channel = logger.shm_->channels_[channel_id];
@@ -73,6 +72,7 @@ namespace FNLog
         }
     }
     
+
     inline void DispatchLog(Logger & logger, Channel& channel, LogData& log)
     {
         for (int device_id = 0; device_id < channel.device_size_; device_id++)
@@ -98,7 +98,7 @@ namespace FNLog
         }
     }
     
-
+ 
     inline void EnterProcChannel(Logger& logger, int channel_id)
     {
         Channel& channel = logger.shm_->channels_[channel_id];
@@ -112,10 +112,14 @@ namespace FNLog
                 int next_idx = (old_idx + 1) % RingBuffer::BUFFER_LEN;
                 if (old_idx == ring_buffer.write_idx_.load(std::memory_order_acquire))
                 {
+                    //empty branch    
                     break;
                 }
+
+                //set proc index  
                 if (!ring_buffer.proc_idx_.compare_exchange_strong(old_idx, next_idx))
                 {
+                    //only one thread get log. this branch will not hit.   
                     break;
                 }
                 auto& cur_log = ring_buffer.buffer_[old_idx];
@@ -127,6 +131,7 @@ namespace FNLog
 
                 do
                 {
+                    //set read index to proc index  
                     old_idx = ring_buffer.read_idx_.load(std::memory_order_acquire);
                     next_idx = (old_idx + 1) % RingBuffer::BUFFER_LEN;
                     if (old_idx == ring_buffer.proc_idx_.load(std::memory_order_acquire))
@@ -138,7 +143,9 @@ namespace FNLog
                         break;
                     }
                     ring_buffer.read_idx_.compare_exchange_strong(old_idx, next_idx);
-                } while (true);
+                } while (true);  
+
+                //if want the high log security can reduce this threshold or enable shared memory queue.  
                 if (local_write_count > 10000)
                 {
                     local_write_count = 0;
@@ -150,7 +157,7 @@ namespace FNLog
                         }
                     }
                 }
-            } while (true);
+            } while (true);  
 
 
             if (channel.channel_state_ == CHANNEL_STATE_NULL)

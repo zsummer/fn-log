@@ -59,7 +59,7 @@ R"----(
 using namespace FNLog;
 int main(int argc, char* argv[])
 {
-    int ret = FastStartSimpleLogger();
+    int ret = FastStartDefaultLogger();
     if (ret != 0 )
     {
         return ret ;

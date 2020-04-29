@@ -54,14 +54,15 @@ namespace FNLog
     public:
         static const int MAX_CONTAINER_DEPTH = 5;
     public:
-        explicit LogStream(LogStream&& ls) noexcept
+        LogStream(const LogStream& other) = delete;
+        LogStream(LogStream&& other) noexcept
         {
-            logger_ = ls.logger_;
-            log_data_ = ls.log_data_;
-            hold_idx_ = ls.hold_idx_;
-            ls.logger_ = nullptr;
-            ls.log_data_ = nullptr;
-            ls.hold_idx_ = -1;
+            logger_ = other.logger_;
+            log_data_ = other.log_data_;
+            hold_idx_ = other.hold_idx_;
+            other.logger_ = nullptr;
+            other.log_data_ = nullptr;
+            other.hold_idx_ = -1;
         }
 
         explicit LogStream(Logger& logger, int channel_id, int priority, int category, 
@@ -160,6 +161,36 @@ namespace FNLog
             return *this;
         }
 
+
+        template<size_t Wide>
+        LogStream& write_longlong(long long n)
+        {
+            if (log_data_ && log_data_->content_len_ + 30 <= LogData::LOG_SIZE)
+            {
+                log_data_->content_len_ += write_dec_unsafe<Wide>(log_data_->content_ + log_data_->content_len_, n);
+            }
+            return *this;
+        }
+        template<size_t Wide>
+        LogStream& write_ulonglong(unsigned long long n)
+        {
+            if (log_data_ && log_data_->content_len_ + 30 <= LogData::LOG_SIZE)
+            {
+                log_data_->content_len_ += write_dec_unsafe<Wide>(log_data_->content_ + log_data_->content_len_, n);
+            }
+            return *this;
+        }
+
+        template<size_t Wide, class N>
+        LogStream& write_number(N n)
+        {
+            if (std::is_signed<N>::value)
+            {
+                return write_longlong<Wide>((long long)n);
+            }
+            return write_ulonglong<Wide>((unsigned long long)n);
+        }
+
         LogStream& write_pointer(const void* ptr)
         {
             if (log_data_ && log_data_->content_len_ + 30 <= LogData::LOG_SIZE)
@@ -253,23 +284,9 @@ namespace FNLog
         LogStream & operator << (long val) { return (*this << (long long)val); }
         LogStream & operator << (unsigned long val) { return (*this << (unsigned long long)val); }
         
-        LogStream& operator << (long long integer)
-        {
-            if (log_data_ && log_data_->content_len_ + 30 <= LogData::LOG_SIZE)
-            {
-                log_data_->content_len_ += write_dec_unsafe<0>(log_data_->content_ + log_data_->content_len_, (long long)integer);
-            }
-            return *this;
-        }
+        LogStream& operator << (long long integer){ return write_longlong<0>(integer);}
 
-        LogStream& operator << (unsigned long long integer)
-        {
-            if (log_data_ && log_data_->content_len_ + 30 <= LogData::LOG_SIZE)
-            {
-                log_data_->content_len_ += write_dec_unsafe<0>(log_data_->content_ + log_data_->content_len_, (unsigned long long)integer);
-            }
-            return *this;
-        }
+        LogStream& operator << (unsigned long long integer){return write_ulonglong<0>(integer);}
 
         LogStream& operator << (float f)
         {
@@ -339,7 +356,7 @@ namespace FNLog
     public:
         LogData * log_data_ = nullptr;
         Logger* logger_ = nullptr;
-        int hold_idx_ = -1;
+        int hold_idx_ = -1;//ring buffer  
     };
 }
 

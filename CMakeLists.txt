@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.0)
 project(fn-log)
-enable_language(ASM)
+#enable_language(ASM)
 
 #from github.com/zsummer
 
@@ -95,6 +95,7 @@ if(WIN32)
     SET_PROPERTY(GLOBAL PROPERTY USE_FOLDERS ON) 
     #SET_PROPERTY(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${PROJECT_NAME})
 else()
+    ADD_DEFINITIONS(-Wall -O2 )
     SET(CMAKE_CXX_FLAGS -std=c++11)
     SET(CMAKE_CXX_FLAGS_DEBUG "$ENV{CXXFLAGS} -O0 -Wall -g -ggdb")
     SET(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -O3 -Wall")
