@@ -68,7 +68,7 @@
 #include <memory>
 #include <atomic>
 
-#ifdef _WIN32
+#ifdef WIN32
 #ifndef KEEP_INPUT_QUICK_EDIT
 #define KEEP_INPUT_QUICK_EDIT false
 #endif
@@ -171,7 +171,7 @@ namespace FNLog
     {
         if (file_ != nullptr)
         {
-#if !defined(__APPLE__) && !defined(_WIN32) 
+#if !defined(__APPLE__) && !defined(WIN32) 
             if (file_ != nullptr)
             {
                 int fd = fileno(file_);
@@ -247,7 +247,7 @@ namespace FNLog
 
     bool FileHandler::is_dir(const std::string& path)
     {
-#ifdef _WIN32
+#ifdef WIN32
         return PathIsDirectoryA(path.c_str()) ? true : false;
 #else
         DIR* pdir = opendir(path.c_str());
@@ -266,7 +266,7 @@ namespace FNLog
 
     bool FileHandler::is_file(const std::string& path)
     {
-#ifdef _WIN32
+#ifdef WIN32
         return ::_access(path.c_str(), 0) == 0;
 #else
         return ::access(path.c_str(), F_OK) == 0;
@@ -288,7 +288,7 @@ namespace FNLog
             if (cur.length() > 0 && !is_dir(cur))
             {
                 bool ret = false;
-#ifdef _WIN32
+#ifdef WIN32
                 ret = CreateDirectoryA(cur.c_str(), nullptr) ? true : false;
 #else
                 ret = (mkdir(cur.c_str(), S_IRWXU | S_IRWXG | S_IRWXO) == 0);
@@ -309,7 +309,7 @@ namespace FNLog
     {
         std::string pid = "0";
         char buf[260] = { 0 };
-#ifdef _WIN32
+#ifdef WIN32
         DWORD winPID = GetCurrentProcessId();
         sprintf(buf, "%06u", winPID);
         pid = buf;
@@ -324,7 +324,7 @@ namespace FNLog
     {
         std::string name = "process";
         char buf[260] = { 0 };
-#ifdef _WIN32
+#ifdef WIN32
         if (GetModuleFileNameA(nullptr, buf, 259) > 0)
         {
             name = buf;
@@ -373,7 +373,7 @@ namespace FNLog
 
     struct tm FileHandler::time_to_tm(time_t t)
     {
-#ifdef _WIN32
+#ifdef WIN32
 #if _MSC_VER < 1400 //VS2003
         return *localtime(&t);
 #else //vs2005->vs2013->
@@ -444,7 +444,7 @@ namespace FNLog
 class UDPHandler
 {
 public:
-#ifndef _WIN32
+#ifndef WIN32
     using SOCKET = int;
     static const int INVALID_SOCKET = -1;
 #endif 
@@ -476,7 +476,7 @@ public:
     {
         if (handler_ != INVALID_SOCKET)
         {
-#ifndef _WIN32
+#ifndef WIN32
             ::close(handler_);
 #else
             closesocket(handler_);
@@ -1008,7 +1008,7 @@ namespace FNLog
         RK_UDP_ADDR,
     };
 
-#ifdef __GNUC__
+#if __GNUG__ && __GNUC__ >= 5
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wclass-memaccess"
 #endif
@@ -1595,7 +1595,7 @@ namespace FNLog
         return PEC_NONE;
     }
 
-#ifdef __GNUC__
+#if __GNUG__ && __GNUC__ >= 5
 #pragma GCC diagnostic pop
 #endif
 
@@ -1653,7 +1653,7 @@ namespace FNLog
 {
 
 
-#ifndef _WIN32
+#ifndef WIN32
     struct PriorityRender
     {
         const char* const priority_name_;
@@ -1795,7 +1795,7 @@ namespace FNLog
 
 
         int real_wide = 0;
-#ifndef _WIN32
+#ifndef WIN32
         real_wide = sizeof(number) * 8 - __builtin_clzll(number);
 #else
         unsigned long win_index = 0;
@@ -1860,7 +1860,7 @@ namespace FNLog
             "0123456789abcdefghijk";
 
         int real_wide = 0;
-#ifndef _WIN32
+#ifndef WIN32
         real_wide = sizeof(number) * 8 - __builtin_clzll(number);
 #else
         unsigned long win_index = 0;
@@ -2178,7 +2178,7 @@ namespace FNLog
 
 namespace FNLog
 {
-#ifdef __GNUC__
+#if __GNUG__ && __GNUC__ >= 5
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wclass-memaccess"
 #endif
@@ -2368,7 +2368,7 @@ namespace FNLog
         return 0;
     }
 
-#ifdef __GNUC__
+#if __GNUG__ && __GNUC__ >= 5
 #pragma GCC diagnostic pop
 #endif
 }
@@ -2781,7 +2781,7 @@ namespace FNLog
         {
             priority = PRIORITY_ALARM;
         }
-#ifndef _WIN32
+#ifndef WIN32
         printf("%s%s\e[0m", PRIORITY_RENDER[priority].scolor_, log.content_);
 #else
 
@@ -3009,7 +3009,7 @@ namespace FNLog
         log.content_len_ = 0;
         log.content_[log.content_len_] = '\0';
 
-#ifdef _WIN32
+#ifdef WIN32
         FILETIME ft;
         GetSystemTimeAsFileTime(&ft);
         unsigned long long now = ft.dwHighDateTime;
@@ -3032,7 +3032,7 @@ namespace FNLog
             return;
         }
 
-#ifdef _WIN32
+#ifdef WIN32
         static thread_local unsigned int therad_id = GetCurrentThreadId();
         log.thread_ = therad_id;
 #elif defined(__APPLE__)
@@ -3225,7 +3225,7 @@ namespace FNLog
 namespace FNLog
 {
 
-#ifdef __GNUC__
+#if __GNUG__ && __GNUC__ >= 5
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wclass-memaccess"
 #endif
@@ -3599,7 +3599,7 @@ namespace FNLog
 
     inline void LoadSharedMemory(Logger& logger)
     {
-#if FN_LOG_USE_SHM && !defined(_WIN32)
+#if FN_LOG_USE_SHM && !defined(WIN32)
         SHMLogger* shm = nullptr;
         int idx = shmget(FN_LOG_SHM_KEY, 0, 0);
         if (idx < 0 && errno != ENOENT)
@@ -3697,7 +3697,7 @@ namespace FNLog
     }
     inline void UnloadSharedMemory(Logger& logger)
     {
-#if FN_LOG_USE_SHM && !defined(_WIN32)
+#if FN_LOG_USE_SHM && !defined(WIN32)
         if (logger.shm_)
         {
             int idx = logger.shm_->shm_id_;
@@ -3720,7 +3720,7 @@ namespace FNLog
         logger.logger_state_ = LOGGER_STATE_UNINIT;
         LoadSharedMemory(logger);
 
-#if ((defined _WIN32) && !KEEP_INPUT_QUICK_EDIT)
+#if ((defined WIN32) && !KEEP_INPUT_QUICK_EDIT)
         HANDLE input_handle = ::GetStdHandle(STD_INPUT_HANDLE);
         if (input_handle != INVALID_HANDLE_VALUE)
         {
@@ -3754,7 +3754,7 @@ namespace FNLog
         UnloadSharedMemory(*this);
     }
 
-#ifdef __GNUC__
+#if __GNUG__ && __GNUC__ >= 5
 #pragma GCC diagnostic pop
 #endif
 
@@ -4349,7 +4349,7 @@ FNLog::LogStream& LogTemplatePack(FNLog::LogStream&& ls, Args&& ... args)
 
 
 //--------------------C STYLE FORMAT ---------------------------
-#ifdef _WIN32
+#ifdef WIN32
 #define LOG_FORMAT(channel_id, priority, category, prefix, logformat, ...) \
 do{ \
     FNLog::LogStream __log_stream(LOG_STREAM_DEFAULT_LOGGER(channel_id, priority, category, prefix));\

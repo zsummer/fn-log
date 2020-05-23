@@ -49,7 +49,7 @@ namespace FNLog
 {
 
 
-#ifndef _WIN32
+#ifndef WIN32
     struct PriorityRender
     {
         const char* const priority_name_;
@@ -191,7 +191,7 @@ namespace FNLog
 
 
         int real_wide = 0;
-#ifndef _WIN32
+#ifndef WIN32
         real_wide = sizeof(number) * 8 - __builtin_clzll(number);
 #else
         unsigned long win_index = 0;
@@ -256,7 +256,7 @@ namespace FNLog
             "0123456789abcdefghijk";
 
         int real_wide = 0;
-#ifndef _WIN32
+#ifndef WIN32
         real_wide = sizeof(number) * 8 - __builtin_clzll(number);
 #else
         unsigned long win_index = 0;

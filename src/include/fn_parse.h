@@ -109,7 +109,7 @@ namespace FNLog
         RK_UDP_ADDR,
     };
 
-#ifdef __GNUC__
+#if __GNUG__ && __GNUC__ >= 5
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wclass-memaccess"
 #endif
@@ -696,7 +696,7 @@ namespace FNLog
         return PEC_NONE;
     }
 
-#ifdef __GNUC__
+#if __GNUG__ && __GNUC__ >= 5
 #pragma GCC diagnostic pop
 #endif
 

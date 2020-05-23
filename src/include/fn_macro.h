@@ -230,7 +230,7 @@ FNLog::LogStream& LogTemplatePack(FNLog::LogStream&& ls, Args&& ... args)
 
 
 //--------------------C STYLE FORMAT ---------------------------
-#ifdef _WIN32
+#ifdef WIN32
 #define LOG_FORMAT(channel_id, priority, category, prefix, logformat, ...) \
 do{ \
     FNLog::LogStream __log_stream(LOG_STREAM_DEFAULT_LOGGER(channel_id, priority, category, prefix));\

@@ -64,7 +64,7 @@ namespace FNLog
         {
             priority = PRIORITY_ALARM;
         }
-#ifndef _WIN32
+#ifndef WIN32
         printf("%s%s\e[0m", PRIORITY_RENDER[priority].scolor_, log.content_);
 #else
 

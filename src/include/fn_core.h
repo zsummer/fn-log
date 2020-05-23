@@ -47,7 +47,7 @@
 namespace FNLog
 {
 
-#ifdef __GNUC__
+#if __GNUG__ && __GNUC__ >= 5
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wclass-memaccess"
 #endif
@@ -421,7 +421,7 @@ namespace FNLog
 
     inline void LoadSharedMemory(Logger& logger)
     {
-#if FN_LOG_USE_SHM && !defined(_WIN32)
+#if FN_LOG_USE_SHM && !defined(WIN32)
         SHMLogger* shm = nullptr;
         int idx = shmget(FN_LOG_SHM_KEY, 0, 0);
         if (idx < 0 && errno != ENOENT)
@@ -519,7 +519,7 @@ namespace FNLog
     }
     inline void UnloadSharedMemory(Logger& logger)
     {
-#if FN_LOG_USE_SHM && !defined(_WIN32)
+#if FN_LOG_USE_SHM && !defined(WIN32)
         if (logger.shm_)
         {
             int idx = logger.shm_->shm_id_;
@@ -542,7 +542,7 @@ namespace FNLog
         logger.logger_state_ = LOGGER_STATE_UNINIT;
         LoadSharedMemory(logger);
 
-#if ((defined _WIN32) && !KEEP_INPUT_QUICK_EDIT)
+#if ((defined WIN32) && !KEEP_INPUT_QUICK_EDIT)
         HANDLE input_handle = ::GetStdHandle(STD_INPUT_HANDLE);
         if (input_handle != INVALID_HANDLE_VALUE)
         {
@@ -576,7 +576,7 @@ namespace FNLog
         UnloadSharedMemory(*this);
     }
 
-#ifdef __GNUC__
+#if __GNUG__ && __GNUC__ >= 5
 #pragma GCC diagnostic pop
 #endif
 
