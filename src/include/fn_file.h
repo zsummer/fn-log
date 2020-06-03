@@ -432,7 +432,7 @@ namespace FNLog
                 }
             }
         }
-        return len;
+        return 0;
     }
 
 }

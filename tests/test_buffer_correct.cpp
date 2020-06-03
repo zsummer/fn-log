@@ -123,7 +123,13 @@ int main(int argc, char* argv[])
         FNLOG_ASSERT((log.log_data_->content_[1] == '1'), "0");
     }
     
+    if (true)
+    {
+        FNLOG_ASSERT(FNLog::short_path("a/b/c", 5) == 0, "0");
+        FNLOG_ASSERT(FNLog::short_path("/a/b/c", 6) == 1, "0");
+        FNLOG_ASSERT(FNLog::short_path("a/b/c/d", 7) == 2, "0");
 
+    }
 
     return 0;
 }
