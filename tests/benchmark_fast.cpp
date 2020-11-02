@@ -63,6 +63,8 @@ std::string ChannelDesc(int channel_type)
     return "invalid channel";
 }
 
+#define Now()  std::chrono::duration<double>(std::chrono::system_clock::now().time_since_epoch()).count()
+
 int main(int argc, char *argv[])
 {
     int ret = FNLog::FastStartDefaultLogger(example_config_text);
@@ -70,6 +72,25 @@ int main(int argc, char *argv[])
     {
         return ret;
     }
+
+    double now = Now();
+    for (size_t i = 0; i < 500000; i++)
+    {
+        LogTraceStream(3, 0) << "asdf" << i << ", " << 2.3 << "asdfasdf";
+    }
+    LogAlarmStream(0, 1) << "use " << Now() - now << " secend";
+    now = Now();
+    for (size_t i = 0; i < 500000; i++)
+    {
+        LOG_TRACE(3, 0, "asdf" << i << ", " << 2.3 << "asdfasdf");
+    }
+    LogAlarmStream(0, 1) << "use " << Now() - now << " secend";
+    now = Now();
+    for (size_t i = 0; i < 500000; i++)
+    {
+        LogTracePack(3, 0, "asdf" , i , ", " , 2.3 , "asdfasdf");
+    }
+    LogAlarmStream(0, 1) << "use " << Now() - now << " secend";
 
     FNLog::Logger& logger = FNLog::GetDefaultLogger();
 

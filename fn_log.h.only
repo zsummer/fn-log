@@ -3087,6 +3087,23 @@ namespace FNLog
                 return -5;
             }
         }
+        bool need_write = false;
+
+        for (int i = 0; i < logger.shm_->channels_[channel_id].device_size_; i++)
+        {
+            if (logger.shm_->channels_[channel_id].devices_[i].config_fields_[FNLog::DEVICE_CFG_ABLE] && priority >= logger.shm_->channels_[channel_id].devices_[i].config_fields_[FNLog::DEVICE_CFG_PRIORITY])
+            {
+                need_write = true;
+                break;
+            }
+        }
+        if (!need_write)
+        {
+            return -6;
+        }
+
+
+
         int state = 0;
         do
         {
@@ -3596,6 +3613,21 @@ namespace FNLog
         }
     }
 
+    inline bool FastCheckPriorityPass(Logger& logger, int channel_id, int priority, int category)
+    {
+        if (logger.shm_->channel_size_ <= channel_id || priority < logger.shm_->channels_[channel_id].config_fields_[FNLog::CHANNEL_CFG_PRIORITY])
+        {
+            return true;
+        }
+        for (int i = 0; i < logger.shm_->channels_[channel_id].device_size_; i++)
+        {
+            if (logger.shm_->channels_[channel_id].devices_[i].config_fields_[FNLog::DEVICE_CFG_ABLE] && priority >= logger.shm_->channels_[channel_id].devices_[i].config_fields_[FNLog::DEVICE_CFG_PRIORITY])
+            {
+                return false;
+            }
+        }
+        return true;
+    }
 
     inline void LoadSharedMemory(Logger& logger)
     {
@@ -4352,6 +4384,10 @@ FNLog::LogStream& LogTemplatePack(FNLog::LogStream&& ls, Args&& ... args)
 #ifdef WIN32
 #define LOG_FORMAT(channel_id, priority, category, prefix, logformat, ...) \
 do{ \
+    if (FNLog::FastCheckPriorityPass(FNLog::GetDefaultLogger(), channel_id, priority, category))  \
+    { \
+        break;   \
+    } \
     FNLog::LogStream __log_stream(LOG_STREAM_DEFAULT_LOGGER(channel_id, priority, category, prefix));\
     if (__log_stream.log_data_)\
     {\
@@ -4363,6 +4399,10 @@ do{ \
 #else
 #define LOG_FORMAT(channel_id, priority, category, prefix, logformat, ...) \
 do{ \
+    if (FNLog::FastCheckPriorityPass(FNLog::GetDefaultLogger(), channel_id, priority, category))  \
+    { \
+        break;   \
+    } \
     FNLog::LogStream __log_stream(LOG_STREAM_DEFAULT_LOGGER(channel_id, priority, category, prefix));\
     if (__log_stream.log_data_)\
     {\

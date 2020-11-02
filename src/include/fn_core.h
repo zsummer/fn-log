@@ -418,6 +418,21 @@ namespace FNLog
         }
     }
 
+    inline bool FastCheckPriorityPass(Logger& logger, int channel_id, int priority, int category)
+    {
+        if (logger.shm_->channel_size_ <= channel_id || priority < logger.shm_->channels_[channel_id].config_fields_[FNLog::CHANNEL_CFG_PRIORITY])
+        {
+            return true;
+        }
+        for (int i = 0; i < logger.shm_->channels_[channel_id].device_size_; i++)
+        {
+            if (logger.shm_->channels_[channel_id].devices_[i].config_fields_[FNLog::DEVICE_CFG_ABLE] && priority >= logger.shm_->channels_[channel_id].devices_[i].config_fields_[FNLog::DEVICE_CFG_PRIORITY])
+            {
+                return false;
+            }
+        }
+        return true;
+    }
 
     inline void LoadSharedMemory(Logger& logger)
     {

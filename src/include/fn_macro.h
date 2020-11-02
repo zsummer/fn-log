@@ -233,6 +233,10 @@ FNLog::LogStream& LogTemplatePack(FNLog::LogStream&& ls, Args&& ... args)
 #ifdef WIN32
 #define LOG_FORMAT(channel_id, priority, category, prefix, logformat, ...) \
 do{ \
+    if (FNLog::FastCheckPriorityPass(FNLog::GetDefaultLogger(), channel_id, priority, category))  \
+    { \
+        break;   \
+    } \
     FNLog::LogStream __log_stream(LOG_STREAM_DEFAULT_LOGGER(channel_id, priority, category, prefix));\
     if (__log_stream.log_data_)\
     {\
@@ -244,6 +248,10 @@ do{ \
 #else
 #define LOG_FORMAT(channel_id, priority, category, prefix, logformat, ...) \
 do{ \
+    if (FNLog::FastCheckPriorityPass(FNLog::GetDefaultLogger(), channel_id, priority, category))  \
+    { \
+        break;   \
+    } \
     FNLog::LogStream __log_stream(LOG_STREAM_DEFAULT_LOGGER(channel_id, priority, category, prefix));\
     if (__log_stream.log_data_)\
     {\

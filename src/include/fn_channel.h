@@ -278,6 +278,23 @@ namespace FNLog
                 return -5;
             }
         }
+        bool need_write = false;
+
+        for (int i = 0; i < logger.shm_->channels_[channel_id].device_size_; i++)
+        {
+            if (logger.shm_->channels_[channel_id].devices_[i].config_fields_[FNLog::DEVICE_CFG_ABLE] && priority >= logger.shm_->channels_[channel_id].devices_[i].config_fields_[FNLog::DEVICE_CFG_PRIORITY])
+            {
+                need_write = true;
+                break;
+            }
+        }
+        if (!need_write)
+        {
+            return -6;
+        }
+
+
+
         int state = 0;
         do
         {
