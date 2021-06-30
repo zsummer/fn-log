@@ -41,6 +41,7 @@ project(fn-log)
 
 # 
 # execute_process
+set(CMAKE_VERBOSE_MAKEFILEON ON)
 if( NOT CMAKE_CONFIGURATION_TYPES )
     set( CMAKE_CONFIGURATION_TYPES Debug Release )
 endif( NOT CMAKE_CONFIGURATION_TYPES )
