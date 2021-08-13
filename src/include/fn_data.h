@@ -114,12 +114,18 @@ namespace FNLog
         static const int LOG_SIZE = FN_LOG_MAX_LOG_SIZE;
     public:
         std::atomic_int    data_mark_; //0 invalid, 1 hold, 2 ready
-        int    channel_id_;
-        int    priority_;
-        int    category_;
+        int     channel_id_;
+        int     priority_;
+        int     category_;
+        int     code_line_;
+        int     code_func_len_;
+        int     code_file_len_;
+        const char* code_func_;
+        const char* code_file_;
         long long timestamp_;        //create timestamp
         int precise_; //create time millionsecond suffix
         unsigned int thread_;
+        int prefix_len_;
         int content_len_;
         char content_[LOG_SIZE]; //content
     };
@@ -131,6 +137,7 @@ namespace FNLog
         DEVICE_OUT_SCREEN,
         DEVICE_OUT_FILE,
         DEVICE_OUT_UDP,
+        DEVICE_OUT_VIRTUAL,
     };
 
 

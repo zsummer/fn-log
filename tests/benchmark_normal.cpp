@@ -1,5 +1,5 @@
 
-#define FN_LOG_MAX_CHANNEL_SIZE 4
+#define FN_LOG_MAX_CHANNEL_SIZE 5
 #define FN_LOG_MAX_LOG_SIZE 1000
 #define FN_LOG_MAX_LOG_QUEUE_SIZE 100000
 #include "fn_log.h"
@@ -45,6 +45,16 @@ R"----(
  - channel: 3
     sync: sync #only support single thread
 
+
+ # 4通道为异步,输出到虚拟设备 
+ - channel: 4
+    sync: null #only support single thread
+    -device: 0
+        disable: false
+        out_type: virtual
+        file: "$PNAME_virtual"
+        rollback: 4
+        limit_size: 100 m #only support M byte
 )----";
 
 std::string ChannelDesc(int channel_type)
@@ -59,6 +69,12 @@ std::string ChannelDesc(int channel_type)
     return "invalid channel";
 }
 
+
+void MyVirtualDevice(const FNLog::LogData& log)
+{
+    //printf("%s", log.content_ + log.prefix_len_);
+}
+
 int main(int argc, char *argv[])
 {
     int ret = FNLog::FastStartDefaultLogger(example_config_text);
@@ -66,7 +82,7 @@ int main(int argc, char *argv[])
     {
         return ret;
     }
-
+    FNLog::SetVirtualDevice(&MyVirtualDevice);
     FNLog::Logger& logger = FNLog::GetDefaultLogger();
 
     unsigned int total_count = 0;

@@ -89,6 +89,11 @@ namespace FNLog
             logger_ = &logger;
             log_data_ = &logger.shm_->ring_buffers_[channel_id].buffer_[hold_idx];
             hold_idx_ = hold_idx;
+            log_data_->code_line_ = line;
+            log_data_->code_func_ = func_name;
+            log_data_->code_func_len_ = func_name_len;
+            log_data_->code_file_ = file_name;
+            log_data_->code_file_len_ = file_name_len;
             if (prefix == LOG_PREFIX_NULL)
             {
                 return;
@@ -123,6 +128,7 @@ namespace FNLog
                 }
                 write_char_unsafe(' ');
             }
+            log_data_->prefix_len_ = log_data_->content_len_;
         }
         
         ~LogStream()

@@ -11,6 +11,7 @@ cat src/include/fn_load.h  |sed `echo -e 's/\xEF\xBB\xBF//'` >> fn_log.h
 cat src/include/fn_out_file_device.h  |sed `echo -e 's/\xEF\xBB\xBF//'` >> fn_log.h
 cat src/include/fn_out_udp_device.h  |sed `echo -e 's/\xEF\xBB\xBF//'` >> fn_log.h
 cat src/include/fn_out_screen_device.h  |sed `echo -e 's/\xEF\xBB\xBF//'` >> fn_log.h
+cat src/include/fn_out_virtual_device.h  |sed `echo -e 's/\xEF\xBB\xBF//'` >> fn_log.h
 cat src/include/fn_channel.h  |sed `echo -e 's/\xEF\xBB\xBF//'` >> fn_log.h
 cat src/include/fn_core.h  |sed `echo -e 's/\xEF\xBB\xBF//'` >> fn_log.h
 cat src/include/fn_stream.h  |sed `echo -e 's/\xEF\xBB\xBF//'` >> fn_log.h

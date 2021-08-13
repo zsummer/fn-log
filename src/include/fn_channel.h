@@ -46,6 +46,7 @@
 #include "fn_out_file_device.h"
 #include "fn_out_screen_device.h"
 #include "fn_out_udp_device.h"
+#include "fn_out_virtual_device.h"
 #include "fn_fmt.h"
 
 namespace FNLog
@@ -67,6 +68,9 @@ namespace FNLog
         case DEVICE_OUT_UDP:
             EnterProcOutUDPDevice(logger, channel_id, device_id, log);
             break;
+        case DEVICE_OUT_VIRTUAL:
+            EnterProcOutVirtualDevice(logger, channel_id, device_id, log);
+            break;        
         default:
             break;
         }
@@ -197,6 +201,12 @@ namespace FNLog
         log.channel_id_ = channel_id;
         log.priority_ = priority;
         log.category_ = category;
+        log.code_line_ = 0;
+        log.code_func_len_ = 0;
+        log.code_file_len_ = 0;
+        log.code_file_ = "";
+        log.code_func_ = "";
+        log.prefix_len_ = 0;
         log.content_len_ = 0;
         log.content_[log.content_len_] = '\0';
 
@@ -247,6 +257,7 @@ namespace FNLog
             log.content_len_ += write_log_thread_unsafe(log.content_ + log.content_len_, log.thread_);
         }
         log.content_[log.content_len_] = '\0';
+        log.prefix_len_ = log.content_len_;
         return;
     }
 

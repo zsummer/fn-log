@@ -245,6 +245,8 @@ namespace FNLog
             return DEVICE_OUT_UDP;
         case 's':case 'S':
             return DEVICE_OUT_SCREEN;
+        case 'v':case 'V':
+            return DEVICE_OUT_VIRTUAL;
         }
         return DEVICE_OUT_NULL;
     }
