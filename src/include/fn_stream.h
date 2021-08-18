@@ -98,6 +98,28 @@ namespace FNLog
             {
                 return;
             }
+            if (prefix & LOG_PREFIX_TIMESTAMP)
+            {
+                log_data_->content_len_ += write_date_unsafe(log_data_->content_ + log_data_->content_len_, log_data_->timestamp_, log_data_->precise_);
+            }
+            if (prefix & LOG_PREFIX_PRIORITY)
+            {
+                log_data_->content_len_ += write_log_priority_unsafe(log_data_->content_ + log_data_->content_len_, log_data_->priority_);
+            }
+            if (prefix & LOG_PREFIX_THREAD)
+            {
+                log_data_->content_len_ += write_log_thread_unsafe(log_data_->content_ + log_data_->content_len_, log_data_->thread_);
+            }
+            if (prefix & LOG_PREFIX_NAME)
+            {
+                write_char_unsafe(' ');
+                write_buffer_unsafe(logger.name_, logger.name_len_);
+            }
+            if (prefix & LOG_PREFIX_DESC)
+            {
+                write_char_unsafe(' ');
+                write_buffer_unsafe(logger.desc_, logger.desc_len_);
+            }
             if (prefix & LOG_PREFIX_FILE)
             {
                 write_char_unsafe(' ');

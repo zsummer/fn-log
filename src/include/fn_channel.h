@@ -229,10 +229,6 @@ namespace FNLog
         log.precise_ = tm.tv_usec / 1000;
 #endif
         log.thread_ = 0;
-        if (prefix == LOG_PREFIX_NULL)
-        {
-            return;
-        }
 
 #ifdef WIN32
         static thread_local unsigned int therad_id = GetCurrentThreadId();
@@ -245,18 +241,6 @@ namespace FNLog
         static thread_local unsigned int therad_id = (unsigned int)syscall(SYS_gettid);
         log.thread_ = therad_id;
 #endif
-        if (prefix & LOG_PREFIX_TIMESTAMP)
-        {
-            log.content_len_ += write_date_unsafe(log.content_ + log.content_len_, log.timestamp_, log.precise_);
-        }
-        if (prefix & LOG_PREFIX_PRIORITY)
-        {
-            log.content_len_ += write_log_priority_unsafe(log.content_ + log.content_len_, log.priority_);
-        }
-        if (prefix & LOG_PREFIX_THREAD)
-        {
-            log.content_len_ += write_log_thread_unsafe(log.content_ + log.content_len_, log.thread_);
-        }
         log.content_[log.content_len_] = '\0';
         log.prefix_len_ = log.content_len_;
         return;
