@@ -116,7 +116,8 @@ namespace FNLog
         std::atomic_int    data_mark_; //0 invalid, 1 hold, 2 ready
         int     channel_id_;
         int     priority_;
-        int     category_;
+        int     category_; 
+        unsigned long long     identify_;
         int     code_line_;
         int     code_func_len_;
         int     code_file_len_;
@@ -318,7 +319,8 @@ namespace FNLog
     public:
         static const int MAX_CHANNEL_SIZE = SHMLogger::MAX_CHANNEL_SIZE;
         static const int HOTUPDATE_INTERVEL = FN_LOG_HOTUPDATE_INTERVEL;
-
+        static const int MAX_DESC_LEN = 50;
+        static const int MAX_NAME_LEN = 250;
         using ReadLocks = std::array<std::mutex, MAX_CHANNEL_SIZE>;
         using ReadGuard = AutoGuard<std::mutex>;
 
@@ -341,7 +343,10 @@ namespace FNLog
         std::string yaml_path_;
         unsigned int logger_state_;
         StateLock state_lock;
-
+        char desc_[MAX_DESC_LEN];
+        int desc_len_;
+        char name_[MAX_NAME_LEN];
+        int name_len_;
         SHMLogger* shm_;
 
         ReadLocks read_locks_;

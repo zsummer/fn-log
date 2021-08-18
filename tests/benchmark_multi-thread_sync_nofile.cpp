@@ -72,7 +72,7 @@ void thread_proc(int index)
     while (state != END)
     {
 
-        LogDebugStream(1, 0).write_buffer("rrrrrrrrrrrrrrrrrrrradfads33333333333333rrd",
+        LogDebugStream(1, 0, 0).write_buffer("rrrrrrrrrrrrrrrrrrrradfads33333333333333rrd",
             sizeof("rrrrrrrrrrrrrrrrrrrradfads33333333333333rrd") - 1)
             << -23 << ": " << 32.2223 << (void*) nullptr;
 

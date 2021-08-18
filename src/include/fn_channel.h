@@ -196,11 +196,12 @@ namespace FNLog
     
     
 
-    inline void InitLogData(Logger& logger, LogData& log, int channel_id, int priority, int category, unsigned int prefix)
+    inline void InitLogData(Logger& logger, LogData& log, int channel_id, int priority, int category, unsigned long long identify, unsigned int prefix)
     {
         log.channel_id_ = channel_id;
         log.priority_ = priority;
         log.category_ = category;
+        log.identify_ = identify;
         log.code_line_ = 0;
         log.code_func_len_ = 0;
         log.code_file_len_ = 0;

@@ -98,6 +98,8 @@ namespace FNLog
         RK_SYNC,
         RK_DISABLE,
         RK_HOT_UPDATE,
+        RK_LOGGER_NAME,
+        PK_LOGGER_DESC,
         RK_PRIORITY,
         RK_CATEGORY,
         RK_CATEGORY_EXTEND,
@@ -155,7 +157,22 @@ namespace FNLog
         case 'h':
             return RK_HOT_UPDATE;
         case 'l':
-            return RK_LIMIT_SIZE;
+            if (*(begin + 1) == 'i')
+            {
+                return RK_LIMIT_SIZE;
+            }
+            else if (end - begin > 8)
+            {
+                if (*(begin + 7) == 'n')
+                {
+                    return RK_LOGGER_NAME;
+                }
+                if (*(begin + 7) == 'd')
+                {
+                    return PK_LOGGER_DESC;
+                }
+            }
+            break;
         case 'p':
             if (*(begin + 1) == 'r')
             {
@@ -220,6 +237,22 @@ namespace FNLog
         return true;
     }
 
+    inline bool ParseString(const char* begin, const char* end, char * buffer, int buffer_len, int& write_len)
+    {
+        write_len = 0;
+        if (end <= begin)
+        {
+            return false;
+        }
+        write_len = buffer_len - 1;
+        if (end - begin < write_len)
+        {
+            write_len = (int)(end - begin);
+        }
+        memcpy(buffer, begin, write_len);
+        buffer[write_len] = '\0';
+        return true;
+    }
     inline ChannelType ParseChannelType(const char* begin, const char* end)
     {
         if (end <= begin || *begin != 's')
@@ -312,6 +345,10 @@ namespace FNLog
         SHMLogger::Channels channels_;
         int channel_size_;
         bool hot_update_;
+        char desc_[Logger::MAX_DESC_LEN];
+        int desc_len_;
+        char name_[Logger::MAX_NAME_LEN];
+        int name_len_;
     };
 
     inline void InitState(LexState& state)
@@ -637,6 +674,8 @@ namespace FNLog
         ls.current_ = ls.first_;
         ls.line_.line_type_ = LINE_NULL;
         ls.line_number_ = 1;
+        ls.desc_len_ = 0;
+        ls.name_len_ = 0;
         do
         {
             const char* current = ls.current_;
@@ -660,6 +699,12 @@ namespace FNLog
             {
             case RK_HOT_UPDATE:
                 ls.hot_update_ = ParseBool(ls.line_.val_begin_, ls.line_.val_end_);//"disable"
+                break;
+            case RK_LOGGER_NAME:
+                ParseString(ls.line_.val_begin_, ls.line_.val_end_, ls.name_, Logger::MAX_NAME_LEN, ls.name_len_);
+                break;
+            case PK_LOGGER_DESC:
+                ParseString(ls.line_.val_begin_, ls.line_.val_end_, ls.desc_, Logger::MAX_DESC_LEN, ls.desc_len_);
                 break;
             case RK_CHANNEL:
                 if (ls.line_.line_type_ != LINE_ARRAY)

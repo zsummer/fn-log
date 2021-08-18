@@ -418,8 +418,9 @@ namespace FNLog
         }
     }
 
-    inline bool FastCheckPriorityPass(Logger& logger, int channel_id, int priority, int category)
+    inline bool FastCheckPriorityPass(Logger& logger, int channel_id, int priority, int category, unsigned long long identify)
     {
+        (void)identify;
         if (logger.shm_->channel_size_ <= channel_id || priority < logger.shm_->channels_[channel_id].config_fields_[FNLog::CHANNEL_CFG_PRIORITY])
         {
             return true;
@@ -555,6 +556,14 @@ namespace FNLog
     {
         logger.hot_update_ = false;
         logger.logger_state_ = LOGGER_STATE_UNINIT;
+        memset(logger.desc_, 0, Logger::MAX_DESC_LEN);
+        logger.desc_len_ = 0;
+        memset(logger.name_, 0, Logger::MAX_NAME_LEN);
+        logger.name_len_ = 0;
+        std::string name = FileHandler::process_name();
+        name = name.substr(0, Logger::MAX_NAME_LEN - 1);
+        memcpy(logger.name_, name.c_str(), name.length() + 1);
+        logger.name_len_ = (int)name.length();
         LoadSharedMemory(logger);
 
 #if ((defined WIN32) && !KEEP_INPUT_QUICK_EDIT)

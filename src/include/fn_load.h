@@ -85,7 +85,16 @@ namespace FNLog
             printf("%s\n", os.str().c_str());
             return ret;
         }
-
+        if (ls->name_len_ > 0)
+        {
+            memcpy(logger.name_, ls->name_, ls->name_len_+1);
+            logger.name_len_ = ls->name_len_;
+        }
+        if (ls->desc_len_ > 0)
+        {
+            memcpy(logger.desc_, ls->desc_, ls->desc_len_+1);
+            logger.desc_len_ = ls->desc_len_;
+        }
         logger.yaml_path_ = path;
         logger.hot_update_ = ls->hot_update_;
         logger.shm_->channel_size_ = ls->channel_size_;

@@ -76,21 +76,21 @@ int main(int argc, char *argv[])
     double now = Now();
     for (size_t i = 0; i < 500000; i++)
     {
-        LogTraceStream(3, 0) << "asdf" << i << ", " << 2.3 << "asdfasdf";
+        LogTraceStream(3, 0, 0) << "asdf" << i << ", " << 2.3 << "asdfasdf";
     }
-    LogAlarmStream(0, 1) << "use " << Now() - now << " secend";
+    LogAlarmStream(0, 1, 0) << "use " << Now() - now << " secend";
     now = Now();
     for (size_t i = 0; i < 500000; i++)
     {
-        LOG_TRACE(3, 0, "asdf" << i << ", " << 2.3 << "asdfasdf");
+        LOG_TRACE(3, 0, 0, "asdf" << i << ", " << 2.3 << "asdfasdf");
     }
-    LogAlarmStream(0, 1) << "use " << Now() - now << " secend";
+    LogAlarmStream(0, 1, 0) << "use " << Now() - now << " secend";
     now = Now();
     for (size_t i = 0; i < 500000; i++)
     {
-        LogTracePack(3, 0, "asdf" , i , ", " , 2.3 , "asdfasdf");
+        LogTracePack(3, 0, 0, "asdf" , i , ", " , 2.3 , "asdfasdf");
     }
-    LogAlarmStream(0, 1) << "use " << Now() - now << " secend";
+    LogAlarmStream(0, 1, 0) << "use " << Now() - now << " secend";
 
     FNLog::Logger& logger = FNLog::GetDefaultLogger();
 
@@ -100,7 +100,7 @@ int main(int argc, char *argv[])
         total_count = 0;
         do
         {
-            LOG_STREAM_DEFAULT_LOGGER(i, FNLog::PRIORITY_DEBUG, 0, FNLog::LOG_PREFIX_NULL)
+            LOG_STREAM_DEFAULT_LOGGER(i, FNLog::PRIORITY_DEBUG, 0, 0, FNLog::LOG_PREFIX_NULL)
                 .write_buffer("rrrrrrrrrrrrrrrrrrrradfads33333333333333rrd",
                     sizeof("rrrrrrrrrrrrrrrrrrrradfads33333333333333rrd") - 1);
 
@@ -110,7 +110,7 @@ int main(int argc, char *argv[])
                 long long now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
                 if (total_count > 0)
                 {
-                    LogInfoStream(0, 1) << "channel:<" << (long long)i << "> "
+                    LogInfoStream(0, 1, 0) << "channel:<" << (long long)i << "> "
                         << ChannelDesc(logger.shm_->channels_[i].channel_type_) << " has write file:<"
                         << logger.shm_->channels_[i].device_size_ << "> test " << 1000000*1000 / (now - last) << " line/sec. ";
                     last = now;
@@ -120,7 +120,7 @@ int main(int argc, char *argv[])
         } while (++total_count);
     }
 
-    LogAlarmStream(0, 1) << "finish";
+    LogAlarmStream(0, 1, 0) << "finish";
     return 0;
 }
 

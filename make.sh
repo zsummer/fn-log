@@ -10,9 +10,11 @@ if [ $# -gt 0 ] && [ $1 = "max" ]; then
     elif [ -f /usr/bin/g++-6 ]; then 
         cmake -DCMAKE_C_COMPILER=/usr/bin/gcc-6 -DCMAKE_CXX_COMPILER=/usr/bin/g++-6 $* ../
     else
-        cmake $* ../
+        cmake $* ../ 
     fi
 else 
-    cmake $* ../
+    cmake $* ../ 
 fi
+
 make -j2 
+

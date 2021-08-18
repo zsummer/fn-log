@@ -51,7 +51,7 @@ int main(int argc, char* argv[])
         }
         LogDebug() << "default channel debug.";
         LogInfo() << "default channel info.";
-        LogDebugStream(1, 0) << "channel:1, category:0.";
+        LogDebugStream(1, 0, 0) << "channel:1, category:0.";
         std::this_thread::sleep_for(std::chrono::milliseconds(1000));
         limit_second--;
     }

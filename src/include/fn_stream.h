@@ -65,7 +65,7 @@ namespace FNLog
             other.hold_idx_ = -1;
         }
 
-        explicit LogStream(Logger& logger, int channel_id, int priority, int category, 
+        explicit LogStream(Logger& logger, int channel_id, int priority, int category, unsigned long long identify,
             const char * const file_name, int file_name_len, int line,
             const char * const func_name, int func_name_len, unsigned int prefix)
         {
@@ -79,7 +79,7 @@ namespace FNLog
 
             try
             {
-                InitLogData(logger, logger.shm_->ring_buffers_[channel_id].buffer_[hold_idx], channel_id, priority, category, prefix);
+                InitLogData(logger, logger.shm_->ring_buffers_[channel_id].buffer_[hold_idx], channel_id, priority, category, identify, prefix);
             }
             catch (const std::exception&)
             {

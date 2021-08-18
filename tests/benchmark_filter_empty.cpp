@@ -70,7 +70,7 @@ std::string ChannelDesc(int channel_type)
 
 int main(int argc, char *argv[])
 {
-#ifndef RELEASE
+#ifdef RELEASE
     int ret = FNLog::FastStartDefaultLogger(" - channel: 0");
     if (ret != 0)
     {
@@ -88,95 +88,95 @@ int main(int argc, char *argv[])
 
     double now = Now();
 
-    LogAlarmStream(0, 1) << "input format: LogDebug() << xxxx << xxx; test:";
+    LogAlarmStream(0, 1, 0) << "input format: LogDebug() << xxxx << xxx; test:";
     now = Now();
     for (unsigned long long i = 0; i < 1000000; i++)
     {
-        LogDebugStream(0, 0) << "asdf" << i << ", " << 2.3 << "asdfasdf";
+        LogDebugStream(0, 0, 0) << "asdf" << i << ", " << 2.3 << "asdfasdf";
     }
-    LogAlarmStream(0, 1) << "1000w debug(write) use" << (Now() - now) * (10) << " secend";
+    LogAlarmStream(0, 1, 0) << "1000w debug(write) use" << (Now() - now) * (10) << " secend";
     now = Now();
     for (unsigned long long i = 0; i < 1000000; i++)
     {
-        LogTraceStream(0, 0) << "asdf" << i << ", " << 2.3 << "asdfasdf";
+        LogTraceStream(0, 0, 0) << "asdf" << i << ", " << 2.3 << "asdfasdf";
     }
-    LogAlarmStream(0, 1) << "1000w trace(no write) use" << (Now() - now) * (10) << " secend";
+    LogAlarmStream(0, 1, 0) << "1000w trace(no write) use" << (Now() - now) * (10) << " secend";
 
     now = Now();
     for (unsigned long long i = 0; i < 1000000; i++)
     {
-        LogDebugStream(1, 0) << "asdf" << i << ", " << 2.3 << "asdfasdf";
+        LogDebugStream(1, 0, 0) << "asdf" << i << ", " << 2.3 << "asdfasdf";
     }
-    LogAlarmStream(0, 1) << "1000w debug(no device no write) use" << (Now() - now) * (10) << " secend";
+    LogAlarmStream(0, 1, 0) << "1000w debug(no device no write) use" << (Now() - now) * (10) << " secend";
     now = Now();
     for (unsigned long long i = 0; i < 1000000; i++)
     {
-        LogTraceStream(1, 0) << "asdf" << i << ", " << 2.3 << "asdfasdf";
+        LogTraceStream(1, 0, 0) << "asdf" << i << ", " << 2.3 << "asdfasdf";
     }
-    LogAlarmStream(0, 1) << "1000w trace(no device no write) use" << (Now() - now) * (10) << " secend";
+    LogAlarmStream(0, 1, 0) << "1000w trace(no device no write) use" << (Now() - now) * (10) << " secend";
 
 
     now = Now();
     for (unsigned long long i = 0; i < 100000; i++)
     {
-        LogDebugStream(2, 0) << "asdf" << i << ", " << 2.3 << "asdfasdf";
+        LogDebugStream(2, 0, 0) << "asdf" << i << ", " << 2.3 << "asdfasdf";
     }
-    LogAlarmStream(0, 1) << "1000w debug(sync write) use" << (Now() - now) * (100) << " secend";
+    LogAlarmStream(0, 1, 0) << "1000w debug(sync write) use" << (Now() - now) * (100) << " secend";
     now = Now();
     for (unsigned long long i = 0; i < 1000000; i++)
     {
-        LogTraceStream(2, 0) << "asdf" << i << ", " << 2.3 << "asdfasdf";
+        LogTraceStream(2, 0, 0) << "asdf" << i << ", " << 2.3 << "asdfasdf";
     }
-    LogAlarmStream(0, 1) << "1000w trace(sync no write) use" << (Now() - now) * (10) << " secend";
+    LogAlarmStream(0, 1, 0) << "1000w trace(sync no write) use" << (Now() - now) * (10) << " secend";
 
 
-    LogAlarmStream(0, 1) << "\n\n";
-    LogAlarmStream(0, 1) << "input format: LOGFMTD(\"sss\", xxx, xxx); test:";
+    LogAlarmStream(0, 1, 0) << "\n\n";
+    LogAlarmStream(0, 1, 0) << "input format: LOGFMTD(\"sss\", xxx, xxx); test:";
     now = Now();
     for (unsigned long long i = 0; i < 1000000; i++)
     {
-        LOGFMT_DEBUG(0, 0, "%s, %llu, %g, %s",  "asdf" , i ,  2.3 , "asdfasdf");
+        LOGFMT_DEBUG(0, 0, 0, "%s, %llu, %g, %s",  "asdf" , i ,  2.3 , "asdfasdf");
     }
-    LogAlarmStream(0, 1) << "1000w debug(write) use" << (Now() - now) * (10) << " secend";
+    LogAlarmStream(0, 1, 0) << "1000w debug(write) use" << (Now() - now) * (10) << " secend";
     now = Now();
     for (unsigned long long i = 0; i < 1000000; i++)
     {
-        LOGFMT_TRACE(0, 0, "%s, %llu, %g, %s", "asdf", i, 2.3, "asdfasdf");
+        LOGFMT_TRACE(0, 0, 0, "%s, %llu, %g, %s", "asdf", i, 2.3, "asdfasdf");
     }
-    LogAlarmStream(0, 1) << "1000w trace(no write) use" << (Now() - now) * (10) << " secend";
+    LogAlarmStream(0, 1, 0) << "1000w trace(no write) use" << (Now() - now) * (10) << " secend";
 
     now = Now();
     for (unsigned long long i = 0; i < 1000000; i++)
     {
-        LOGFMT_DEBUG(1, 0, "%s, %llu, %g, %s", "asdf", i, 2.3, "asdfasdf");
+        LOGFMT_DEBUG(1, 0, 0, "%s, %llu, %g, %s", "asdf", i, 2.3, "asdfasdf");
     }
-    LogAlarmStream(0, 1) << "1000w debug(no device no write) use" << (Now() - now) * (10) << " secend";
+    LogAlarmStream(0, 1, 0) << "1000w debug(no device no write) use" << (Now() - now) * (10) << " secend";
     now = Now();
     for (unsigned long long i = 0; i < 1000000; i++)
     {
-        LOGFMT_TRACE(1, 0, "%s, %llu, %g, %s", "asdf", i, 2.3, "asdfasdf");
+        LOGFMT_TRACE(1, 0, 0, "%s, %llu, %g, %s", "asdf", i, 2.3, "asdfasdf");
     }
-    LogAlarmStream(0, 1) << "1000w trace(no device no write) use" << (Now() - now) * (10) << " secend";
+    LogAlarmStream(0, 10, 0) << "1000w trace(no device no write) use" << (Now() - now) * (10) << " secend";
 
 
     now = Now();
     for (unsigned long long i = 0; i < 100000; i++)
     {
-        LOGFMT_DEBUG(2, 0, "%s, %llu, %g, %s", "asdf", i, 2.3, "asdfasdf");
+        LOGFMT_DEBUG(2, 0, 0, "%s, %llu, %g, %s", "asdf", i, 2.3, "asdfasdf");
     }
-    LogAlarmStream(0, 1) << "1000w debug(sync write) use" << (Now() - now) * (100) << " secend";
+    LogAlarmStream(0, 1, 0) << "1000w debug(sync write) use" << (Now() - now) * (100) << " secend";
     now = Now();
     for (unsigned long long i = 0; i < 1000000; i++)
     {
-        LOGFMT_TRACE(2, 0, "%s, %llu, %g, %s", "asdf", i, 2.3, "asdfasdf");
+        LOGFMT_TRACE(2, 0, 0, "%s, %llu, %g, %s", "asdf", i, 2.3, "asdfasdf");
     }
-    LogAlarmStream(0, 1) << "1000w trace(sync no write) use" << (Now() - now) * (10) << " secend";
+    LogAlarmStream(0, 1, 0) << "1000w trace(sync no write) use" << (Now() - now) * (10) << " secend";
 
 
 
 
 
-    LogAlarmStream(0, 1) << "finish";
+    LogAlarmStream(0, 1, 0) << "finish";
     return 0;
 }
 

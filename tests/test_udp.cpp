@@ -47,7 +47,7 @@ int main(int argc, char* argv[])
         LogDebug() << "now time:" << (long long)time(nullptr) << ";";
     }
 
-    LogAlarmStream(0, 1) << "finish";
+    LogAlarmStream(0, 1, 0) << "finish";
 
     return 0;
 }
