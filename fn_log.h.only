@@ -445,18 +445,22 @@ class UDPHandler
 {
 public:
 #ifndef WIN32
-    using SOCKET = int;
-    static const int INVALID_SOCKET = -1;
+    using FNLOG_SOCKET = int;
+    static const int FNLOG_INVALID_SOCKET = -1;
+#else
+    using FNLOG_SOCKET = SOCKET;
+    static const SOCKET FNLOG_INVALID_SOCKET = INVALID_SOCKET;
 #endif 
 
 public:
     UDPHandler()
     {
-        handler_ = INVALID_SOCKET;
+        chunk_1_[0] = '\0';
+        handler_ = FNLOG_INVALID_SOCKET;
     }
     ~UDPHandler()
     {
-        if (handler_ != INVALID_SOCKET)
+        if (handler_ != FNLOG_INVALID_SOCKET)
         {
             close();
         }
@@ -464,7 +468,7 @@ public:
 
     bool is_open()
     {
-        return handler_ != INVALID_SOCKET;
+        return handler_ != FNLOG_INVALID_SOCKET;
     }
 
     void open()
@@ -474,20 +478,20 @@ public:
 
     void close()
     {
-        if (handler_ != INVALID_SOCKET)
+        if (handler_ != FNLOG_INVALID_SOCKET)
         {
 #ifndef WIN32
             ::close(handler_);
 #else
             closesocket(handler_);
 #endif 
-            handler_ = INVALID_SOCKET;
+            handler_ = FNLOG_INVALID_SOCKET;
         }
     }
 
     void write(unsigned int ip, unsigned short port, const char* data, int len)
     {
-        if (handler_ == INVALID_SOCKET)
+        if (handler_ == FNLOG_INVALID_SOCKET)
         {
             return;
         }
@@ -503,7 +507,7 @@ public:
  
 public:
     char chunk_1_[128];
-    SOCKET handler_;
+    FNLOG_SOCKET handler_;
 };
 
 
