@@ -103,6 +103,8 @@ namespace FNLog
         RK_PRIORITY,
         RK_CATEGORY,
         RK_CATEGORY_EXTEND,
+        RK_IDENTIFY,
+        RK_IDENTIFY_EXTEND,
         RK_OUT_TYPE,
         RK_FILE,
         RK_PATH,
@@ -156,6 +158,16 @@ namespace FNLog
             return RK_FILE;
         case 'h':
             return RK_HOT_UPDATE;
+        case 'i':
+            if (end - begin > (int)sizeof("identify") - 1)
+            {
+                return RK_IDENTIFY_EXTEND;
+            }
+            else
+            {
+                return RK_IDENTIFY;
+            }
+            break;
         case 'l':
             if (*(begin + 1) == 'i')
             {
@@ -540,6 +552,12 @@ namespace FNLog
             case RK_CATEGORY_EXTEND:
                 device.config_fields_[DEVICE_CFG_CATEGORY_EXTEND] = atoll(ls.line_.val_begin_);
                 break;
+            case RK_IDENTIFY:
+                device.config_fields_[DEVICE_CFG_IDENTIFY] = atoll(ls.line_.val_begin_);
+                break;
+            case RK_IDENTIFY_EXTEND:
+                device.config_fields_[DEVICE_CFG_IDENTIFY_EXTEND] = atoll(ls.line_.val_begin_);
+                break;
             case RK_LIMIT_SIZE:
                 device.config_fields_[DEVICE_CFG_FILE_LIMIT_SIZE] = atoll(ls.line_.val_begin_) * 1000*1000;
                 break;
@@ -621,6 +639,12 @@ namespace FNLog
                 break;            
             case RK_CATEGORY_EXTEND:
                 channel.config_fields_[CHANNEL_CFG_CATEGORY_EXTEND] = atoi(ls.line_.val_begin_);
+                break;
+            case RK_IDENTIFY:
+                channel.config_fields_[CHANNEL_CFG_IDENTIFY] = atoi(ls.line_.val_begin_);
+                break;
+            case RK_IDENTIFY_EXTEND:
+                channel.config_fields_[CHANNEL_CFG_IDENTIFY_EXTEND] = atoi(ls.line_.val_begin_);
                 break;
             case RK_DEVICE:
                 if (ls.line_.line_type_ != LINE_ARRAY)

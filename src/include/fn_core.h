@@ -418,7 +418,7 @@ namespace FNLog
         }
     }
 
-    inline bool FastCheckPriorityPass(Logger& logger, int channel_id, int priority, int category, unsigned long long identify)
+    inline bool FastCheckPriorityPass(Logger& logger, int channel_id, int priority, int category, long long identify)
     {
         (void)identify;
         if (logger.shm_->channel_size_ <= channel_id || priority < logger.shm_->channels_[channel_id].config_fields_[FNLog::CHANNEL_CFG_PRIORITY])

@@ -630,7 +630,7 @@ namespace FNLog
         int     channel_id_;
         int     priority_;
         int     category_; 
-        unsigned long long     identify_;
+        long long     identify_;
         int     code_line_;
         int     code_func_len_;
         int     code_file_len_;
@@ -661,6 +661,8 @@ namespace FNLog
         DEVICE_CFG_PRIORITY,  
         DEVICE_CFG_CATEGORY,  
         DEVICE_CFG_CATEGORY_EXTEND, 
+        DEVICE_CFG_IDENTIFY,
+        DEVICE_CFG_IDENTIFY_EXTEND,
         DEVICE_CFG_FILE_LIMIT_SIZE, 
         DEVICE_CFG_FILE_ROLLBACK, 
         DEVICE_CFG_UDP_IP,
@@ -718,6 +720,8 @@ namespace FNLog
         CHANNEL_CFG_PRIORITY, 
         CHANNEL_CFG_CATEGORY,  
         CHANNEL_CFG_CATEGORY_EXTEND, 
+        CHANNEL_CFG_IDENTIFY,
+        CHANNEL_CFG_IDENTIFY_EXTEND,
         CHANNEL_CFG_MAX_ID
     };
 
@@ -1018,6 +1022,8 @@ namespace FNLog
         RK_PRIORITY,
         RK_CATEGORY,
         RK_CATEGORY_EXTEND,
+        RK_IDENTIFY,
+        RK_IDENTIFY_EXTEND,
         RK_OUT_TYPE,
         RK_FILE,
         RK_PATH,
@@ -1071,6 +1077,16 @@ namespace FNLog
             return RK_FILE;
         case 'h':
             return RK_HOT_UPDATE;
+        case 'i':
+            if (end - begin > (int)sizeof("identify") - 1)
+            {
+                return RK_IDENTIFY_EXTEND;
+            }
+            else
+            {
+                return RK_IDENTIFY;
+            }
+            break;
         case 'l':
             if (*(begin + 1) == 'i')
             {
@@ -1455,6 +1471,12 @@ namespace FNLog
             case RK_CATEGORY_EXTEND:
                 device.config_fields_[DEVICE_CFG_CATEGORY_EXTEND] = atoll(ls.line_.val_begin_);
                 break;
+            case RK_IDENTIFY:
+                device.config_fields_[DEVICE_CFG_IDENTIFY] = atoll(ls.line_.val_begin_);
+                break;
+            case RK_IDENTIFY_EXTEND:
+                device.config_fields_[DEVICE_CFG_IDENTIFY_EXTEND] = atoll(ls.line_.val_begin_);
+                break;
             case RK_LIMIT_SIZE:
                 device.config_fields_[DEVICE_CFG_FILE_LIMIT_SIZE] = atoll(ls.line_.val_begin_) * 1000*1000;
                 break;
@@ -1536,6 +1558,12 @@ namespace FNLog
                 break;            
             case RK_CATEGORY_EXTEND:
                 channel.config_fields_[CHANNEL_CFG_CATEGORY_EXTEND] = atoi(ls.line_.val_begin_);
+                break;
+            case RK_IDENTIFY:
+                channel.config_fields_[CHANNEL_CFG_IDENTIFY] = atoi(ls.line_.val_begin_);
+                break;
+            case RK_IDENTIFY_EXTEND:
+                channel.config_fields_[CHANNEL_CFG_IDENTIFY_EXTEND] = atoi(ls.line_.val_begin_);
                 break;
             case RK_DEVICE:
                 if (ls.line_.line_type_ != LINE_ARRAY)
@@ -3040,13 +3068,18 @@ namespace FNLog
             {
                 continue;
             }
-            if (AtomicLoadC(device, DEVICE_CFG_CATEGORY) > 0)
+            long long begin_category = AtomicLoadC(device, DEVICE_CFG_CATEGORY);
+            long long category_count = AtomicLoadC(device, DEVICE_CFG_CATEGORY_EXTEND);
+            long long begin_identify = AtomicLoadC(device, DEVICE_CFG_IDENTIFY);
+            long long identify_count = AtomicLoadC(device, DEVICE_CFG_IDENTIFY_EXTEND);
+
+            if (category_count > 0 && (log.category_ < begin_category || log.category_ >= begin_category + category_count))
             {
-                if (log.category_ < AtomicLoadC(device, DEVICE_CFG_CATEGORY)
-                    || log.category_ > AtomicLoadC(device, DEVICE_CFG_CATEGORY) + AtomicLoadC(device, DEVICE_CFG_CATEGORY_EXTEND))
-                {
-                    continue;
-                }
+                continue;
+            }
+            if (identify_count > 0 && (log.identify_ < begin_identify || log.identify_ >= begin_identify + identify_count))
+            {
+                continue;
             }
             EnterProcDevice(logger, channel.channel_id_, device_id, log);
         }
@@ -3196,7 +3229,7 @@ namespace FNLog
         return;
     }
 
-    inline int HoldChannel(Logger& logger, int channel_id, int priority, int category)
+    inline int HoldChannel(Logger& logger, int channel_id, int priority, int category, long long identify)
     {
         if (channel_id >= logger.shm_->channel_size_ || channel_id < 0)
         {
@@ -3216,14 +3249,20 @@ namespace FNLog
         {
             return -4;
         }
-        if (AtomicLoadC(channel, CHANNEL_CFG_CATEGORY) > 0)
+        long long begin_category = AtomicLoadC(channel, CHANNEL_CFG_CATEGORY);
+        long long category_count = AtomicLoadC(channel, CHANNEL_CFG_CATEGORY_EXTEND);
+        long long begin_identify = AtomicLoadC(channel, CHANNEL_CFG_IDENTIFY);
+        long long identify_count = AtomicLoadC(channel, CHANNEL_CFG_IDENTIFY_EXTEND);
+
+        if (category_count > 0 && (category < begin_category || category >= begin_category + category_count))
         {
-            if (category < AtomicLoadC(channel, CHANNEL_CFG_CATEGORY)
-                || category > AtomicLoadC(channel, CHANNEL_CFG_CATEGORY) + AtomicLoadC(channel, CHANNEL_CFG_CATEGORY_EXTEND))
-            {
-                return -5;
-            }
+            return -5;
         }
+        if (identify_count > 0 && (identify < begin_identify || identify >= begin_identify + identify_count))
+        {
+            return -6;
+        }
+
         bool need_write = false;
 
         for (int i = 0; i < logger.shm_->channels_[channel_id].device_size_; i++)
@@ -3750,7 +3789,7 @@ namespace FNLog
         }
     }
 
-    inline bool FastCheckPriorityPass(Logger& logger, int channel_id, int priority, int category, unsigned long long identify)
+    inline bool FastCheckPriorityPass(Logger& logger, int channel_id, int priority, int category, long long identify)
     {
         (void)identify;
         if (logger.shm_->channel_size_ <= channel_id || priority < logger.shm_->channels_[channel_id].config_fields_[FNLog::CHANNEL_CFG_PRIORITY])
@@ -4003,13 +4042,13 @@ namespace FNLog
             other.hold_idx_ = -1;
         }
 
-        explicit LogStream(Logger& logger, int channel_id, int priority, int category, unsigned long long identify,
+        explicit LogStream(Logger& logger, int channel_id, int priority, int category, long long identify,
             const char * const file_name, int file_name_len, int line,
             const char * const func_name, int func_name_len, unsigned int prefix)
         {
             logger_ = nullptr;
             log_data_ = nullptr;
-            int hold_idx = HoldChannel(logger, channel_id, priority, category);
+            int hold_idx = HoldChannel(logger, channel_id, priority, category, identify);
             if (hold_idx < 0)
             {
                 return;

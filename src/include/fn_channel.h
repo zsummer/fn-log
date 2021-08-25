@@ -90,13 +90,18 @@ namespace FNLog
             {
                 continue;
             }
-            if (AtomicLoadC(device, DEVICE_CFG_CATEGORY) > 0)
+            long long begin_category = AtomicLoadC(device, DEVICE_CFG_CATEGORY);
+            long long category_count = AtomicLoadC(device, DEVICE_CFG_CATEGORY_EXTEND);
+            long long begin_identify = AtomicLoadC(device, DEVICE_CFG_IDENTIFY);
+            long long identify_count = AtomicLoadC(device, DEVICE_CFG_IDENTIFY_EXTEND);
+
+            if (category_count > 0 && (log.category_ < begin_category || log.category_ >= begin_category + category_count))
             {
-                if (log.category_ < AtomicLoadC(device, DEVICE_CFG_CATEGORY)
-                    || log.category_ > AtomicLoadC(device, DEVICE_CFG_CATEGORY) + AtomicLoadC(device, DEVICE_CFG_CATEGORY_EXTEND))
-                {
-                    continue;
-                }
+                continue;
+            }
+            if (identify_count > 0 && (log.identify_ < begin_identify || log.identify_ >= begin_identify + identify_count))
+            {
+                continue;
             }
             EnterProcDevice(logger, channel.channel_id_, device_id, log);
         }
@@ -246,7 +251,7 @@ namespace FNLog
         return;
     }
 
-    inline int HoldChannel(Logger& logger, int channel_id, int priority, int category)
+    inline int HoldChannel(Logger& logger, int channel_id, int priority, int category, long long identify)
     {
         if (channel_id >= logger.shm_->channel_size_ || channel_id < 0)
         {
@@ -266,14 +271,20 @@ namespace FNLog
         {
             return -4;
         }
-        if (AtomicLoadC(channel, CHANNEL_CFG_CATEGORY) > 0)
+        long long begin_category = AtomicLoadC(channel, CHANNEL_CFG_CATEGORY);
+        long long category_count = AtomicLoadC(channel, CHANNEL_CFG_CATEGORY_EXTEND);
+        long long begin_identify = AtomicLoadC(channel, CHANNEL_CFG_IDENTIFY);
+        long long identify_count = AtomicLoadC(channel, CHANNEL_CFG_IDENTIFY_EXTEND);
+
+        if (category_count > 0 && (category < begin_category || category >= begin_category + category_count))
         {
-            if (category < AtomicLoadC(channel, CHANNEL_CFG_CATEGORY)
-                || category > AtomicLoadC(channel, CHANNEL_CFG_CATEGORY) + AtomicLoadC(channel, CHANNEL_CFG_CATEGORY_EXTEND))
-            {
-                return -5;
-            }
+            return -5;
         }
+        if (identify_count > 0 && (identify < begin_identify || identify >= begin_identify + identify_count))
+        {
+            return -6;
+        }
+
         bool need_write = false;
 
         for (int i = 0; i < logger.shm_->channels_[channel_id].device_size_; i++)

@@ -121,7 +121,7 @@ namespace FNLog
         int     channel_id_;
         int     priority_;
         int     category_; 
-        unsigned long long     identify_;
+        long long     identify_;
         int     code_line_;
         int     code_func_len_;
         int     code_file_len_;
@@ -152,6 +152,8 @@ namespace FNLog
         DEVICE_CFG_PRIORITY,  
         DEVICE_CFG_CATEGORY,  
         DEVICE_CFG_CATEGORY_EXTEND, 
+        DEVICE_CFG_IDENTIFY,
+        DEVICE_CFG_IDENTIFY_EXTEND,
         DEVICE_CFG_FILE_LIMIT_SIZE, 
         DEVICE_CFG_FILE_ROLLBACK, 
         DEVICE_CFG_UDP_IP,
@@ -209,6 +211,8 @@ namespace FNLog
         CHANNEL_CFG_PRIORITY, 
         CHANNEL_CFG_CATEGORY,  
         CHANNEL_CFG_CATEGORY_EXTEND, 
+        CHANNEL_CFG_IDENTIFY,
+        CHANNEL_CFG_IDENTIFY_EXTEND,
         CHANNEL_CFG_MAX_ID
     };
 

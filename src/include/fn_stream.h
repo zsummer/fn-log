@@ -65,13 +65,13 @@ namespace FNLog
             other.hold_idx_ = -1;
         }
 
-        explicit LogStream(Logger& logger, int channel_id, int priority, int category, unsigned long long identify,
+        explicit LogStream(Logger& logger, int channel_id, int priority, int category, long long identify,
             const char * const file_name, int file_name_len, int line,
             const char * const func_name, int func_name_len, unsigned int prefix)
         {
             logger_ = nullptr;
             log_data_ = nullptr;
-            int hold_idx = HoldChannel(logger, channel_id, priority, category);
+            int hold_idx = HoldChannel(logger, channel_id, priority, category, identify);
             if (hold_idx < 0)
             {
                 return;
