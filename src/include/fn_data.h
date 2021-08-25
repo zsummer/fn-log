@@ -49,11 +49,11 @@
 #endif
 
 #ifndef FN_LOG_MAX_LOG_SIZE
-#define FN_LOG_MAX_LOG_SIZE 1000
+#define FN_LOG_MAX_LOG_SIZE 10000
 #endif
 
 #ifndef FN_LOG_MAX_LOG_QUEUE_SIZE //the size need big than push log thread count
-#define FN_LOG_MAX_LOG_QUEUE_SIZE 10000
+#define FN_LOG_MAX_LOG_QUEUE_SIZE 1000
 #endif
 
 
@@ -181,10 +181,10 @@ namespace FNLog
     public:
         static const int MAX_PATH_SYS_LEN = 255;
         static const int MAX_PATH_LEN = 200;
-        static const int MAX_NAME_LEN = 50;
+        static const int MAX_LOGGER_NAME_LEN = 50;
         static const int MAX_ROLLBACK_LEN = 4;
         static const int MAX_ROLLBACK_PATHS = 5;
-        static_assert(MAX_PATH_LEN + MAX_NAME_LEN + MAX_ROLLBACK_LEN < MAX_PATH_SYS_LEN, "");
+        static_assert(MAX_PATH_LEN + MAX_LOGGER_NAME_LEN + MAX_ROLLBACK_LEN < MAX_PATH_SYS_LEN, "");
         static_assert(LogData::LOG_SIZE > MAX_PATH_SYS_LEN*2, "unsafe size"); // promise format length: date, time, source file path, function length.
         static_assert(MAX_ROLLBACK_PATHS < 10, "");
         using ConfigFields = std::array<std::atomic_llong, DEVICE_CFG_MAX_ID>;
@@ -193,7 +193,7 @@ namespace FNLog
     public:
         int device_id_;
         unsigned int out_type_;
-        char out_file_[MAX_NAME_LEN];
+        char out_file_[MAX_LOGGER_NAME_LEN];
         char out_path_[MAX_PATH_LEN];
         ConfigFields config_fields_;
         LogFields log_fields_;
@@ -327,8 +327,8 @@ namespace FNLog
     public:
         static const int MAX_CHANNEL_SIZE = SHMLogger::MAX_CHANNEL_SIZE;
         static const int HOTUPDATE_INTERVEL = FN_LOG_HOTUPDATE_INTERVEL;
-        static const int MAX_DESC_LEN = 50;
-        static const int MAX_NAME_LEN = 250;
+        static const int MAX_LOGGER_DESC_LEN = 50;
+        static const int MAX_LOGGER_NAME_LEN = 250;
         using ReadLocks = std::array<std::mutex, MAX_CHANNEL_SIZE>;
         using ReadGuard = AutoGuard<std::mutex>;
 
@@ -351,9 +351,9 @@ namespace FNLog
         std::string yaml_path_;
         unsigned int logger_state_;
         StateLock state_lock;
-        char desc_[MAX_DESC_LEN];
+        char desc_[MAX_LOGGER_DESC_LEN];
         int desc_len_;
-        char name_[MAX_NAME_LEN];
+        char name_[MAX_LOGGER_NAME_LEN];
         int name_len_;
         SHMLogger* shm_;
 

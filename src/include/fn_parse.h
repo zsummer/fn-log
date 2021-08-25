@@ -357,9 +357,9 @@ namespace FNLog
         SHMLogger::Channels channels_;
         int channel_size_;
         bool hot_update_;
-        char desc_[Logger::MAX_DESC_LEN];
+        char desc_[Logger::MAX_LOGGER_DESC_LEN];
         int desc_len_;
-        char name_[Logger::MAX_NAME_LEN];
+        char name_[Logger::MAX_LOGGER_NAME_LEN];
         int name_len_;
     };
 
@@ -573,7 +573,7 @@ namespace FNLog
                 }
                 break;
             case RK_FILE:
-                if (ls.line_.val_end_ - ls.line_.val_begin_ < Device::MAX_NAME_LEN - 1
+                if (ls.line_.val_end_ - ls.line_.val_begin_ < Device::MAX_LOGGER_NAME_LEN - 1
                     && ls.line_.val_end_ - ls.line_.val_begin_ >= 1)
                 {
                     memcpy(device.out_file_, ls.line_.val_begin_, ls.line_.val_end_ - ls.line_.val_begin_);
@@ -725,10 +725,10 @@ namespace FNLog
                 ls.hot_update_ = ParseBool(ls.line_.val_begin_, ls.line_.val_end_);//"disable"
                 break;
             case RK_LOGGER_NAME:
-                ParseString(ls.line_.val_begin_, ls.line_.val_end_, ls.name_, Logger::MAX_NAME_LEN, ls.name_len_);
+                ParseString(ls.line_.val_begin_, ls.line_.val_end_, ls.name_, Logger::MAX_LOGGER_NAME_LEN, ls.name_len_);
                 break;
             case PK_LOGGER_DESC:
-                ParseString(ls.line_.val_begin_, ls.line_.val_end_, ls.desc_, Logger::MAX_DESC_LEN, ls.desc_len_);
+                ParseString(ls.line_.val_begin_, ls.line_.val_end_, ls.desc_, Logger::MAX_LOGGER_DESC_LEN, ls.desc_len_);
                 break;
             case RK_CHANNEL:
                 if (ls.line_.line_type_ != LINE_ARRAY)

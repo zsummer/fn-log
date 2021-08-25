@@ -556,12 +556,12 @@ namespace FNLog
     {
         logger.hot_update_ = false;
         logger.logger_state_ = LOGGER_STATE_UNINIT;
-        memset(logger.desc_, 0, Logger::MAX_DESC_LEN);
+        memset(logger.desc_, 0, Logger::MAX_LOGGER_DESC_LEN);
         logger.desc_len_ = 0;
-        memset(logger.name_, 0, Logger::MAX_NAME_LEN);
+        memset(logger.name_, 0, Logger::MAX_LOGGER_NAME_LEN);
         logger.name_len_ = 0;
         std::string name = FileHandler::process_name();
-        name = name.substr(0, Logger::MAX_NAME_LEN - 1);
+        name = name.substr(0, Logger::MAX_LOGGER_NAME_LEN - 1);
         memcpy(logger.name_, name.c_str(), name.length() + 1);
         logger.name_len_ = (int)name.length();
         LoadSharedMemory(logger);
