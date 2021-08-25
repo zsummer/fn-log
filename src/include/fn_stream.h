@@ -113,16 +113,22 @@ namespace FNLog
             if (prefix & LOG_PREFIX_NAME)
             {
                 write_char_unsafe(' ');
+                write_char_unsafe('[');
                 write_buffer_unsafe(logger.name_, logger.name_len_);
+                write_char_unsafe(']');
             }
             if (prefix & LOG_PREFIX_DESC)
             {
                 write_char_unsafe(' ');
+                write_char_unsafe('[');
                 write_buffer_unsafe(logger.desc_, logger.desc_len_);
+                write_char_unsafe(']');
             }
             if (prefix & LOG_PREFIX_FILE)
             {
                 write_char_unsafe(' ');
+                write_char_unsafe('[');
+                write_char_unsafe('(');
                 if (file_name && file_name_len > 0)
                 {
                     int jump_bytes = short_path(file_name, file_name_len);
@@ -132,14 +138,15 @@ namespace FNLog
                 {
                     write_buffer_unsafe("nofile", 6);
                 }
+                write_char_unsafe(')');
                 write_char_unsafe(':');
-                write_char_unsafe('<');
                 *this << (unsigned long long)line;
-                write_char_unsafe('>');
-                write_char_unsafe(' ');
+                write_char_unsafe(']');
             }
             if (prefix & LOG_PREFIX_FUNCTION)
             {
+                write_char_unsafe(' ');
+                write_char_unsafe('(');
                 if (func_name && func_name_len > 0)
                 {
                     write_buffer_unsafe(func_name, func_name_len);
@@ -148,8 +155,9 @@ namespace FNLog
                 {
                     write_buffer_unsafe("null", 4);
                 }
-                write_char_unsafe(' ');
+                write_char_unsafe(')');
             }
+            write_char_unsafe(' ');
             log_data_->prefix_len_ = log_data_->content_len_;
         }
         
