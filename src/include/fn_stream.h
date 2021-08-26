@@ -112,21 +112,18 @@ namespace FNLog
             }
             if (prefix & LOG_PREFIX_NAME)
             {
-                write_char_unsafe(' ');
                 write_char_unsafe('[');
                 write_buffer_unsafe(logger.name_, logger.name_len_);
                 write_char_unsafe(']');
             }
             if (prefix & LOG_PREFIX_DESC)
             {
-                write_char_unsafe(' ');
                 write_char_unsafe('[');
                 write_buffer_unsafe(logger.desc_, logger.desc_len_);
                 write_char_unsafe(']');
             }
             if (prefix & LOG_PREFIX_FILE)
             {
-                write_char_unsafe(' ');
                 write_char_unsafe('[');
                 write_char_unsafe('(');
                 if (file_name && file_name_len > 0)
@@ -145,7 +142,6 @@ namespace FNLog
             }
             if (prefix & LOG_PREFIX_FUNCTION)
             {
-                write_char_unsafe(' ');
                 write_char_unsafe('(');
                 if (func_name && func_name_len > 0)
                 {

@@ -500,8 +500,6 @@ namespace FNLog
     inline int write_log_thread_unsafe(char* dst, unsigned int thread_id)
     {
         int write_bytes = 0;
-        *(dst + write_bytes) = ' ';
-        write_bytes++;
         *(dst + write_bytes) = '[';
         write_bytes++;
         write_bytes += write_dec_unsafe<0>(dst + write_bytes, (unsigned long long) thread_id);
