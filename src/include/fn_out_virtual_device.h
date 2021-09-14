@@ -63,6 +63,9 @@ namespace FNLog
     {
         if (RefVirtualDevice())
         {
+            Device& device = logger.shm_->channels_[channel_id].devices_[device_id];
+            AtomicAddL(device, DEVICE_LOG_TOTAL_WRITE_LINE);
+            AtomicAddLV(device, DEVICE_LOG_TOTAL_WRITE_BYTE, log.content_len_);
             (*RefVirtualDevice())(log);
         }
     }

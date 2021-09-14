@@ -92,14 +92,24 @@ namespace FNLog
             }
             long long begin_category = AtomicLoadC(device, DEVICE_CFG_CATEGORY);
             long long category_count = AtomicLoadC(device, DEVICE_CFG_CATEGORY_EXTEND);
+            long long category_block = AtomicLoadC(device, DEVICE_CFG_CATEGORY_BLOCKED);
             long long begin_identify = AtomicLoadC(device, DEVICE_CFG_IDENTIFY);
             long long identify_count = AtomicLoadC(device, DEVICE_CFG_IDENTIFY_EXTEND);
+            long long identify_block = AtomicLoadC(device, DEVICE_CFG_IDENTIFY_BLOCKED);
 
             if (category_count > 0 && (log.category_ < begin_category || log.category_ >= begin_category + category_count))
             {
                 continue;
             }
             if (identify_count > 0 && (log.identify_ < begin_identify || log.identify_ >= begin_identify + identify_count))
+            {
+                continue;
+            }
+            if ((category_block & log.category_) != 0)
+            {
+                continue;
+            }
+            if ((identify_block & log.identify_) != 0)
             {
                 continue;
             }
