@@ -47,7 +47,7 @@
 
 namespace FNLog
 {
-#if __GNUG__ && __GNUC__ >= 5
+#if __GNUG__ && __GNUC__ >= 6
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wclass-memaccess"
 #endif
@@ -246,7 +246,7 @@ namespace FNLog
         return 0;
     }
 
-#if __GNUG__ && __GNUC__ >= 5
+#if __GNUG__ && __GNUC__ >= 6
 #pragma GCC diagnostic pop
 #endif
 }
