@@ -665,8 +665,10 @@ namespace FNLog
         DEVICE_CFG_PRIORITY,  
         DEVICE_CFG_CATEGORY,  
         DEVICE_CFG_CATEGORY_EXTEND, 
+        DEVICE_CFG_CATEGORY_BLOCKED,
         DEVICE_CFG_IDENTIFY,
         DEVICE_CFG_IDENTIFY_EXTEND,
+        DEVICE_CFG_IDENTIFY_BLOCKED,
         DEVICE_CFG_FILE_LIMIT_SIZE, 
         DEVICE_CFG_FILE_ROLLBACK, 
         DEVICE_CFG_UDP_IP,
@@ -1026,8 +1028,10 @@ namespace FNLog
         RK_PRIORITY,
         RK_CATEGORY,
         RK_CATEGORY_EXTEND,
+        RK_CATEGORY_BLOCKED,
         RK_IDENTIFY,
         RK_IDENTIFY_EXTEND,
+        RK_IDENTIFY_BLOCKED,
         RK_OUT_TYPE,
         RK_FILE,
         RK_PATH,
@@ -1057,9 +1061,9 @@ namespace FNLog
             }
             else if (*(begin + 1) == 'a')
             {
-                if (end - begin > (int)sizeof("category") - 1)
+                if (end - begin > (int)sizeof("category_e") - 1)
                 {
-                    return RK_CATEGORY_EXTEND;
+                    return *(begin + 9) == 'e' ? RK_CATEGORY_EXTEND : RK_CATEGORY_BLOCKED;
                 }
                 else
                 {
@@ -1082,9 +1086,9 @@ namespace FNLog
         case 'h':
             return RK_HOT_UPDATE;
         case 'i':
-            if (end - begin > (int)sizeof("identify") - 1)
+            if (end - begin > (int)sizeof("identify_e") - 1)
             {
-                return RK_IDENTIFY_EXTEND;
+                return *(begin + 9) == 'e' ? RK_IDENTIFY_EXTEND : RK_IDENTIFY_BLOCKED;
             }
             else
             {
@@ -1475,11 +1479,16 @@ namespace FNLog
             case RK_CATEGORY_EXTEND:
                 device.config_fields_[DEVICE_CFG_CATEGORY_EXTEND] = atoll(ls.line_.val_begin_);
                 break;
+            case RK_CATEGORY_BLOCKED:
+                device.config_fields_[DEVICE_CFG_CATEGORY_BLOCKED] = atoll(ls.line_.val_begin_);
             case RK_IDENTIFY:
                 device.config_fields_[DEVICE_CFG_IDENTIFY] = atoll(ls.line_.val_begin_);
                 break;
             case RK_IDENTIFY_EXTEND:
                 device.config_fields_[DEVICE_CFG_IDENTIFY_EXTEND] = atoll(ls.line_.val_begin_);
+                break;
+            case RK_IDENTIFY_BLOCKED:
+                device.config_fields_[DEVICE_CFG_IDENTIFY_BLOCKED] = atoll(ls.line_.val_begin_);
                 break;
             case RK_LIMIT_SIZE:
                 device.config_fields_[DEVICE_CFG_FILE_LIMIT_SIZE] = atoll(ls.line_.val_begin_) * 1000*1000;
@@ -2977,6 +2986,9 @@ namespace FNLog
     {
         if (RefVirtualDevice())
         {
+            Device& device = logger.shm_->channels_[channel_id].devices_[device_id];
+            AtomicAddL(device, DEVICE_LOG_TOTAL_WRITE_LINE);
+            AtomicAddLV(device, DEVICE_LOG_TOTAL_WRITE_BYTE, log.content_len_);
             (*RefVirtualDevice())(log);
         }
     }
@@ -3072,14 +3084,24 @@ namespace FNLog
             }
             long long begin_category = AtomicLoadC(device, DEVICE_CFG_CATEGORY);
             long long category_count = AtomicLoadC(device, DEVICE_CFG_CATEGORY_EXTEND);
+            long long category_block = AtomicLoadC(device, DEVICE_CFG_CATEGORY_BLOCKED);
             long long begin_identify = AtomicLoadC(device, DEVICE_CFG_IDENTIFY);
             long long identify_count = AtomicLoadC(device, DEVICE_CFG_IDENTIFY_EXTEND);
+            long long identify_block = AtomicLoadC(device, DEVICE_CFG_IDENTIFY_BLOCKED);
 
             if (category_count > 0 && (log.category_ < begin_category || log.category_ >= begin_category + category_count))
             {
                 continue;
             }
             if (identify_count > 0 && (log.identify_ < begin_identify || log.identify_ >= begin_identify + identify_count))
+            {
+                continue;
+            }
+            if ((category_block & log.category_) != 0)
+            {
+                continue;
+            }
+            if ((identify_block & log.identify_) != 0)
             {
                 continue;
             }
