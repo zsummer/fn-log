@@ -2433,6 +2433,10 @@ namespace FNLog
         {
             return ret;
         }
+        if (!logger.hot_update_)
+        {
+            return -8;
+        }
         logger.hot_update_ = ls->hot_update_;
 
         static_assert(std::is_same<decltype(logger.shm_->channels_[channel_id].config_fields_), decltype(ls->channels_[channel_id].config_fields_)>::value, "");
@@ -2442,7 +2446,7 @@ namespace FNLog
         Channel& src_chl = ls->channels_[channel_id];
         if (dst_chl.channel_id_ != src_chl.channel_id_ || src_chl.channel_id_ != channel_id)
         {
-            return - 7;
+            return -10;
         }
         for (int field_id = 0; field_id < CHANNEL_CFG_MAX_ID; field_id++)
         {
@@ -2456,21 +2460,21 @@ namespace FNLog
             Device& src_dvc = src_chl.devices_[device_id];
             if (src_dvc.device_id_ != device_id)
             {
-                return -8;
+                return -11;
             }
             if (device_id < dst_chl.device_size_)
             {
                 Device& dst_dvc = dst_chl.devices_[device_id];
                 if (dst_dvc.device_id_ != device_id)
                 {
-                    return -9;
+                    return -12;
                 }
                 memcpy(&dst_dvc.config_fields_, &src_dvc.config_fields_, sizeof(dst_dvc.config_fields_));
                 continue;
             }
             if (dst_chl.device_size_ != device_id)
             {
-                return -10;
+                return -13;
             }
             memcpy(&dst_chl.devices_[dst_chl.device_size_++], &src_dvc, sizeof(src_dvc));
             
