@@ -32,6 +32,62 @@ R"----(
         out_type: screen
         category: 1
         category_extend: 1
+    -device:2
+        disable: false
+        out_type: screen
+        category: 1
+        category_extend: 1
+    -device:3
+        disable: false
+        out_type: screen
+        category: 1
+        category_extend: 1
+    -device:4
+        disable: false
+        out_type: screen
+        category: 1
+        category_extend: 1
+    -device:5
+        disable: false
+        out_type: screen
+        category: 1
+        category_extend: 1
+    -device:6
+        disable: false
+        out_type: screen
+        category: 1
+        category_extend: 1
+    -device:7
+        disable: false
+        out_type: screen
+        category: 1
+        category_extend: 1
+    -device:8
+        disable: false
+        out_type: screen
+        category: 1
+        category_extend: 1
+    -device:9
+        disable: false
+        out_type: screen
+        category: 1
+        category_extend: 1
+    -device:10
+        disable: false
+        out_type: screen
+        category: 1
+        category_extend: 1
+    -device:11
+        disable: false
+        out_type: screen
+        category: 1
+        category_extend: 1
+    -device:12
+        disable: false
+        out_type: screen
+        category: 1
+        category_extend: 1
+
  # 1 异步空 
  - channel: 1
 

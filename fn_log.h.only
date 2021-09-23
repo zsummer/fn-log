@@ -3241,24 +3241,32 @@ namespace FNLog
         for (int i = 0; i < logger.shm_->channels_[channel_id].device_size_; i++)
         {
             Device::ConfigFields& cf = logger.shm_->channels_[channel_id].devices_[i].config_fields_;
-            if (cf[FNLog::DEVICE_CFG_ABLE]
-                && priority >= cf[FNLog::DEVICE_CFG_PRIORITY])
+            long long cf_able = cf[FNLog::DEVICE_CFG_ABLE];
+            long long cf_priority = cf[FNLog::DEVICE_CFG_PRIORITY];
+            long long cf_begin_category = cf[FNLog::DEVICE_CFG_CATEGORY];
+            long long cf_category_count = cf[FNLog::DEVICE_CFG_CATEGORY_EXTEND];
+            unsigned long long cf_category_filter = (unsigned long long)cf[FNLog::DEVICE_CFG_CATEGORY_FILTER];
+            long long cf_begin_identify = cf[FNLog::DEVICE_CFG_IDENTIFY];
+            long long cf_identify_count = cf[FNLog::DEVICE_CFG_IDENTIFY_EXTEND];
+            unsigned long long cf_identify_filter = (unsigned long long)cf[FNLog::DEVICE_CFG_IDENTIFY_FILTER];
+
+            if (cf_able && priority >= cf_priority)
             {
-                if (cf[FNLog::DEVICE_CFG_CATEGORY_EXTEND] > 0  &&(category < cf[FNLog::DEVICE_CFG_CATEGORY] || category >= cf[FNLog::DEVICE_CFG_CATEGORY] + cf[FNLog::DEVICE_CFG_CATEGORY_EXTEND]) )
+                if (cf_category_count > 0  && (category < cf_begin_category || category >= cf_begin_category + cf_category_count) )
                 {
                     continue;
                 }
-                if (cf[FNLog::DEVICE_CFG_IDENTIFY_EXTEND] > 0 && (category < cf[FNLog::DEVICE_CFG_IDENTIFY] || category >= cf[FNLog::DEVICE_CFG_IDENTIFY] + cf[FNLog::DEVICE_CFG_IDENTIFY_EXTEND]))
+                if (cf_identify_count > 0 && (identify < cf_begin_identify || identify >= cf_begin_identify + cf_identify_count))
                 {
                     continue;
                 }
-                if (cf[FNLog::DEVICE_CFG_CATEGORY_FILTER] &&
-                    (((unsigned long long)cf[FNLog::DEVICE_CFG_CATEGORY_FILTER]) & ((1ULL) << (unsigned int)category)) == 0)
+                if (cf_category_filter &&
+                    (cf_category_filter & ((1ULL) << (unsigned int)category)) == 0)
                 {
                     continue;
                 }
-                if (cf[FNLog::DEVICE_CFG_IDENTIFY_FILTER] &&
-                    (((unsigned long long)cf[FNLog::DEVICE_CFG_IDENTIFY_FILTER])  & ((1ULL) << (unsigned int)identify)) == 0)
+                if (cf_identify_filter &&
+                    (cf_identify_filter & ((1ULL) << (unsigned int)identify)) == 0)
                 {
                     continue;
                 }
