@@ -337,6 +337,16 @@ namespace FNLog
         return;
     }
 
+    inline void ParseBitArray(const char* begin, const char* end, unsigned long long bitmap)
+    {
+        (void)bitmap;
+        if (end <= begin)
+        {
+            return;
+        }
+       
+        return;
+    }
     struct Line
     {
         int blank_;
@@ -646,6 +656,9 @@ namespace FNLog
                 break;            
             case RK_CATEGORY_EXTEND:
                 channel.config_fields_[CHANNEL_CFG_CATEGORY_EXTEND] = atoi(ls.line_.val_begin_);
+                break;
+            case RK_CATEGORY_BLOCKED:
+                channel.config_fields_[CHANNEL_CFG_CATEGORY_BLOCKED] = atoi(ls.line_.val_begin_);
                 break;
             case RK_IDENTIFY:
                 channel.config_fields_[CHANNEL_CFG_IDENTIFY] = atoi(ls.line_.val_begin_);
