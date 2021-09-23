@@ -337,15 +337,29 @@ namespace FNLog
         return;
     }
 
-    inline void ParseBitArray(const char* begin, const char* end, unsigned long long bitmap)
+    inline unsigned long long ParseBitArray(const char* begin, const char* end)
     {
-        (void)bitmap;
+        unsigned long long bitmap = 0;
         if (end <= begin)
         {
-            return;
+            return bitmap;
         }
-       
-        return;
+        const char* offset = begin;
+        while (offset < end)
+        {
+            if (*offset >= '0' && *offset <= '9')
+            {
+                int bit_offset = atoi(offset);
+                bitmap |= (1ULL << bit_offset);
+                while (offset < end && (*offset >= '0' && *offset <= '9'))
+                {
+                    offset++;
+                }
+                continue;
+            }
+            offset++;
+        }
+        return bitmap;
     }
     struct Line
     {
@@ -486,7 +500,7 @@ namespace FNLog
                 if ((ch >= 'a' && ch <= 'z')
                     || (ch >= 'A' && ch <= 'Z')
                     || (ch >= '0' && ch <= '9')
-                    || ch == '_' || ch == '-' || ch == ':' || ch == '/' || ch == '.' || ch == '$' || ch == '~')
+                    || ch == '_' || ch == '-' || ch == ':' || ch == '/' || ch == '.' || ch == ',' || ch == '$' || ch == '~')
                 {
                     switch (ls.line_.block_type_)
                     {
@@ -565,7 +579,7 @@ namespace FNLog
                 device.config_fields_[DEVICE_CFG_CATEGORY_EXTEND] = atoll(ls.line_.val_begin_);
                 break;
             case RK_CATEGORY_BLOCKED:
-                device.config_fields_[DEVICE_CFG_CATEGORY_BLOCKED] = atoll(ls.line_.val_begin_);
+                device.config_fields_[DEVICE_CFG_CATEGORY_BLOCKED] = ParseBitArray(ls.line_.val_begin_, ls.line_.val_end_);
             case RK_IDENTIFY:
                 device.config_fields_[DEVICE_CFG_IDENTIFY] = atoll(ls.line_.val_begin_);
                 break;
@@ -573,7 +587,7 @@ namespace FNLog
                 device.config_fields_[DEVICE_CFG_IDENTIFY_EXTEND] = atoll(ls.line_.val_begin_);
                 break;
             case RK_IDENTIFY_BLOCKED:
-                device.config_fields_[DEVICE_CFG_IDENTIFY_BLOCKED] = atoll(ls.line_.val_begin_);
+                device.config_fields_[DEVICE_CFG_IDENTIFY_BLOCKED] = ParseBitArray(ls.line_.val_begin_, ls.line_.val_end_);
                 break;
             case RK_LIMIT_SIZE:
                 device.config_fields_[DEVICE_CFG_FILE_LIMIT_SIZE] = atoll(ls.line_.val_begin_) * 1000*1000;
@@ -658,13 +672,16 @@ namespace FNLog
                 channel.config_fields_[CHANNEL_CFG_CATEGORY_EXTEND] = atoi(ls.line_.val_begin_);
                 break;
             case RK_CATEGORY_BLOCKED:
-                channel.config_fields_[CHANNEL_CFG_CATEGORY_BLOCKED] = atoi(ls.line_.val_begin_);
+                channel.config_fields_[CHANNEL_CFG_CATEGORY_BLOCKED] = ParseBitArray(ls.line_.val_begin_, ls.line_.val_end_);
                 break;
             case RK_IDENTIFY:
                 channel.config_fields_[CHANNEL_CFG_IDENTIFY] = atoi(ls.line_.val_begin_);
                 break;
             case RK_IDENTIFY_EXTEND:
                 channel.config_fields_[CHANNEL_CFG_IDENTIFY_EXTEND] = atoi(ls.line_.val_begin_);
+                break;
+            case RK_IDENTIFY_BLOCKED:
+                channel.config_fields_[CHANNEL_CFG_IDENTIFY_BLOCKED] = ParseBitArray(ls.line_.val_begin_, ls.line_.val_end_);
                 break;
             case RK_DEVICE:
                 if (ls.line_.line_type_ != LINE_ARRAY)
