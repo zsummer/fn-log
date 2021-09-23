@@ -84,19 +84,25 @@ int main(int argc, char* argv[])
     FNLog::SetDeviceConfig(FNLog::GetDefaultLogger(), 0, 0, FNLog::DEVICE_CFG_CATEGORY_EXTEND, 0);
 
     old_write = DeviceWrite(0, 0);
-    FNLog::SetDeviceConfig(FNLog::GetDefaultLogger(), 0, 0, FNLog::DEVICE_CFG_CATEGORY_BLOCKED, (1ULL <<8));
+    FNLog::SetDeviceConfig(FNLog::GetDefaultLogger(), 0, 0, FNLog::DEVICE_CFG_CATEGORY_FILTER, (1ULL <<8));
     LogInfoStream(0, 1, 0) << "1";
     LogInfoStream(0, 8, 0) << "1";
     FNLOG_ASSERT(DeviceWrite(0, 0) == old_write + 1, "check block category");
 
     old_write = DeviceWrite(0, 0);
-    FNLog::SetDeviceConfig(FNLog::GetDefaultLogger(), 0, 0, FNLog::DEVICE_CFG_CATEGORY_BLOCKED, ((1ULL <<8) | (1ULL << 1)));
+    FNLog::SetDeviceConfig(FNLog::GetDefaultLogger(), 0, 0, FNLog::DEVICE_CFG_CATEGORY_FILTER, ((1ULL <<8) | (1ULL << 1)));
+    LogInfoStream(0, 1, 0) << "1";
+    LogInfoStream(0, 8, 0) << "1";
+    FNLOG_ASSERT(DeviceWrite(0, 0) == old_write + 2, "check block category");
+
+    old_write = DeviceWrite(0, 0);
+    FNLog::SetDeviceConfig(FNLog::GetDefaultLogger(), 0, 0, FNLog::DEVICE_CFG_CATEGORY_FILTER, (1ULL << 63));
     LogInfoStream(0, 1, 0) << "1";
     LogInfoStream(0, 8, 0) << "1";
     FNLOG_ASSERT(DeviceWrite(0, 0) == old_write, "check block category");
 
     old_write = DeviceWrite(0, 0);
-    FNLog::SetDeviceConfig(FNLog::GetDefaultLogger(), 0, 0, FNLog::DEVICE_CFG_CATEGORY_BLOCKED, (0));
+    FNLog::SetDeviceConfig(FNLog::GetDefaultLogger(), 0, 0, FNLog::DEVICE_CFG_CATEGORY_FILTER, (0));
     LogInfoStream(0, 1, 0) << "1";
     LogInfoStream(0, 8, 0) << "1";
     FNLOG_ASSERT(DeviceWrite(0, 0) == old_write + 2, "check block category");

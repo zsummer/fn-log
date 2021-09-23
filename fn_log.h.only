@@ -665,10 +665,10 @@ namespace FNLog
         DEVICE_CFG_PRIORITY,  
         DEVICE_CFG_CATEGORY,  
         DEVICE_CFG_CATEGORY_EXTEND, 
-        DEVICE_CFG_CATEGORY_BLOCKED,
+        DEVICE_CFG_CATEGORY_FILTER,
         DEVICE_CFG_IDENTIFY,
         DEVICE_CFG_IDENTIFY_EXTEND,
-        DEVICE_CFG_IDENTIFY_BLOCKED,
+        DEVICE_CFG_IDENTIFY_FILTER,
         DEVICE_CFG_FILE_LIMIT_SIZE, 
         DEVICE_CFG_FILE_ROLLBACK, 
         DEVICE_CFG_UDP_IP,
@@ -726,9 +726,10 @@ namespace FNLog
         CHANNEL_CFG_PRIORITY, 
         CHANNEL_CFG_CATEGORY,  
         CHANNEL_CFG_CATEGORY_EXTEND, 
-        CHANNEL_CFG_CATEGORY_BLOCKED,
+        CHANNEL_CFG_CATEGORY_FILTER,
         CHANNEL_CFG_IDENTIFY,
         CHANNEL_CFG_IDENTIFY_EXTEND,
+        CHANNEL_CFG_IDENTIFY_FILTER,
         CHANNEL_CFG_MAX_ID
     };
 
@@ -1029,10 +1030,10 @@ namespace FNLog
         RK_PRIORITY,
         RK_CATEGORY,
         RK_CATEGORY_EXTEND,
-        RK_CATEGORY_BLOCKED,
+        RK_CATEGORY_FILTER,
         RK_IDENTIFY,
         RK_IDENTIFY_EXTEND,
-        RK_IDENTIFY_BLOCKED,
+        RK_IDENTIFY_FILTER,
         RK_OUT_TYPE,
         RK_FILE,
         RK_PATH,
@@ -1064,7 +1065,7 @@ namespace FNLog
             {
                 if (end - begin > (int)sizeof("category_e") - 1)
                 {
-                    return *(begin + 9) == 'e' ? RK_CATEGORY_EXTEND : RK_CATEGORY_BLOCKED;
+                    return *(begin + 9) == 'e' ? RK_CATEGORY_EXTEND : RK_CATEGORY_FILTER;
                 }
                 else
                 {
@@ -1089,7 +1090,7 @@ namespace FNLog
         case 'i':
             if (end - begin > (int)sizeof("identify_e") - 1)
             {
-                return *(begin + 9) == 'e' ? RK_IDENTIFY_EXTEND : RK_IDENTIFY_BLOCKED;
+                return *(begin + 9) == 'e' ? RK_IDENTIFY_EXTEND : RK_IDENTIFY_FILTER;
             }
             else
             {
@@ -1263,15 +1264,29 @@ namespace FNLog
         return;
     }
 
-    inline void ParseBitArray(const char* begin, const char* end, unsigned long long bitmap)
+    inline unsigned long long ParseBitArray(const char* begin, const char* end)
     {
-        bitmap;
+        unsigned long long bitmap = 0;
         if (end <= begin)
         {
-            return;
+            return bitmap;
         }
-       
-        return;
+        const char* offset = begin;
+        while (offset < end)
+        {
+            if (*offset >= '0' && *offset <= '9')
+            {
+                int bit_offset = atoi(offset);
+                bitmap |= (1ULL << bit_offset);
+                while (offset < end && (*offset >= '0' && *offset <= '9'))
+                {
+                    offset++;
+                }
+                continue;
+            }
+            offset++;
+        }
+        return bitmap;
     }
     struct Line
     {
@@ -1412,7 +1427,7 @@ namespace FNLog
                 if ((ch >= 'a' && ch <= 'z')
                     || (ch >= 'A' && ch <= 'Z')
                     || (ch >= '0' && ch <= '9')
-                    || ch == '_' || ch == '-' || ch == ':' || ch == '/' || ch == '.' || ch == '$' || ch == '~')
+                    || ch == '_' || ch == '-' || ch == ':' || ch == '/' || ch == '.' || ch == ',' || ch == '$' || ch == '~')
                 {
                     switch (ls.line_.block_type_)
                     {
@@ -1490,16 +1505,16 @@ namespace FNLog
             case RK_CATEGORY_EXTEND:
                 device.config_fields_[DEVICE_CFG_CATEGORY_EXTEND] = atoll(ls.line_.val_begin_);
                 break;
-            case RK_CATEGORY_BLOCKED:
-                device.config_fields_[DEVICE_CFG_CATEGORY_BLOCKED] = atoll(ls.line_.val_begin_);
+            case RK_CATEGORY_FILTER:
+                device.config_fields_[DEVICE_CFG_CATEGORY_FILTER] = ParseBitArray(ls.line_.val_begin_, ls.line_.val_end_);
             case RK_IDENTIFY:
                 device.config_fields_[DEVICE_CFG_IDENTIFY] = atoll(ls.line_.val_begin_);
                 break;
             case RK_IDENTIFY_EXTEND:
                 device.config_fields_[DEVICE_CFG_IDENTIFY_EXTEND] = atoll(ls.line_.val_begin_);
                 break;
-            case RK_IDENTIFY_BLOCKED:
-                device.config_fields_[DEVICE_CFG_IDENTIFY_BLOCKED] = atoll(ls.line_.val_begin_);
+            case RK_IDENTIFY_FILTER:
+                device.config_fields_[DEVICE_CFG_IDENTIFY_FILTER] = ParseBitArray(ls.line_.val_begin_, ls.line_.val_end_);
                 break;
             case RK_LIMIT_SIZE:
                 device.config_fields_[DEVICE_CFG_FILE_LIMIT_SIZE] = atoll(ls.line_.val_begin_) * 1000*1000;
@@ -1583,14 +1598,17 @@ namespace FNLog
             case RK_CATEGORY_EXTEND:
                 channel.config_fields_[CHANNEL_CFG_CATEGORY_EXTEND] = atoi(ls.line_.val_begin_);
                 break;
-            case RK_CATEGORY_BLOCKED:
-                channel.config_fields_[CHANNEL_CFG_CATEGORY_BLOCKED] = atoi(ls.line_.val_begin_);
+            case RK_CATEGORY_FILTER:
+                channel.config_fields_[CHANNEL_CFG_CATEGORY_FILTER] = ParseBitArray(ls.line_.val_begin_, ls.line_.val_end_);
                 break;
             case RK_IDENTIFY:
                 channel.config_fields_[CHANNEL_CFG_IDENTIFY] = atoi(ls.line_.val_begin_);
                 break;
             case RK_IDENTIFY_EXTEND:
                 channel.config_fields_[CHANNEL_CFG_IDENTIFY_EXTEND] = atoi(ls.line_.val_begin_);
+                break;
+            case RK_IDENTIFY_FILTER:
+                channel.config_fields_[CHANNEL_CFG_IDENTIFY_FILTER] = ParseBitArray(ls.line_.val_begin_, ls.line_.val_end_);
                 break;
             case RK_DEVICE:
                 if (ls.line_.line_type_ != LINE_ARRAY)
@@ -3005,10 +3023,10 @@ namespace FNLog
             }
             long long begin_category = AtomicLoadC(device, DEVICE_CFG_CATEGORY);
             long long category_count = AtomicLoadC(device, DEVICE_CFG_CATEGORY_EXTEND);
-            unsigned long long category_block = (unsigned long long)AtomicLoadC(device, DEVICE_CFG_CATEGORY_BLOCKED);
+            unsigned long long category_filter = (unsigned long long)AtomicLoadC(device, DEVICE_CFG_CATEGORY_FILTER);
             long long begin_identify = AtomicLoadC(device, DEVICE_CFG_IDENTIFY);
             long long identify_count =AtomicLoadC(device, DEVICE_CFG_IDENTIFY_EXTEND);
-            unsigned long long identify_block = (unsigned long long)AtomicLoadC(device, DEVICE_CFG_IDENTIFY_BLOCKED);
+            unsigned long long identify_filter = (unsigned long long)AtomicLoadC(device, DEVICE_CFG_IDENTIFY_FILTER);
 
             if (category_count > 0 && (log.category_ < begin_category || log.category_ >= begin_category + category_count))
             {
@@ -3018,11 +3036,11 @@ namespace FNLog
             {
                 continue;
             }
-            if ((category_block & ((1ULL) << (unsigned int)log.category_)) != 0)
+            if (category_filter && (category_filter & ((1ULL) << (unsigned int)log.category_)) == 0)
             {
                 continue;
             }
-            if ((identify_block & ((1ULL) << (unsigned int)log.identify_)) != 0)
+            if (identify_filter && (identify_filter & ((1ULL) << (unsigned int)log.identify_)) == 0)
             {
                 continue;
             }
@@ -3196,8 +3214,10 @@ namespace FNLog
         }
         long long begin_category = AtomicLoadC(channel, CHANNEL_CFG_CATEGORY);
         long long category_count = AtomicLoadC(channel, CHANNEL_CFG_CATEGORY_EXTEND);
+        unsigned long long category_filter = (unsigned long long)AtomicLoadC(channel, CHANNEL_CFG_CATEGORY_FILTER);
         long long begin_identify = AtomicLoadC(channel, CHANNEL_CFG_IDENTIFY);
         long long identify_count = AtomicLoadC(channel, CHANNEL_CFG_IDENTIFY_EXTEND);
+        unsigned long long identify_filter = (unsigned long long)AtomicLoadC(channel, CHANNEL_CFG_IDENTIFY_FILTER);
 
         if (category_count > 0 && (category < begin_category || category >= begin_category + category_count))
         {
@@ -3206,6 +3226,14 @@ namespace FNLog
         if (identify_count > 0 && (identify < begin_identify || identify >= begin_identify + identify_count))
         {
             return -6;
+        }
+        if (category_filter && (category_filter & ((1ULL) << (unsigned int)category)) == 0)
+        {
+            return -7;
+        }
+        if (identify_filter && (identify_filter & ((1ULL) << (unsigned int)identify)) == 0)
+        {
+            return -8;
         }
 
         bool need_write = false;
@@ -3220,7 +3248,7 @@ namespace FNLog
         }
         if (!need_write)
         {
-            return -6;
+            return -10;
         }
 
 
@@ -3259,7 +3287,7 @@ namespace FNLog
                 break;
             }
         } while (true);
-        return -10;
+        return -11;
     }
 
     inline int PushChannel(Logger& logger, int channel_id, int hold_idx)

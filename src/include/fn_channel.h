@@ -92,10 +92,10 @@ namespace FNLog
             }
             long long begin_category = AtomicLoadC(device, DEVICE_CFG_CATEGORY);
             long long category_count = AtomicLoadC(device, DEVICE_CFG_CATEGORY_EXTEND);
-            unsigned long long category_block = (unsigned long long)AtomicLoadC(device, DEVICE_CFG_CATEGORY_BLOCKED);
+            unsigned long long category_filter = (unsigned long long)AtomicLoadC(device, DEVICE_CFG_CATEGORY_FILTER);
             long long begin_identify = AtomicLoadC(device, DEVICE_CFG_IDENTIFY);
             long long identify_count =AtomicLoadC(device, DEVICE_CFG_IDENTIFY_EXTEND);
-            unsigned long long identify_block = (unsigned long long)AtomicLoadC(device, DEVICE_CFG_IDENTIFY_BLOCKED);
+            unsigned long long identify_filter = (unsigned long long)AtomicLoadC(device, DEVICE_CFG_IDENTIFY_FILTER);
 
             if (category_count > 0 && (log.category_ < begin_category || log.category_ >= begin_category + category_count))
             {
@@ -105,11 +105,11 @@ namespace FNLog
             {
                 continue;
             }
-            if ((category_block & ((1ULL) << (unsigned int)log.category_)) != 0)
+            if (category_filter && (category_filter & ((1ULL) << (unsigned int)log.category_)) == 0)
             {
                 continue;
             }
-            if ((identify_block & ((1ULL) << (unsigned int)log.identify_)) != 0)
+            if (identify_filter && (identify_filter & ((1ULL) << (unsigned int)log.identify_)) == 0)
             {
                 continue;
             }
@@ -283,8 +283,10 @@ namespace FNLog
         }
         long long begin_category = AtomicLoadC(channel, CHANNEL_CFG_CATEGORY);
         long long category_count = AtomicLoadC(channel, CHANNEL_CFG_CATEGORY_EXTEND);
+        unsigned long long category_filter = (unsigned long long)AtomicLoadC(channel, CHANNEL_CFG_CATEGORY_FILTER);
         long long begin_identify = AtomicLoadC(channel, CHANNEL_CFG_IDENTIFY);
         long long identify_count = AtomicLoadC(channel, CHANNEL_CFG_IDENTIFY_EXTEND);
+        unsigned long long identify_filter = (unsigned long long)AtomicLoadC(channel, CHANNEL_CFG_IDENTIFY_FILTER);
 
         if (category_count > 0 && (category < begin_category || category >= begin_category + category_count))
         {
@@ -293,6 +295,14 @@ namespace FNLog
         if (identify_count > 0 && (identify < begin_identify || identify >= begin_identify + identify_count))
         {
             return -6;
+        }
+        if (category_filter && (category_filter & ((1ULL) << (unsigned int)category)) == 0)
+        {
+            return -7;
+        }
+        if (identify_filter && (identify_filter & ((1ULL) << (unsigned int)identify)) == 0)
+        {
+            return -8;
         }
 
         bool need_write = false;
@@ -307,7 +317,7 @@ namespace FNLog
         }
         if (!need_write)
         {
-            return -6;
+            return -10;
         }
 
 
@@ -346,7 +356,7 @@ namespace FNLog
                 break;
             }
         } while (true);
-        return -10;
+        return -11;
     }
 
     inline int PushChannel(Logger& logger, int channel_id, int hold_idx)
