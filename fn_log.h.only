@@ -3240,8 +3240,28 @@ namespace FNLog
 
         for (int i = 0; i < logger.shm_->channels_[channel_id].device_size_; i++)
         {
-            if (logger.shm_->channels_[channel_id].devices_[i].config_fields_[FNLog::DEVICE_CFG_ABLE] && priority >= logger.shm_->channels_[channel_id].devices_[i].config_fields_[FNLog::DEVICE_CFG_PRIORITY])
+            Device::ConfigFields& cf = logger.shm_->channels_[channel_id].devices_[i].config_fields_;
+            if (cf[FNLog::DEVICE_CFG_ABLE]
+                && priority >= cf[FNLog::DEVICE_CFG_PRIORITY])
             {
+                if (cf[FNLog::DEVICE_CFG_CATEGORY_EXTEND] > 0  &&(category < cf[FNLog::DEVICE_CFG_CATEGORY] || category >= cf[FNLog::DEVICE_CFG_CATEGORY] + cf[FNLog::DEVICE_CFG_CATEGORY_EXTEND]) )
+                {
+                    continue;
+                }
+                if (cf[FNLog::DEVICE_CFG_IDENTIFY_EXTEND] > 0 && (category < cf[FNLog::DEVICE_CFG_IDENTIFY] || category >= cf[FNLog::DEVICE_CFG_IDENTIFY] + cf[FNLog::DEVICE_CFG_IDENTIFY_EXTEND]))
+                {
+                    continue;
+                }
+                if (cf[FNLog::DEVICE_CFG_CATEGORY_FILTER] &&
+                    (((unsigned long long)cf[FNLog::DEVICE_CFG_CATEGORY_FILTER]) & ((1ULL) << (unsigned int)category)) == 0)
+                {
+                    continue;
+                }
+                if (cf[FNLog::DEVICE_CFG_IDENTIFY_FILTER] &&
+                    (((unsigned long long)cf[FNLog::DEVICE_CFG_IDENTIFY_FILTER])  & ((1ULL) << (unsigned int)identify)) == 0)
+                {
+                    continue;
+                }
                 need_write = true;
                 break;
             }
