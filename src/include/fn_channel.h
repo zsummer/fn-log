@@ -261,25 +261,24 @@ namespace FNLog
         return;
     }
 
-    inline int HoldChannel(Logger& logger, int channel_id, int priority, int category, long long identify)
+    inline bool BlockInput(Logger& logger, int channel_id, int priority, int category, long long identify)
     {
         if (channel_id >= logger.shm_->channel_size_ || channel_id < 0)
         {
-            return -1;
+            return true;
         }
         if (logger.logger_state_ != LOGGER_STATE_RUNNING)
         {
-            return -2;
+            return true;
         }
         Channel& channel = logger.shm_->channels_[channel_id];
-        RingBuffer& ring_buffer = logger.shm_->ring_buffers_[channel_id];
         if (channel.channel_state_ != CHANNEL_STATE_RUNNING)
         {
-            return -3;
+            return true;
         }
         if (priority < AtomicLoadC(channel, CHANNEL_CFG_PRIORITY))
         {
-            return -4;
+            return true;
         }
         long long begin_category = AtomicLoadC(channel, CHANNEL_CFG_CATEGORY);
         long long category_count = AtomicLoadC(channel, CHANNEL_CFG_CATEGORY_EXTEND);
@@ -290,19 +289,19 @@ namespace FNLog
 
         if (category_count > 0 && (category < begin_category || category >= begin_category + category_count))
         {
-            return -5;
+            return true;
         }
         if (identify_count > 0 && (identify < begin_identify || identify >= begin_identify + identify_count))
         {
-            return -6;
+            return true;
         }
         if (category_filter && (category_filter & ((1ULL) << (unsigned int)category)) == 0)
         {
-            return -7;
+            return true;
         }
         if (identify_filter && (identify_filter & ((1ULL) << (unsigned int)identify)) == 0)
         {
-            return -8;
+            return true;
         }
 
         bool need_write = false;
@@ -321,7 +320,7 @@ namespace FNLog
 
             if (cf_able && priority >= cf_priority)
             {
-                if (cf_category_count > 0  && (category < cf_begin_category || category >= cf_begin_category + cf_category_count) )
+                if (cf_category_count > 0 && (category < cf_begin_category || category >= cf_begin_category + cf_category_count))
                 {
                     continue;
                 }
@@ -345,11 +344,20 @@ namespace FNLog
         }
         if (!need_write)
         {
-            return -10;
+            return true;
         }
+        return false;
+    }
 
-
-
+    inline int HoldChannel(Logger& logger, int channel_id, int priority, int category, long long identify)
+    {
+        if (BlockInput(logger, channel_id, priority, category, identify))
+        {
+            return -1;
+        }
+        Channel& channel = logger.shm_->channels_[channel_id];
+        RingBuffer& ring_buffer = logger.shm_->ring_buffers_[channel_id];
+        
         int state = 0;
         do
         {
