@@ -218,7 +218,7 @@ namespace FNLog
         for (int field_id = 0; field_id < CHANNEL_CFG_MAX_ID; field_id++)
         {
             //this is multi-thread safe op. 
-            dst_chl.config_fields_[field_id] = src_chl.config_fields_[field_id].load();
+            dst_chl.config_fields_[field_id] = AtomicLoadC(src_chl, field_id);
         }
 
         //single thread op.

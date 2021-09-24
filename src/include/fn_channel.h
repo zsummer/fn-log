@@ -305,7 +305,7 @@ namespace FNLog
         }
 
         bool need_write = false;
-
+        
         for (int i = 0; i < logger.shm_->channels_[channel_id].device_size_; i++)
         {
             Device::ConfigFields& cf = logger.shm_->channels_[channel_id].devices_[i].config_fields_;
@@ -346,6 +346,7 @@ namespace FNLog
         {
             return true;
         }
+        
         return false;
     }
 

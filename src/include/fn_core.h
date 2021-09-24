@@ -398,7 +398,7 @@ namespace FNLog
         for (int i = 0; i < logger.shm_->channel_size_; i++)
         {
             auto& channel = logger.shm_->channels_[i];
-            channel.config_fields_[cce].store(v);
+            channel.config_fields_[cce] = v;
         }
     }
 
@@ -412,7 +412,7 @@ namespace FNLog
                 auto& device = channel.devices_[j];
                 if (device.out_type_ == out_type || out_type == DEVICE_OUT_NULL)
                 {
-                    device.config_fields_[dce].store(v);
+                    device.config_fields_[dce] = v;
                 }
             }
         }

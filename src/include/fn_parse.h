@@ -298,7 +298,7 @@ namespace FNLog
         return DEVICE_OUT_NULL;
     }
 
-    inline void ParseAddres(const char* begin, const char* end, std::atomic_llong& ip, std::atomic_llong& port)
+    inline void ParseAddres(const char* begin, const char* end, long long & ip, long long& port)
     {
         ip = 0;
         port = 0;
@@ -612,7 +612,15 @@ namespace FNLog
                 }
                 break;
             case RK_UDP_ADDR:
-                ParseAddres(ls.line_.val_begin_, ls.line_.val_end_, device.config_fields_[DEVICE_CFG_UDP_IP], device.config_fields_[DEVICE_CFG_UDP_PORT]);
+                if (true)
+                {
+                    long long ip = 0;
+                    long long port = 0;
+                    ParseAddres(ls.line_.val_begin_, ls.line_.val_end_, ip, port);
+                    device.config_fields_[DEVICE_CFG_UDP_IP] = ip;
+                    device.config_fields_[DEVICE_CFG_UDP_PORT] = port;
+                }
+                
                 if (device.config_fields_[DEVICE_CFG_UDP_IP] == 0)
                 {
                     return PEC_ILLEGAL_ADDR_IP;

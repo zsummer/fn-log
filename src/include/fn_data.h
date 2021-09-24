@@ -69,6 +69,7 @@
 #define FN_LOG_SHM_KEY 0x9110
 #endif 
 
+//#define FN_LOG_USING_ATOM_CFG
 
 namespace FNLog
 {
@@ -189,7 +190,11 @@ namespace FNLog
         static_assert(MAX_PATH_LEN + MAX_LOGGER_NAME_LEN + MAX_ROLLBACK_LEN < MAX_PATH_SYS_LEN, "");
         static_assert(LogData::LOG_SIZE > MAX_PATH_SYS_LEN*2, "unsafe size"); // promise format length: date, time, source file path, function length.
         static_assert(MAX_ROLLBACK_PATHS < 10, "");
+#ifdef FN_LOG_USING_ATOM_CFG
         using ConfigFields = std::array<std::atomic_llong, DEVICE_CFG_MAX_ID>;
+#else
+        using ConfigFields = std::array<long long, DEVICE_CFG_MAX_ID>;
+#endif // FN_LOG_USING_ATOM_CFG
         using LogFields = std::array<std::atomic_llong, DEVICE_LOG_MAX_ID>;
 
     public:
@@ -257,7 +262,12 @@ namespace FNLog
     struct Channel
     {
     public:
+#ifdef FN_LOG_USING_ATOM_CFG
         using ConfigFields = std::array<std::atomic_llong, CHANNEL_CFG_MAX_ID>;
+#else
+        using ConfigFields = std::array<long long, CHANNEL_CFG_MAX_ID>;
+#endif // FN_LOG_USING_ATOM_CFG
+
         using LogFields = std::array<std::atomic_llong, CHANNEL_LOG_MAX_ID>;
         static const int MAX_DEVICE_SIZE = 20;
 
@@ -384,7 +394,11 @@ namespace FNLog
     template <class M>
     inline long long AtomicLoadC(M& m, unsigned eid)
     {
+#ifdef FN_LOG_USING_ATOM_CFG
         return m.config_fields_[eid].load(std::memory_order_relaxed);
+#else
+        return m.config_fields_[eid];
+#endif // FN_LOG_USING_ATOM_CFG
     }
 
     template <class M>
