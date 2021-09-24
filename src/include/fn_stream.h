@@ -49,6 +49,7 @@
 
 namespace FNLog
 {
+
     class LogStream
     {
     public:
