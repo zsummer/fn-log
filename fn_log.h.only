@@ -904,15 +904,13 @@ namespace FNLog
         return x < y ? y : x;
     }
 
-    template <class M>
-    inline long long AtomicLoadC(M& m, unsigned eid)
-    {
+
 #ifdef FN_LOG_USING_ATOM_CFG
-        return m.config_fields_[eid].load(std::memory_order_relaxed);
+    #define AtomicLoadC(m, eid) m.config_fields_[eid].load(std::memory_order_relaxed)
 #else
-        return m.config_fields_[eid];
+#define AtomicLoadC(m, eid) m.config_fields_[eid]
 #endif // FN_LOG_USING_ATOM_CFG
-    }
+
 
     template <class M>
     inline long long AtomicLoadL(M& m, unsigned eid)
