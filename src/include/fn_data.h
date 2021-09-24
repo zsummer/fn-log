@@ -193,7 +193,7 @@ namespace FNLog
 #ifdef FN_LOG_USING_ATOM_CFG
         using ConfigFields = std::array<std::atomic_llong, DEVICE_CFG_MAX_ID>;
 #else
-        using ConfigFields = std::array<long long, DEVICE_CFG_MAX_ID>;
+        using ConfigFields = long long[DEVICE_CFG_MAX_ID];
 #endif // FN_LOG_USING_ATOM_CFG
         using LogFields = std::array<std::atomic_llong, DEVICE_LOG_MAX_ID>;
 
@@ -265,7 +265,7 @@ namespace FNLog
 #ifdef FN_LOG_USING_ATOM_CFG
         using ConfigFields = std::array<std::atomic_llong, CHANNEL_CFG_MAX_ID>;
 #else
-        using ConfigFields = std::array<long long, CHANNEL_CFG_MAX_ID>;
+        using ConfigFields = long long[CHANNEL_CFG_MAX_ID];
 #endif // FN_LOG_USING_ATOM_CFG
 
         using LogFields = std::array<std::atomic_llong, CHANNEL_LOG_MAX_ID>;
