@@ -1,6 +1,6 @@
 #ifdef __GNUG__
 #pragma GCC push_options
-#pragma GCC optimize (O2)
+#pragma GCC optimize ("O2")
 #endif
 /*
  *

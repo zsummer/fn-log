@@ -5,7 +5,7 @@ export LC_ALL=C
 
 echo "#ifdef __GNUG__" > fn_log.h
 echo "#pragma GCC push_options" >> fn_log.h
-echo "#pragma GCC optimize ("O2")" >> fn_log.h
+echo "#pragma GCC optimize (\"O2\")" >> fn_log.h
 echo "#endif" >> fn_log.h
 cat src/include/fn_file.h  |sed `echo -e 's/\xEF\xBB\xBF//'` >> fn_log.h
 cat src/include/fn_data.h  |sed `echo -e 's/\xEF\xBB\xBF//'` >> fn_log.h
