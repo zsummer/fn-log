@@ -49,6 +49,11 @@
 
 namespace FNLog
 {
+    template<int BLANK_SIZE>
+    struct LogBlankAlign
+    {
+        //static const int blank_size = BLANK_SIZE;
+    };
 
     class LogStream
     {
@@ -367,6 +372,7 @@ namespace FNLog
             return *this << "]";
         }
 
+
         template<class _Elem, class _Alloc>
         LogStream & operator <<(const std::vector<_Elem, _Alloc> & val) { return write_container(val, "vector:", sizeof("vector:") - 1);}
         template<class _Elem, class _Alloc>
@@ -385,7 +391,21 @@ namespace FNLog
         {return write_container(val, "unordered_set:", sizeof("unordered_set:") - 1);}
         template<class _Traits, class _Allocator>
         LogStream & operator <<(const std::basic_string<char, _Traits, _Allocator> & str) { return write_buffer(str.c_str(), (int)str.length());}
+        template<int BLANK_SIZE>
+        LogStream & operator <<(const LogBlankAlign<BLANK_SIZE>& blanks)
+        {
+            if (log_data_ && log_data_->content_len_ + BLANK_SIZE < LogData::LOG_SIZE)
+            {
+                for (int i = log_data_->content_len_;  i < BLANK_SIZE; i++)
+                {
+                    write_char_unsafe(' ');
+                }
+            }
+            return *this;
+        }
         
+
+
     public:
         LogData * log_data_ = nullptr;
         Logger* logger_ = nullptr;
