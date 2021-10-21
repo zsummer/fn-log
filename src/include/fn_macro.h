@@ -246,6 +246,7 @@ do{ \
     }\
 } while (0)
 #else
+// function format warn:   void(int x1, int x2, const char *args, ...) __attribute__((format(printf, 3, 4)));    
 #define LOG_FORMAT(channel_id, priority, category, identify, prefix, logformat, ...) \
 do{ \
     if (FNLog::BlockInput(FNLog::GetDefaultLogger(), channel_id, priority, category, identify))  \
