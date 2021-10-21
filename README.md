@@ -1,10 +1,7 @@
 
 # Introduction:  
-|    OS     |    GCC    |    CLANG    
-------------|-----------|---------------   
-|   OSX     | [![Build Status](https://travis-ci.com/zsummer/fn-log.svg?branch=master&job=1)](https://travis-ci.com/zsummer/fn-log) | [![Build Status](https://travis-ci.com/zsummer/fn-log.svg?branch=master&job=3)](https://travis-ci.com/zsummer/fn-log)   
-|  Linux    | [![Build Status](https://travis-ci.com/zsummer/fn-log.svg?branch=master&job=2)](https://travis-ci.com/zsummer/fn-log) | [![Build Status](https://travis-ci.com/zsummer/fn-log.svg?branch=master&job=4)](https://travis-ci.com/zsummer/fn-log)   
-  
+[![Build](https://github.com/zsummer/fn-log/actions/workflows/cmake.yml/badge.svg)](https://github.com/zsummer/fn-log/actions/workflows/cmake.yml)
+[![CodeQL](https://github.com/zsummer/fn-log/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/zsummer/fn-log/actions/workflows/codeql-analysis.yml)
 [![Coverity Status](https://scan.coverity.com/projects/19065/badge.svg)](https://scan.coverity.com/projects/zsummer-fn-log)
 [![Coverage Status](https://coveralls.io/repos/github/zsummer/fn-log/badge.svg?branch=master)](https://coveralls.io/github/zsummer/fn-log?branch=master)  
 fn-log is an open source C++ lightweight & cross platform log library. It's an iteration from log4z.   
