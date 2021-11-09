@@ -82,7 +82,7 @@ namespace FNLog
         }
         else
         {
-            SetConsoleTextAttribute(sc_handle, PRIORITY_RENDER[priority].color_);
+            SetConsoleTextAttribute(sc_handle, (old_info.wAttributes& ~7u) |PRIORITY_RENDER[priority].color_);
             printf("%s", log.content_);
             SetConsoleTextAttribute(sc_handle, old_info.wAttributes);
         }
