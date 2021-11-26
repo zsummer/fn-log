@@ -421,6 +421,7 @@ namespace FNLog
     {
         m.log_fields_[eid].store(v, std::memory_order_relaxed);
     }
+
 }
 
 

@@ -448,6 +448,37 @@ namespace FNLog
         }
         return 0;
     }
+
+
+    inline int TransmitChannel(Logger& logger, int channel_id, const LogData& log)
+    {
+        if (log.channel_id_ == channel_id)
+        {
+            return -1;
+        }
+        int hold_idx = FNLog::HoldChannel(logger, channel_id, log.priority_, log.category_, log.identify_);
+        if (hold_idx < 0)
+        {
+            return -2;
+        }
+        LogData& trans_log = logger.shm_->ring_buffers_[channel_id].buffer_[hold_idx];
+        trans_log.channel_id_ = log.channel_id_;
+        trans_log.priority_ = log.priority_;
+        trans_log.category_ = log.category_;
+        trans_log.identify_ = log.identify_;
+        trans_log.code_line_ = log.code_line_;
+        trans_log.code_func_len_ = log.code_func_len_;
+        trans_log.code_file_len_ = log.code_file_len_;
+        trans_log.code_func_ = log.code_func_;
+        trans_log.code_file_ = log.code_file_;
+        trans_log.timestamp_ = log.timestamp_;
+        trans_log.precise_ = log.precise_;
+        trans_log.thread_ = log.thread_;
+        trans_log.prefix_len_ = log.prefix_len_;
+        trans_log.content_len_ = log.content_len_;
+        memcpy(trans_log.content_, log.content_, log.content_len_);
+        return PushChannel(logger, channel_id, hold_idx);
+    }
 }
 
 
