@@ -65,6 +65,7 @@ jobs:
           ./benchmark_normal
           ./benchmark_udp
           ./benchmark_fast
+          ./benchmark_virtual_device
           if [ "$RUNNER_OS" == "Linux" ]; then
             ipcs -m
             ipcs -mt
