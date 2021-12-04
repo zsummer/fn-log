@@ -3418,7 +3418,7 @@ namespace FNLog
             return -2;
         }
         LogData& trans_log = logger.shm_->ring_buffers_[channel_id].buffer_[hold_idx];
-        trans_log.channel_id_ = log.channel_id_;
+        trans_log.channel_id_ = channel_id;
         trans_log.priority_ = log.priority_;
         trans_log.category_ = log.category_;
         trans_log.identify_ = log.identify_;
@@ -3431,7 +3431,7 @@ namespace FNLog
         trans_log.precise_ = log.precise_;
         trans_log.thread_ = log.thread_;
         trans_log.prefix_len_ = log.prefix_len_;
-        trans_log.content_len_ = log.content_len_;
+        trans_log.content_len_ = log.content_len_ > 0 ? log.content_len_ - 1: log.content_len_;
         memcpy(trans_log.content_, log.content_, log.content_len_);
         return PushChannel(logger, channel_id, hold_idx);
     }
