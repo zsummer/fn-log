@@ -93,6 +93,7 @@ namespace FNLog
     enum ReseveKey
     {
         RK_NULL,
+        RK_SHM_KEY,
         RK_CHANNEL,
         RK_DEVICE,
         RK_SYNC,
@@ -202,7 +203,11 @@ namespace FNLog
         case 'o':
             return RK_OUT_TYPE;
         case 's':
-            return RK_SYNC;
+            if (*(begin+1) == 'y')
+            {
+                return RK_SYNC;
+            }
+            return RK_SHM_KEY;
         case 'u':
             return RK_UDP_ADDR;
         default:
@@ -249,6 +254,24 @@ namespace FNLog
             return false;
         }
         return true;
+    }
+
+    inline long long ParseNumber(const char* begin, const char* end)
+    {
+        if (end <= begin)
+        {
+            return 0;
+        }
+
+        if (end - begin > 40 )
+        {
+            return 0;
+        }
+
+        char buff[50];
+        memcpy(buff, begin, end - begin);
+        buff[end - begin] = '\0';
+        return strtoll(buff, NULL, 0);
     }
 
     inline bool ParseString(const char* begin, const char* end, char * buffer, int buffer_len, int& write_len)
@@ -298,6 +321,33 @@ namespace FNLog
         return DEVICE_OUT_NULL;
     }
 
+    inline std::pair<long long, const char*> ParseAddresIP(const char* begin, const char* end)
+    {
+        if (end <= begin)
+        {
+            return std::make_pair(0, end);
+        }
+        const char* ip_begin = begin;
+        while ((*ip_begin < '1' || *ip_begin > '9') && ip_begin != end)
+        {
+            ip_begin++;
+        }
+        const char* ip_end = ip_begin;
+        while (((*ip_end >= '0' && *ip_end <= '9') || *ip_end == '.') && ip_end != end)
+        {
+            ip_end++;
+        }
+        if (ip_end - ip_begin > 40)
+        {
+            return std::make_pair(0, end);
+        }
+        char buff[50];
+        memcpy(buff, ip_begin, ip_end - ip_begin);
+        buff[ip_end - ip_begin] = '\0';
+        return std::make_pair((long long)inet_addr(buff), ip_end); 
+    }
+
+
     inline void ParseAddres(const char* begin, const char* end, long long & ip, long long& port)
     {
         ip = 0;
@@ -306,34 +356,25 @@ namespace FNLog
         {
             return;
         }
-        const char* ip_begin = begin;
-        while ((*ip_begin < '1' || *ip_begin > '9') && ip_begin != end)
-        {
-            ip_begin++;
-        }
-        const char* ip_end = ip_begin;
-        while (((*ip_end >= '0' && *ip_end <= '9') || *ip_end == '.' ) && ip_end != end)
-        {
-            ip_end++;
-        }
-        if (ip_end <= ip_begin)
-        {
-            return;
-        }
-
-        const char* port_begin = ip_end;
-        while ((*port_begin < '1' || *port_begin > '9') && port_begin != end)
+        auto result_ip = ParseAddresIP(begin, end);
+        const char* port_begin = result_ip.second;
+        while (port_begin != end && (*port_begin < '1' || *port_begin > '9')  )
         {
             port_begin++;
         }
-        if (end <= port_begin)
+        if (port_begin >= end)
         {
             return;
         }
-        std::string str(ip_begin, ip_end - ip_begin);
-        ip = inet_addr(str.c_str());
-        str.assign(port_begin, end - port_begin);
-        port = htons(atoi(str.c_str()));
+        if (end - port_begin >= 40)
+        {
+            return;
+        }
+        char buff[50];
+        memcpy(buff, port_begin, end - port_begin);
+        buff[end - port_begin] = '\0';
+        port = htons(atoi(buff));
+        ip = result_ip.first;
         return;
     }
 
@@ -382,6 +423,7 @@ namespace FNLog
         Line line_;
         SHMLogger::Channels channels_;
         int channel_size_;
+        long long shm_key_;
         bool hot_update_;
         char desc_[Logger::MAX_LOGGER_DESC_LEN];
         int desc_len_;
@@ -774,6 +816,9 @@ namespace FNLog
                 break;
             case PK_LOGGER_DESC:
                 ParseString(ls.line_.val_begin_, ls.line_.val_end_, ls.desc_, Logger::MAX_LOGGER_DESC_LEN, ls.desc_len_);
+                break;
+            case RK_SHM_KEY:
+                ls.shm_key_ = ParseNumber(ls.line_.val_begin_, ls.line_.val_end_);
                 break;
             case RK_CHANNEL:
                 if (ls.line_.line_type_ != LINE_ARRAY)
