@@ -266,7 +266,7 @@ namespace FNLog
 #endif
     inline bool BlockInput(Logger& logger, int channel_id, int priority, int category, long long identify)
     {
-        if (channel_id >= logger.shm_->channel_size_ || channel_id < 0)
+        if (logger.shm_ == NULL || channel_id >= logger.shm_->channel_size_ || channel_id < 0)
         {
             return true;
         }

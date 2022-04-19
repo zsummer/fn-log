@@ -578,13 +578,6 @@ public:
 #define FN_LOG_HOTUPDATE_INTERVEL 5
 #endif
 
-#ifndef FN_LOG_USE_SHM
-#define FN_LOG_USE_SHM 0
-#endif 
-
-#ifndef FN_LOG_SHM_KEY
-#define FN_LOG_SHM_KEY 0x9110
-#endif 
 
 //#define FN_LOG_USING_ATOM_CFG
 
@@ -886,6 +879,8 @@ namespace FNLog
         int desc_len_;
         char name_[MAX_LOGGER_NAME_LEN];
         int name_len_;
+
+        long long shm_key_;
         SHMLogger* shm_;
 
         ReadLocks read_locks_;
@@ -1037,6 +1032,7 @@ namespace FNLog
     enum ReseveKey
     {
         RK_NULL,
+        RK_SHM_KEY,
         RK_CHANNEL,
         RK_DEVICE,
         RK_SYNC,
@@ -1146,7 +1142,11 @@ namespace FNLog
         case 'o':
             return RK_OUT_TYPE;
         case 's':
-            return RK_SYNC;
+            if (*(begin+1) == 'y')
+            {
+                return RK_SYNC;
+            }
+            return RK_SHM_KEY;
         case 'u':
             return RK_UDP_ADDR;
         default:
@@ -1193,6 +1193,24 @@ namespace FNLog
             return false;
         }
         return true;
+    }
+
+    inline long long ParseNumber(const char* begin, const char* end)
+    {
+        if (end <= begin)
+        {
+            return 0;
+        }
+
+        if (end - begin > 40 )
+        {
+            return 0;
+        }
+
+        char buff[50];
+        memcpy(buff, begin, end - begin);
+        buff[end - begin] = '\0';
+        return strtoll(buff, NULL, 0);
     }
 
     inline bool ParseString(const char* begin, const char* end, char * buffer, int buffer_len, int& write_len)
@@ -1242,6 +1260,33 @@ namespace FNLog
         return DEVICE_OUT_NULL;
     }
 
+    inline std::pair<long long, const char*> ParseAddresIP(const char* begin, const char* end)
+    {
+        if (end <= begin)
+        {
+            return std::make_pair(0, end);
+        }
+        const char* ip_begin = begin;
+        while ((*ip_begin < '1' || *ip_begin > '9') && ip_begin != end)
+        {
+            ip_begin++;
+        }
+        const char* ip_end = ip_begin;
+        while (((*ip_end >= '0' && *ip_end <= '9') || *ip_end == '.') && ip_end != end)
+        {
+            ip_end++;
+        }
+        if (ip_end - ip_begin > 40)
+        {
+            return std::make_pair(0, end);
+        }
+        char buff[50];
+        memcpy(buff, ip_begin, ip_end - ip_begin);
+        buff[ip_end - ip_begin] = '\0';
+        return std::make_pair((long long)inet_addr(buff), ip_end); 
+    }
+
+
     inline void ParseAddres(const char* begin, const char* end, long long & ip, long long& port)
     {
         ip = 0;
@@ -1250,34 +1295,25 @@ namespace FNLog
         {
             return;
         }
-        const char* ip_begin = begin;
-        while ((*ip_begin < '1' || *ip_begin > '9') && ip_begin != end)
-        {
-            ip_begin++;
-        }
-        const char* ip_end = ip_begin;
-        while (((*ip_end >= '0' && *ip_end <= '9') || *ip_end == '.' ) && ip_end != end)
-        {
-            ip_end++;
-        }
-        if (ip_end <= ip_begin)
-        {
-            return;
-        }
-
-        const char* port_begin = ip_end;
-        while ((*port_begin < '1' || *port_begin > '9') && port_begin != end)
+        auto result_ip = ParseAddresIP(begin, end);
+        const char* port_begin = result_ip.second;
+        while (port_begin != end && (*port_begin < '1' || *port_begin > '9')  )
         {
             port_begin++;
         }
-        if (end <= port_begin)
+        if (port_begin >= end)
         {
             return;
         }
-        std::string str(ip_begin, ip_end - ip_begin);
-        ip = inet_addr(str.c_str());
-        str.assign(port_begin, end - port_begin);
-        port = htons(atoi(str.c_str()));
+        if (end - port_begin >= 40)
+        {
+            return;
+        }
+        char buff[50];
+        memcpy(buff, port_begin, end - port_begin);
+        buff[end - port_begin] = '\0';
+        port = htons(atoi(buff));
+        ip = result_ip.first;
         return;
     }
 
@@ -1326,6 +1362,7 @@ namespace FNLog
         Line line_;
         SHMLogger::Channels channels_;
         int channel_size_;
+        long long shm_key_;
         bool hot_update_;
         char desc_[Logger::MAX_LOGGER_DESC_LEN];
         int desc_len_;
@@ -1718,6 +1755,9 @@ namespace FNLog
                 break;
             case PK_LOGGER_DESC:
                 ParseString(ls.line_.val_begin_, ls.line_.val_end_, ls.desc_, Logger::MAX_LOGGER_DESC_LEN, ls.desc_len_);
+                break;
+            case RK_SHM_KEY:
+                ls.shm_key_ = ParseNumber(ls.line_.val_begin_, ls.line_.val_end_);
                 break;
             case RK_CHANNEL:
                 if (ls.line_.line_type_ != LINE_ARRAY)
@@ -2246,6 +2286,129 @@ namespace FNLog
 #endif
     
 
+    inline int LoadSharedMemory(Logger& logger)
+    {
+#if !defined(WIN32)
+        if (logger.shm_key_ <= 0)
+        {
+            logger.shm_ = new SHMLogger();
+            memset(logger.shm_, 0, sizeof(SHMLogger));
+            return 0;
+        }
+        SHMLogger* shm = nullptr;
+        int idx = shmget(logger.shm_key_, 0, 0);
+        if (idx < 0 && errno != ENOENT)
+        {
+            printf("shmget error. key:<0x%llx>, errno:<%d>. can use 'ipcs -m', 'ipcrm -m' to view and clear.\n",
+                logger.shm_key_, errno);
+            return -1;
+        }
+
+        if (idx < 0)
+        {
+            idx = shmget(logger.shm_key_, sizeof(SHMLogger), IPC_CREAT | IPC_EXCL | 0600);
+            if (idx < 0)
+            {
+                printf("new shm. shmget error. key:<0x%llx>, errno:<%d>.\n", logger.shm_key_, errno);
+                return -2;
+            }
+            void* addr = shmat(idx, nullptr, 0);
+            if (addr == nullptr || addr == (void*)-1)
+            {
+                printf("new shm. shmat error. key:<0x%llx>, idx:<%d>, errno:<%d>.\n", logger.shm_key_, idx, errno);
+                return -3;
+            }
+            memset(addr, 0, sizeof(SHMLogger));
+            shm = (SHMLogger*)addr;
+            shm->shm_size_ = sizeof(SHMLogger);
+            shm->shm_id_ = idx;
+        }
+        else
+        {
+            void* addr = shmat(idx, nullptr, 0);
+            if (addr == nullptr || addr == (void*)-1)
+            {
+                printf("shmat error. key:<%llx>, idx:<%d>, errno:<%d>.\n", logger.shm_key_, idx, errno);
+                return -4;
+            }
+            shm = (SHMLogger*)addr;
+        }
+
+        if (shm->shm_size_ != sizeof(SHMLogger) || shm->shm_id_ != idx)
+        {
+            printf("shm version error. key:<0x%llx>, old id:<%d>, new id:<%d>, old size:<%d> new size:<%d>. "
+                "can use 'ipcs -m', 'ipcrm -m' to view and clear.\n",
+                logger.shm_key_, shm->shm_id_, idx, shm->shm_size_, (int)sizeof(SHMLogger));
+            return -5;
+        }
+        for (int i = 0; i < shm->channel_size_; i++)
+        {
+            if (i >= SHMLogger::MAX_CHANNEL_SIZE)
+            {
+                return -6;
+            }
+
+            if (shm->ring_buffers_[i].write_idx_ >= RingBuffer::BUFFER_LEN
+                || shm->ring_buffers_[i].write_idx_ < 0)
+            {
+                return -7;
+            }
+
+            while (shm->ring_buffers_[i].write_idx_.load() != shm->ring_buffers_[i].hold_idx_.load())
+            {
+                auto& log = shm->ring_buffers_[i].buffer_[shm->ring_buffers_[i].write_idx_];
+                log.data_mark_ = 2;
+                log.priority_ = PRIORITY_FATAL;
+                std::string core_desc = "!!!core recover!!!";
+                log.content_len_ = FN_MIN(log.content_len_, LogData::LOG_SIZE - (int)core_desc.length() - 2);
+                memcpy(&log.content_[log.content_len_], core_desc.c_str(), core_desc.length());
+
+                log.content_len_ += core_desc.length();
+                log.content_[log.content_len_++] = '\n';
+                log.content_[log.content_len_] = '\0';
+
+                shm->ring_buffers_[i].write_idx_ = (shm->ring_buffers_[i].write_idx_ + 1) % RingBuffer::BUFFER_LEN;
+            }
+            shm->ring_buffers_[i].hold_idx_ = shm->ring_buffers_[i].write_idx_.load();
+
+            if (shm->ring_buffers_[i].read_idx_ >= RingBuffer::BUFFER_LEN
+                || shm->ring_buffers_[i].read_idx_ < 0)
+            {
+                return -10;
+            }
+            shm->ring_buffers_[i].proc_idx_ = shm->ring_buffers_[i].read_idx_.load();
+            if (shm->ring_buffers_[i].read_idx_ != 0 || shm->ring_buffers_[i].write_idx_ != 0)
+            {
+                printf("attach shm key:<0x%llx> channel:<%d>, write:<%d>, read:<%d> \n", logger.shm_key_,
+                    i, shm->ring_buffers_[i].write_idx_.load(), (int)shm->ring_buffers_[i].read_idx_.load());
+            }
+        }
+        logger.shm_ = shm;
+#else
+        logger.shm_ = new SHMLogger();
+        memset(logger.shm_, 0, sizeof(SHMLogger));
+#endif
+        return 0;
+    }
+    inline void UnloadSharedMemory(Logger& logger)
+    {
+#if !defined(WIN32)
+        if (logger.shm_ && logger.shm_key_ > 0)
+        {
+            int idx = logger.shm_->shm_id_;
+            shmdt(logger.shm_);
+            shmctl(idx, IPC_RMID, nullptr);
+            logger.shm_ = nullptr;
+        }
+#endif
+        if (logger.shm_)
+        {
+            delete logger.shm_;
+            logger.shm_ = nullptr;
+        }
+    }
+
+
     inline int InitFromYMAL(Logger& logger, const std::string& text, const std::string& path)
     {
         Logger::StateLockGuard state_guard(logger.state_lock);
@@ -2254,11 +2417,7 @@ namespace FNLog
             printf("init from ymal:<%s> text error\n", path.c_str());
             return -1;
         }
-        if (logger.shm_ == nullptr)
-        {
-            printf("%s", "init from ymal text error. no shm.\n");
-            return -2;
-        }
+
         std::unique_ptr<LexState> ls(new LexState);
         int ret = ParseLogger(*ls, text);
         if (ret != PEC_NONE)
@@ -2290,6 +2449,16 @@ namespace FNLog
         }
         logger.yaml_path_ = path;
         logger.hot_update_ = ls->hot_update_;
+        logger.shm_key_ = ls->shm_key_;
+        if (logger.shm_  == NULL)
+        {
+            ret = LoadSharedMemory(logger);
+            if (ret != 0)
+            {
+                printf("LoadSharedMemory has error:%d,  yaml:%s\n", ret, text.c_str());
+                return ret;
+            }
+        }
         logger.shm_->channel_size_ = ls->channel_size_;
         for (int i = 0; i < ls->channel_size_; i++)
         {
@@ -3222,7 +3391,7 @@ namespace FNLog
 #endif
     inline bool BlockInput(Logger& logger, int channel_id, int priority, int category, long long identify)
     {
-        if (channel_id >= logger.shm_->channel_size_ || channel_id < 0)
+        if (logger.shm_ == NULL || channel_id >= logger.shm_->channel_size_ || channel_id < 0)
         {
             return true;
         }
@@ -3615,7 +3784,7 @@ namespace FNLog
             printf("start error. state:<%u> not uninit:<%u>.\n", logger.logger_state_, LOGGER_STATE_UNINIT);
             return -1;
         }
-        if (logger.shm_->channel_size_ > Logger::MAX_CHANNEL_SIZE || logger.shm_->channel_size_ <= 0)
+        if (logger.shm_ == NULL || logger.shm_->channel_size_ > Logger::MAX_CHANNEL_SIZE || logger.shm_->channel_size_ <= 0)
         {
             printf("start error. channel size:<%d> invalid.\n", logger.shm_->channel_size_);
             return -2;
@@ -3708,10 +3877,15 @@ namespace FNLog
     {
         if (logger.logger_state_ != LOGGER_STATE_UNINIT)
         {
-            printf("parse and start error. state:<%u> not uninit:<%u>.\n", logger.logger_state_, LOGGER_STATE_UNINIT);
+            printf("parse and start error. state:<%u> not uninit:<%u> by fast try.\n", logger.logger_state_, LOGGER_STATE_UNINIT);
             return -1;
         }
         Logger::StateLockGuard state_guard(logger.state_lock);
+        if (logger.logger_state_ != LOGGER_STATE_UNINIT)
+        {
+            printf("parse and start error. state:<%u> not uninit:<%u> in locked check.\n", logger.logger_state_, LOGGER_STATE_UNINIT);
+            return -2;
+        }
         int ret = InitFromYMAL(logger, config_content, "");
         if (ret != 0)
         {
@@ -3859,122 +4033,6 @@ namespace FNLog
     }
 
 
-    inline void LoadSharedMemory(Logger& logger)
-    {
-#if FN_LOG_USE_SHM && !defined(WIN32)
-        SHMLogger* shm = nullptr;
-        int idx = shmget(FN_LOG_SHM_KEY, 0, 0);
-        if (idx < 0 && errno != ENOENT)
-        {
-            printf("shmget error. key:<0x%x>, errno:<%d>. can use 'ipcs -m', 'ipcrm -m' to view and clear.\n", 
-                FN_LOG_SHM_KEY, errno);
-            return;
-        }
-
-        if (idx < 0)
-        {
-            idx = shmget(FN_LOG_SHM_KEY, sizeof(SHMLogger), IPC_CREAT | IPC_EXCL | 0600);
-            if (idx < 0)
-            {
-                printf("new shm. shmget error. key:<0x%x>, errno:<%d>.\n", FN_LOG_SHM_KEY, errno);
-                return;
-            }
-            void* addr = shmat(idx, nullptr, 0);
-            if (addr == nullptr || addr == (void*)-1)
-            {
-                printf("new shm. shmat error. key:<0x%x>, idx:<%d>, errno:<%d>.\n", FN_LOG_SHM_KEY, idx, errno);
-                return;
-            }
-            memset(addr, 0, sizeof(SHMLogger));
-            shm = (SHMLogger*)addr;
-            shm->shm_size_ = sizeof(SHMLogger);
-            shm->shm_id_ = idx;
-        }
-        else
-        {
-            void* addr = shmat(idx, nullptr, 0);
-            if (addr == nullptr || addr == (void*)-1)
-            {
-                printf("shmat error. key:<%x>, idx:<%d>, errno:<%d>.\n", FN_LOG_SHM_KEY, idx, errno);
-                return;
-            }
-            shm = (SHMLogger*)addr;
-        }
-
-        if (shm->shm_size_ != sizeof(SHMLogger) || shm->shm_id_ != idx)
-        {
-            printf("shm version error. key:<0x%x>, old id:<%d>, new id:<%d>, old size:<%d> new size:<%d>. "
-                "can use 'ipcs -m', 'ipcrm -m' to view and clear.\n",
-                FN_LOG_SHM_KEY, shm->shm_id_, idx, shm->shm_size_, (int)sizeof(SHMLogger));
-            return;
-        }
-        for (int i = 0; i < shm->channel_size_; i++)
-        {
-            if (i >= SHMLogger::MAX_CHANNEL_SIZE)
-            {
-                return;
-            }
-
-            if (shm->ring_buffers_[i].write_idx_ >= RingBuffer::BUFFER_LEN
-                || shm->ring_buffers_[i].write_idx_ < 0)
-            {
-                return;
-            }
-
-            while (shm->ring_buffers_[i].write_idx_.load() != shm->ring_buffers_[i].hold_idx_.load())
-            {
-                auto& log = shm->ring_buffers_[i].buffer_[shm->ring_buffers_[i].write_idx_];
-                log.data_mark_ = 2;
-                log.priority_ = PRIORITY_FATAL;
-                std::string core_desc = "!!!core recover!!!";
-                log.content_len_ = FN_MIN(log.content_len_, LogData::LOG_SIZE - (int)core_desc.length() -2 );
-                memcpy(&log.content_[log.content_len_], core_desc.c_str(), core_desc.length());
-
-                log.content_len_ += core_desc.length();
-                log.content_[log.content_len_++] = '\n';
-                log.content_[log.content_len_] = '\0';
-
-                shm->ring_buffers_[i].write_idx_ = (shm->ring_buffers_[i].write_idx_ + 1) % RingBuffer::BUFFER_LEN;
-            }
-            shm->ring_buffers_[i].hold_idx_ = shm->ring_buffers_[i].write_idx_.load();
-
-            if (shm->ring_buffers_[i].read_idx_ >= RingBuffer::BUFFER_LEN
-                || shm->ring_buffers_[i].read_idx_ < 0)
-            {
-                return;
-            }
-            shm->ring_buffers_[i].proc_idx_ = shm->ring_buffers_[i].read_idx_.load();
-            if (shm->ring_buffers_[i].read_idx_ != 0 || shm->ring_buffers_[i].write_idx_ != 0)
-            {
-                printf("attach shm channel:<%d>, write:<%d>, read:<%d> \n",
-                    i, shm->ring_buffers_[i].write_idx_.load(), (int)shm->ring_buffers_[i].read_idx_.load());
-            }
-        }
-        logger.shm_ = shm;
-#else
-        logger.shm_ = new SHMLogger();
-        memset(logger.shm_, 0, sizeof(SHMLogger));
-        
-#endif
-    }
-    inline void UnloadSharedMemory(Logger& logger)
-    {
-#if FN_LOG_USE_SHM && !defined(WIN32)
-        if (logger.shm_)
-        {
-            int idx = logger.shm_->shm_id_;
-            shmdt(logger.shm_);
-            shmctl(idx, IPC_RMID, nullptr);
-            logger.shm_ = nullptr;
-        }
-#else
-        if (logger.shm_)
-        {
-            delete logger.shm_;
-            logger.shm_ = nullptr;
-        }
-#endif
-    }
 
     inline void InitLogger(Logger& logger)
     {
@@ -3988,7 +4046,9 @@ namespace FNLog
         name = name.substr(0, Logger::MAX_LOGGER_NAME_LEN - 1);
         memcpy(logger.name_, name.c_str(), name.length() + 1);
         logger.name_len_ = (int)name.length();
-        LoadSharedMemory(logger);
+        logger.shm_key_ = 0;
+        logger.shm_ = NULL;
+        
 
 #if ((defined WIN32) && !KEEP_INPUT_QUICK_EDIT)
         HANDLE input_handle = ::GetStdHandle(STD_INPUT_HANDLE);
