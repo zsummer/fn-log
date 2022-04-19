@@ -2417,11 +2417,7 @@ namespace FNLog
             printf("init from ymal:<%s> text error\n", path.c_str());
             return -1;
         }
-        if (logger.shm_ != nullptr)
-        {
-            printf("%s", "init from ymal text error. already has shm.\n");
-            return -2;
-        }
+
         std::unique_ptr<LexState> ls(new LexState);
         int ret = ParseLogger(*ls, text);
         if (ret != PEC_NONE)
@@ -2454,11 +2450,14 @@ namespace FNLog
         logger.yaml_path_ = path;
         logger.hot_update_ = ls->hot_update_;
         logger.shm_key_ = ls->shm_key_;
-        ret = LoadSharedMemory(logger);
-        if (ret != 0)
+        if (logger.shm_  == NULL)
         {
-            printf("LoadSharedMemory has error:%d,  yaml:%s\n",  ret, text.c_str());
-            return ret;
+            ret = LoadSharedMemory(logger);
+            if (ret != 0)
+            {
+                printf("LoadSharedMemory has error:%d,  yaml:%s\n", ret, text.c_str());
+                return ret;
+            }
         }
         logger.shm_->channel_size_ = ls->channel_size_;
         for (int i = 0; i < ls->channel_size_; i++)
@@ -3392,7 +3391,7 @@ namespace FNLog
 #endif
     inline bool BlockInput(Logger& logger, int channel_id, int priority, int category, long long identify)
     {
-        if (channel_id >= logger.shm_->channel_size_ || channel_id < 0)
+        if (logger.shm_ == NULL || channel_id >= logger.shm_->channel_size_ || channel_id < 0)
         {
             return true;
         }
@@ -3878,10 +3877,15 @@ namespace FNLog
     {
         if (logger.logger_state_ != LOGGER_STATE_UNINIT)
         {
-            printf("parse and start error. state:<%u> not uninit:<%u>.\n", logger.logger_state_, LOGGER_STATE_UNINIT);
+            printf("parse and start error. state:<%u> not uninit:<%u> by fast try.\n", logger.logger_state_, LOGGER_STATE_UNINIT);
             return -1;
         }
         Logger::StateLockGuard state_guard(logger.state_lock);
+        if (logger.logger_state_ != LOGGER_STATE_UNINIT)
+        {
+            printf("parse and start error. state:<%u> not uninit:<%u> in locked check.\n", logger.logger_state_, LOGGER_STATE_UNINIT);
+            return -2;
+        }
         int ret = InitFromYMAL(logger, config_content, "");
         if (ret != 0)
         {

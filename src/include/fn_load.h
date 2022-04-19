@@ -184,11 +184,7 @@ namespace FNLog
             printf("init from ymal:<%s> text error\n", path.c_str());
             return -1;
         }
-        if (logger.shm_ != nullptr)
-        {
-            printf("%s", "init from ymal text error. already has shm.\n");
-            return -2;
-        }
+
         std::unique_ptr<LexState> ls(new LexState);
         int ret = ParseLogger(*ls, text);
         if (ret != PEC_NONE)
@@ -221,11 +217,14 @@ namespace FNLog
         logger.yaml_path_ = path;
         logger.hot_update_ = ls->hot_update_;
         logger.shm_key_ = ls->shm_key_;
-        ret = LoadSharedMemory(logger);
-        if (ret != 0)
+        if (logger.shm_  == NULL)
         {
-            printf("LoadSharedMemory has error:%d,  yaml:%s\n",  ret, text.c_str());
-            return ret;
+            ret = LoadSharedMemory(logger);
+            if (ret != 0)
+            {
+                printf("LoadSharedMemory has error:%d,  yaml:%s\n", ret, text.c_str());
+                return ret;
+            }
         }
         logger.shm_->channel_size_ = ls->channel_size_;
         for (int i = 0; i < ls->channel_size_; i++)
