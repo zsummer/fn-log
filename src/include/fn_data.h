@@ -61,13 +61,6 @@
 #define FN_LOG_HOTUPDATE_INTERVEL 5
 #endif
 
-#ifndef FN_LOG_USE_SHM
-#define FN_LOG_USE_SHM 0
-#endif 
-
-#ifndef FN_LOG_SHM_KEY
-#define FN_LOG_SHM_KEY 0x9110
-#endif 
 
 //#define FN_LOG_USING_ATOM_CFG
 
@@ -369,6 +362,8 @@ namespace FNLog
         int desc_len_;
         char name_[MAX_LOGGER_NAME_LEN];
         int name_len_;
+
+        long long shm_key_;
         SHMLogger* shm_;
 
         ReadLocks read_locks_;
