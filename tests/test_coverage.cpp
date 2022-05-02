@@ -102,6 +102,62 @@ int main(int argc, char* argv[])
         FNLOG_ASSERT(GetDeviceConfig(logger, 0, 8, DEVICE_CFG_PRIORITY) == PRIORITY_FATAL, "parse priority");
     }                                                                      
 
+
+    LogInfo() << 1.23f / 0.000000001;
+    LogInfo() << 1.23f / 0.00000001;
+    LogInfo() << 1.23f / 0.0000001;
+    LogInfo() << 1.23f / 0.000001;
+    LogInfo() << 1.23f / 0.00001;
+    LogInfo() << 1.23f / 0.0001;
+    LogInfo() << 1.23f / 0.001;
+    LogInfo() << 1.23f / 0.1;
+    LogInfo() << 1.23f / 1;
+    LogInfo() << 1.23f / 10;
+    LogInfo() << 1.23f / 100;
+    LogInfo() << 1.23f / 1000;
+    LogInfo() << 1.23f / 10000;
+    LogInfo() << 1.23f / 100000;
+    LogInfo() << 1.23f / 1000000;
+    LogInfo() << 1.23f / 10000000;
+    LogInfo() << 1.23f / 100000000;
+    LogInfo() << 1.23 / 0.000000001;
+    LogInfo() << 1.23 / 0.00000001;
+    LogInfo() << 1.23 / 0.0000001;
+    LogInfo() << 1.23 / 0.000001;
+    LogInfo() << 1.23 / 0.00001;
+    LogInfo() << 1.23 / 0.0001;
+    LogInfo() << 1.23 / 0.001;
+    LogInfo() << 1.23 / 0.1;
+    LogInfo() << 1.23 / 1;
+    LogInfo() << 1.23 / 10;
+    LogInfo() << 1.23 / 100;
+    LogInfo() << 1.23 / 1000;
+    LogInfo() << 1.23 / 10000;
+    LogInfo() << 1.23 / 100000;
+    LogInfo() << 1.23 / 1000000;
+    LogInfo() << 1.23 / 10000000;
+    LogInfo() << 1.23 / 100000000;
+
+    LogInfo() << LogPercent(1.23 / 0.000000001);
+    LogInfo() << LogPercent(1.23 / 0.00000001);
+    LogInfo() << LogPercent(1.23 / 0.0000001);
+    LogInfo() << LogPercent(1.23 / 0.000001);
+    LogInfo() << LogPercent(1.23 / 0.00001);
+    LogInfo() << LogPercent(1.23 / 0.0001);
+    LogInfo() << LogPercent(1.23 / 0.001);
+    LogInfo() << LogPercent(1.23 / 0.1);
+    LogInfo() << LogPercent(1.23 / 1);
+    LogInfo() << LogPercent(1.23 / 10);
+    LogInfo() << LogPercent(1.23 / 100);
+    LogInfo() << LogPercent(1.23 / 1000);
+    LogInfo() << LogPercent(1.23 / 10000);
+    LogInfo() << LogPercent(1.23 / 100000);
+    LogInfo() << LogPercent(1.23 / 1000000);
+    LogInfo() << LogPercent(1.23 / 10000000);
+    LogInfo() << LogPercent(1.23 / 100000000);
+    LogInfo() << LogPercent(1.23 / 1000000000) <<" : need 0%";
+
+
     LogAlarm() << "finish";
 
     return 0;

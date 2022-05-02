@@ -55,6 +55,13 @@ namespace FNLog
         //static const int blank_size = BLANK_SIZE;
     };
 
+
+    struct LogPercent
+    {
+        LogPercent(float v) :v_(v) {}
+        float v_;
+    };
+
     class LogStream
     {
     public:
@@ -403,6 +410,23 @@ namespace FNLog
             }
             return *this;
         }
+        LogStream & operator <<(const LogPercent& blanks)
+        {
+            if (log_data_ && log_data_->content_len_ + 40 < LogData::LOG_SIZE)
+            {
+                if (blanks.v_ < 0.000001)
+                {
+                    write_buffer("00.00%", strlen("00.00%"));
+                }
+                else
+                {
+                    log_data_->content_len_ += write_double_unsafe(log_data_->content_ + log_data_->content_len_, blanks.v_*100.0);
+                    write_char_unsafe('%');
+                }
+            }
+            return *this;
+        }
+
         
 
 

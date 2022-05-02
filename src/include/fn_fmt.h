@@ -301,11 +301,17 @@ namespace FNLog
 
 
         double fabst = std::fabs(number);
-
         if (fabst < 0.0001 || fabst > 0xFFFFFFFFFFFFFFFULL)
         {
-            char* buf = gcvt(number, 16, dst);
-            (void)buf;
+            if (fabst < 0.0001 && fabst > 0.0000001)
+            {
+                sprintf(dst, "%.08lf", fabst);
+            }
+            else
+            {
+                char* buf = gcvt(number, 16, dst);
+                (void)buf;
+            }
             return (int)strlen(dst);
         }
         bool is_neg = std::signbit(number);
