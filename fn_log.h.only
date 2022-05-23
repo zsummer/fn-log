@@ -4512,7 +4512,7 @@ namespace FNLog
             {
                 if (blanks.v_ < 0.000001)
                 {
-                    write_buffer("00.00%", strlen("00.00%"));
+                    write_buffer("00.00%", (int)strlen("00.00%"));
                 }
                 else
                 {
