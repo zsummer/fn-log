@@ -21,7 +21,7 @@ R"----(
         disable: false
         out_type: screen
         priority: trace
-        category: 1
+        category: 0
         category_extend: 1
         path: "./log/"
         file: "$PNAME_00"
@@ -31,8 +31,8 @@ R"----(
         disable: false
         out_type: file
         priority: debug
-        category: 0
-        category_extend: 5
+        category: 1
+        category_extend: 1
         path: "./log/"
         file: "$PNAME_01"
         rollback: 4
@@ -61,7 +61,7 @@ R"----(
         disable: false
         out_type: file
         priority: trace
-        category_filter: 4,5
+        category_filter: 0, 4,5
         path: "./log/"
         file: "$PNAME_04"
         rollback: 4
@@ -90,7 +90,7 @@ R"----(
         disable: false
         out_type: file
         priority: trace
-        identify: 0
+        identify: 6
         identify_extend: 1
         path: "./log/"
         file: "$PNAME_07"
@@ -102,7 +102,7 @@ R"----(
         priority: trace
         category: 0
         category_extend: 1
-        identify: 0
+        identify: 6
         identify_extend: 1
         path: "./log/"
         file: "$PNAME_08"
@@ -126,7 +126,7 @@ R"----(
         priority: trace
         category: 9
         category_extend: 10
-        identify: 9
+        identify: 69
         identify_extend: 10
         path: "./log/"
         file: "$PNAME_10"
@@ -138,7 +138,7 @@ R"----(
         priority: trace
         category: 9
         category_extend: 10
-        identify: 9
+        identify: 19
         identify_extend: 10
         path: "./log/"
         file: "$PNAME_11"
@@ -150,7 +150,7 @@ R"----(
         priority: debug
         category: 9
         category_extend: 10
-        identify: 9
+        identify: 999
         identify_extend: 10
         path: "./log/"
         file: "$PNAME_12"
@@ -162,7 +162,7 @@ R"----(
         priority: trace
         category: 9
         category_extend: 10
-        identify: 9
+        identify: 9999
         identify_extend: 10
         path: "./log/"
         file: "$PNAME_13"
@@ -174,7 +174,7 @@ R"----(
         priority: trace
         category: 9
         category_extend: 10
-        identify: 9
+        identify: 79
         identify_extend: 10
         path: "./log/"
         file: "$PNAME_14"
@@ -184,7 +184,7 @@ R"----(
         disable: false
         out_type: file
         priority: trace
-        category: 9
+        category: 69
         category_extend: 10
         identify: 9
         identify_extend: 10
@@ -196,7 +196,7 @@ R"----(
         disable: false
         out_type: file
         priority: trace
-        category: 9
+        category: 59
         category_extend: 10
         identify: 9
         identify_extend: 10
@@ -246,23 +246,27 @@ int main(int argc, char *argv[])
         return ret;
     }
 
-
-    double now = Now();
-    for (size_t i = 0; i < 500000; i++)
+    //base test
+    if (true)
     {
-        LogTraceStream(0, 0, 0) << "asdf" << i << ", " << 2.3 << "asdfasdffffffffffffffffffffffffffffffffffffffff";
+        long long loop_count = 1000000;
+        double now = Now();
+        for (long long i = 0; i < loop_count; i++)
+        {
+            LogInfoStream(0, 1, 0) << "asdf" << i << ", " << 2.3 << "asdfasdffffffffffffffffffffffffffffffffffffffff";
+        }
+        LogAlarmStream(0, 0, 0) << "per log used " << (Now() - now) * 1000 * 1000 * 1000 / loop_count << "ns";
+
+        loop_count = 10000000;
+        now = Now();
+        for (long long i = 0; i < loop_count; i++)
+        {
+            LogTraceStream(0, 567, 986) << "asdf" << i << ", " << 2.3 << "asdfasdffffffffffffffffffffffffffffffffffffffff";
+        }
+        LogAlarmStream(0, 0, 0) << "per empty log used " << (Now() - now) * 1000 * 1000 * 1000 / loop_count << "ns";
     }
-    LogAlarmStream(0, 1, 0) << "per log used " << (Now() - now)*1000*1000*1000 / 500000 << "ns";
 
-
-    now = Now();
-    for (size_t i = 0; i < 500000; i++)
-    {
-        LogTraceStream(0, 100, 0) << "asdf" << i << ", " << 2.3 << "asdfasdffffffffffffffffffffffffffffffffffffffff";
-    }
-    LogAlarmStream(0, 1, 0) << "per log used " << (Now() - now) * 1000 * 1000 * 1000 / 500000 << "ns";
-
-    LogAlarmStream(0, 1, 0) << "finish";
+    LogAlarmStream(0, 0, 0) << "finish";
     return 0;
 }
 
