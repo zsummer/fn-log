@@ -753,6 +753,10 @@ namespace FNLog
                     memset(&device, 0, sizeof(device));
                     device.device_id_ = device_id;
                     ret = ParseDevice(ls, device, ls.line_.blank_);
+                    if (device.out_type_ == DEVICE_OUT_VIRTUAL)
+                    {
+                        channel.virtual_device_id_ = device.device_id_;
+                    }
                     if (ret != PEC_NONE || ls.line_.line_type_ == LINE_EOF)
                     {
                         return ret;

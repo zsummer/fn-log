@@ -174,6 +174,19 @@ namespace FNLog
         {
             if (log_data_) 
             {
+                if (RefVirtualDevice() != NULL)
+                {
+                    Channel& channel = logger_->shm_->channels_[log_data_->channel_id_];
+                    if (channel.virtual_device_id_ >= 0)
+                    {
+                        Device& device = channel.devices_[channel.virtual_device_id_];
+                        if (log_data_->priority_ >= device.config_fields_[DEVICE_CFG_PRIORITY])
+                        {
+                            (*RefVirtualDevice())(*log_data_);
+                        }
+                        
+                    }
+                }
                 PushLog(*logger_, log_data_->channel_id_, hold_idx_);
                 hold_idx_ = -1;
                 log_data_ = nullptr;
