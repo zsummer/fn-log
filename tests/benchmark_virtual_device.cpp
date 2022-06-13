@@ -35,57 +35,57 @@ R"----(
     -device:2
         disable: false
         out_type: screen
-        category: 1
+        category: 10
         category_extend: 1
     -device:3
         disable: false
         out_type: screen
-        category: 1
+        category: 100
         category_extend: 1
     -device:4
         disable: false
         out_type: screen
-        category: 1
+        category: 10
         category_extend: 1
     -device:5
         disable: false
         out_type: screen
-        category: 1
+        category: 10
         category_extend: 1
     -device:6
         disable: false
         out_type: screen
-        category: 1
+        category: 10
         category_extend: 1
     -device:7
         disable: false
         out_type: screen
-        category: 1
+        category: 10
         category_extend: 1
     -device:8
         disable: false
         out_type: screen
-        category: 1
+        category: 10
         category_extend: 1
     -device:9
         disable: false
         out_type: screen
-        category: 1
+        category: 100
         category_extend: 1
     -device:10
         disable: false
         out_type: screen
-        category: 1
+        category: 10
         category_extend: 1
     -device:11
         disable: false
         out_type: screen
-        category: 1
+        category: 11
         category_extend: 1
     -device:12
         disable: false
         out_type: screen
-        category: 1
+        category: 12
         category_extend: 1
 
  # 1 异步空 
@@ -99,9 +99,11 @@ R"----(
  # 2通道为同步写文件 
  - channel: 2
     sync: sync #only support single thread
+    priority: trace
     -device: 0
         disable: false
         out_type: file
+        priority: trace
         file: "$PNAME_$YEAR"
         rollback: 4
         limit_size: 100 m #only support M byte
@@ -141,49 +143,78 @@ int main(int argc, char *argv[])
     }
     FNLog::SetVirtualDevice(&VirtualDevice);
 
+    LogAlarmStream(0, 1, 0) << "begin test. screen channel 0, 1, 0 ";
+
+    long long loop_count = 500000;
+
     double now = Now();
-    for (size_t i = 0; i < 500000; i++)
-    {
-        LogTraceStream(3, 0, 0) << "asdf" << i << ", " << 2.3 << "asdfasdf";
-    }
-    LogAlarmStream(0, 1, 0) << "use " << Now() - now << " secend";
+
     now = Now();
-    for (size_t i = 0; i < 500000; i++)
+    for (long long i = 0; i < loop_count; i++)
     {
-        LOG_TRACE(3, 0, 0, "asdf" << i << ", " << 2.3 << "asdfasdf");
+        LogTraceStream(0, 0, 0) << "asdf" << i << ", " << 2.3 << "asdfasdf   from channel 2" << "asdfasdf   from channel 1";
     }
-    LogAlarmStream(0, 1, 0) << "use " << Now() - now << " secend";
+    LogAlarmStream(0, 1, 0) << "loop:" << loop_count << ", per log used:" << (Now() - now) * 1000 * 1000 * 1000 / loop_count << " ns";
     now = Now();
-    for (size_t i = 0; i < 500000; i++)
+
+    if (true)
     {
-        LogTracePack(3, 0, 0, "asdf" , i , ", " , 2.3 , "asdfasdf");
+        now = Now();
+        FNLog::LogStream ls(LogTraceStream(1, 0, 0) );
+        ls << "asdf" << 0 << ", " << 2.3 << "asdfasdf   from channel 2" << "asdfasdf   from channel 1";
+        for (long long i = 0; i < loop_count; i++)
+        {
+            (*FNLog::RefVirtualDevice())(*ls.log_data_);
+        }
+        LogAlarmStream(0, 1, 0) << "loop:" << loop_count << ", per log used:" << (Now() - now) * 1000 * 1000 * 1000 / loop_count << " ns";
+        now = Now();
     }
-    LogAlarmStream(0, 1, 0) << "use " << Now() - now << " secend";
+
+
+
+
+
+    now = Now();
+    for (long long i = 0; i < loop_count; i++)
+    {
+        LogTraceStream(1, 0, 0) << "asdf" << i << ", " << 2.3 << "asdfasdf   from channel 2" << "asdfasdf   from channel 1";
+    }
+    LogAlarmStream(0, 1, 0) << "loop:" << loop_count <<", per log used:" << (Now() - now)*1000*1000*1000/ loop_count << " ns";
+    now = Now();
+    for (long long i = 0; i < loop_count; i++)
+    {
+        LOG_TRACE(1, 0, 0, "asdf" << i << ", " << 2.3 << "asdfasdf   from channel 1");
+    }
+    LogAlarmStream(0, 1, 0) << "loop:" << loop_count << ", per log used:" << (Now() - now) * 1000 * 1000 * 1000 / loop_count << " ns";
+    now = Now();
+    for (long long i = 0; i < loop_count; i++)
+    {
+        LogTracePack(1, 0, 0, "asdf" , i , ", " , 2.3 , "asdfasdf. from channel 1" );
+    }
+    LogAlarmStream(0, 1, 0) << "loop:" << loop_count << ", per log used:" << (Now() - now) * 1000 * 1000 * 1000 / loop_count << " ns";
 
     FNLog::Logger& logger = FNLog::GetDefaultLogger();
 
-    unsigned int total_count = 0;
+   
     for (int i = 0; i < logger.shm_->channel_size_; i++)
     {
-        total_count = 0;
+        unsigned int total_count = 0;
+        now = Now();
         do
         {
+
             LOG_STREAM_DEFAULT_LOGGER(i, FNLog::PRIORITY_DEBUG, 0, 0, FNLog::LOG_PREFIX_NULL)
                 .write_buffer("rrrrrrrrrrrrrrrrrrrradfads33333333333333rrd",
                     sizeof("rrrrrrrrrrrrrrrrrrrradfads33333333333333rrd") - 1);
 
-            if (total_count %1000000 == 0)
+            //LOG_TRACE(i, 0, 0, "asdf" << i << ", " << 2.3 << "asdfasdf   from channel 2");
+
+            if (total_count % loop_count == 0 && total_count != 0)
             {
-                static long long last = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-                long long now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-                if (total_count > 0)
-                {
-                    LogInfoStream(0, 1, 0) << "channel:<" << (long long)i << "> "
-                        << ChannelDesc(logger.shm_->channels_[i].channel_type_) << " has write file:<"
-                        << logger.shm_->channels_[i].device_size_ << "> test " << 1000000*1000 / (now - last) << " line/sec. ";
-                    last = now;
-                    break;
-                }
+                LogInfoStream(0, 1, 0) << "channel:<" << (long long)i << "> "
+                    << ChannelDesc(logger.shm_->channels_[i].channel_type_) << " write file:<"
+                    << logger.shm_->channels_[i].device_size_ << ">  prof: " << (Now() - now) * 1000.0 * 1000.0 * 1000.0 / total_count << " ns. ";
+                break;
             }
         } while (++total_count);
     }

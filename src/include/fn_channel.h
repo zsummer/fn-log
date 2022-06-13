@@ -69,7 +69,7 @@ namespace FNLog
             EnterProcOutUDPDevice(logger, channel_id, device_id, log);
             break;
         case DEVICE_OUT_VIRTUAL:
-            EnterProcOutVirtualDevice(logger, channel_id, device_id, log);
+            //EnterProcOutVirtualDevice(logger, channel_id, device_id, log);
             break;        
         default:
             break;

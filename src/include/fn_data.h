@@ -275,6 +275,7 @@ namespace FNLog
         time_t last_hot_check_;
 
         int chunk_;
+        int virtual_device_id_;
         int device_size_;
         Device devices_[MAX_DEVICE_SIZE];
         ConfigFields config_fields_;
