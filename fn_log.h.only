@@ -792,6 +792,7 @@ namespace FNLog
         time_t last_hot_check_;
 
         int chunk_;
+        int virtual_device_id_;
         int device_size_;
         Device devices_[MAX_DEVICE_SIZE];
         ConfigFields config_fields_;
@@ -1692,6 +1693,10 @@ namespace FNLog
                     memset(&device, 0, sizeof(device));
                     device.device_id_ = device_id;
                     ret = ParseDevice(ls, device, ls.line_.blank_);
+                    if (device.out_type_ == DEVICE_OUT_VIRTUAL)
+                    {
+                        channel.virtual_device_id_ = device.device_id_;
+                    }
                     if (ret != PEC_NONE || ls.line_.line_type_ == LINE_EOF)
                     {
                         return ret;
@@ -3200,7 +3205,7 @@ namespace FNLog
             EnterProcOutUDPDevice(logger, channel_id, device_id, log);
             break;
         case DEVICE_OUT_VIRTUAL:
-            EnterProcOutVirtualDevice(logger, channel_id, device_id, log);
+            //EnterProcOutVirtualDevice(logger, channel_id, device_id, log);
             break;        
         default:
             break;
@@ -4270,6 +4275,19 @@ namespace FNLog
         {
             if (log_data_) 
             {
+                if (RefVirtualDevice() != NULL)
+                {
+                    Channel& channel = logger_->shm_->channels_[log_data_->channel_id_];
+                    if (channel.virtual_device_id_ >= 0)
+                    {
+                        Device& device = channel.devices_[channel.virtual_device_id_];
+                        if (log_data_->priority_ >= device.config_fields_[DEVICE_CFG_PRIORITY])
+                        {
+                            (*RefVirtualDevice())(*log_data_);
+                        }
+                        
+                    }
+                }
                 PushLog(*logger_, log_data_->channel_id_, hold_idx_);
                 hold_idx_ = -1;
                 log_data_ = nullptr;
