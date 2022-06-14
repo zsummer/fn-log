@@ -1,10 +1,7 @@
 
 # Introduction:  
-|    OS     |    GCC    |    CLANG    
-------------|-----------|---------------   
-|   OSX     | [![Build Status](https://travis-ci.org/zsummer/fn-log.svg?branch=master&job=1)](https://travis-ci.org/zsummer/fn-log) | [![Build Status](https://travis-ci.org/zsummer/fn-log.svg?branch=master&job=3)](https://travis-ci.org/zsummer/fn-log)   
-|  Linux    | [![Build Status](https://travis-ci.org/zsummer/fn-log.svg?branch=master&job=2)](https://travis-ci.org/zsummer/fn-log) | [![Build Status](https://travis-ci.org/zsummer/fn-log.svg?branch=master&job=4)](https://travis-ci.org/zsummer/fn-log)   
-  
+[![Build](https://github.com/zsummer/fn-log/actions/workflows/cmake.yml/badge.svg)](https://github.com/zsummer/fn-log/actions/workflows/cmake.yml)
+[![CodeQL](https://github.com/zsummer/fn-log/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/zsummer/fn-log/actions/workflows/codeql-analysis.yml)
 [![Coverity Status](https://scan.coverity.com/projects/19065/badge.svg)](https://scan.coverity.com/projects/zsummer-fn-log)
 [![Coverage Status](https://coveralls.io/repos/github/zsummer/fn-log/badge.svg?branch=master)](https://coveralls.io/github/zsummer/fn-log?branch=master)  
 fn-log is an open source C++ lightweight & cross platform log library. It's an iteration from log4z.   
@@ -44,6 +41,7 @@ fn-log是一款开源的轻量级高性能的跨平台日志库, 从log4z迭代�
   > 可以针对不同的channel以及不同的device进行独立设置等级/内容过滤机制等.  
   > 提供各种形式的device输出机制, 已实现的包括写文件, 写屏幕, 写UDP等.   
   > 可以同时支持同步输出和异步输出  
+  > 支持虚拟设备 支持用户进行特殊导出等处理, 并保存有日志现场信息.  
   
 - [x] **常规日志功能支持** 
   > 支持日志文件回滚  

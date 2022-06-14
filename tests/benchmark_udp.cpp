@@ -74,7 +74,7 @@ int main(int argc, char *argv[])
         total_count = 0;
         do
         {
-            LogDebugStream(i, 0).write_buffer("rrrrrrrrrrrrrrrrrrrradfads33333333333333rrd",
+            LogDebugStream(i, 0, 0).write_buffer("rrrrrrrrrrrrrrrrrrrradfads33333333333333rrd",
                                 sizeof("rrrrrrrrrrrrrrrrrrrradfads33333333333333rrd") - 1)
                 << -23 << ": " << 32.2223 << (void*) nullptr;
             
@@ -82,9 +82,9 @@ int main(int argc, char *argv[])
             {
                 static long long last = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
                 long long now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-                if (total_count > 0)
+                if (total_count > 0 && now - last > 0.0001f)
                 {
-                    LogInfoStream(0, 1) << "channel:<" << (long long)i << "> "
+                    LogInfoStream(0, 1, 0) << "channel:<" << (long long)i << "> "
                         << ChannelDesc(logger.shm_->channels_[i].channel_type_) << " <"
                         << logger.shm_->channels_[i].device_size_ << "> test " << 100000*1000 / (now - last)  << "line/sec.";
                     last = now;
@@ -98,7 +98,7 @@ int main(int argc, char *argv[])
         } while (++total_count);
     }
 
-    LogAlarmStream(0, 1) << "finish";
+    LogAlarmStream(0, 1, 0) << "finish";
     return 0;
 }
 

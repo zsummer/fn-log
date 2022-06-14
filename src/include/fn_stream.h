@@ -49,6 +49,19 @@
 
 namespace FNLog
 {
+    template<int BLANK_SIZE>
+    struct LogBlankAlign
+    {
+        //static const int blank_size = BLANK_SIZE;
+    };
+
+
+    struct LogPercent
+    {
+        LogPercent(float v) :v_(v) {}
+        float v_;
+    };
+
     class LogStream
     {
     public:
@@ -65,13 +78,13 @@ namespace FNLog
             other.hold_idx_ = -1;
         }
 
-        explicit LogStream(Logger& logger, int channel_id, int priority, int category, 
+        explicit LogStream(Logger& logger, int channel_id, int priority, int category, long long identify,
             const char * const file_name, int file_name_len, int line,
             const char * const func_name, int func_name_len, unsigned int prefix)
         {
             logger_ = nullptr;
             log_data_ = nullptr;
-            int hold_idx = HoldChannel(logger, channel_id, priority, category);
+            int hold_idx = HoldChannel(logger, channel_id, priority, category, identify);
             if (hold_idx < 0)
             {
                 return;
@@ -79,7 +92,7 @@ namespace FNLog
 
             try
             {
-                InitLogData(logger, logger.shm_->ring_buffers_[channel_id].buffer_[hold_idx], channel_id, priority, category, prefix);
+                InitLogData(logger, logger.shm_->ring_buffers_[channel_id].buffer_[hold_idx], channel_id, priority, category, identify, prefix);
             }
             catch (const std::exception&)
             {
@@ -89,13 +102,43 @@ namespace FNLog
             logger_ = &logger;
             log_data_ = &logger.shm_->ring_buffers_[channel_id].buffer_[hold_idx];
             hold_idx_ = hold_idx;
+            log_data_->code_line_ = line;
+            log_data_->code_func_ = func_name;
+            log_data_->code_func_len_ = func_name_len;
+            log_data_->code_file_ = file_name;
+            log_data_->code_file_len_ = file_name_len;
             if (prefix == LOG_PREFIX_NULL)
             {
                 return;
             }
+            if (prefix & LOG_PREFIX_TIMESTAMP)
+            {
+                log_data_->content_len_ += write_date_unsafe(log_data_->content_ + log_data_->content_len_, log_data_->timestamp_, log_data_->precise_);
+            }
+            if (prefix & LOG_PREFIX_PRIORITY)
+            {
+                log_data_->content_len_ += write_log_priority_unsafe(log_data_->content_ + log_data_->content_len_, log_data_->priority_);
+            }
+            if (prefix & LOG_PREFIX_THREAD)
+            {
+                log_data_->content_len_ += write_log_thread_unsafe(log_data_->content_ + log_data_->content_len_, log_data_->thread_);
+            }
+            if (prefix & LOG_PREFIX_NAME)
+            {
+                write_char_unsafe('[');
+                write_buffer_unsafe(logger.name_, logger.name_len_);
+                write_char_unsafe(']');
+            }
+            if (prefix & LOG_PREFIX_DESC)
+            {
+                write_char_unsafe('[');
+                write_buffer_unsafe(logger.desc_, logger.desc_len_);
+                write_char_unsafe(']');
+            }
             if (prefix & LOG_PREFIX_FILE)
             {
-                write_char_unsafe(' ');
+                write_char_unsafe('[');
+                write_char_unsafe('(');
                 if (file_name && file_name_len > 0)
                 {
                     int jump_bytes = short_path(file_name, file_name_len);
@@ -105,14 +148,14 @@ namespace FNLog
                 {
                     write_buffer_unsafe("nofile", 6);
                 }
+                write_char_unsafe(')');
                 write_char_unsafe(':');
-                write_char_unsafe('<');
                 *this << (unsigned long long)line;
-                write_char_unsafe('>');
-                write_char_unsafe(' ');
+                write_char_unsafe(']');
             }
             if (prefix & LOG_PREFIX_FUNCTION)
             {
+                write_char_unsafe('(');
                 if (func_name && func_name_len > 0)
                 {
                     write_buffer_unsafe(func_name, func_name_len);
@@ -121,14 +164,29 @@ namespace FNLog
                 {
                     write_buffer_unsafe("null", 4);
                 }
-                write_char_unsafe(' ');
+                write_char_unsafe(')');
             }
+            write_char_unsafe(' ');
+            log_data_->prefix_len_ = log_data_->content_len_;
         }
         
         ~LogStream()
         {
             if (log_data_) 
             {
+                if (RefVirtualDevice() != NULL)
+                {
+                    Channel& channel = logger_->shm_->channels_[log_data_->channel_id_];
+                    if (channel.virtual_device_id_ >= 0)
+                    {
+                        Device& device = channel.devices_[channel.virtual_device_id_];
+                        if (log_data_->priority_ >= device.config_fields_[DEVICE_CFG_PRIORITY])
+                        {
+                            (*RefVirtualDevice())(*log_data_);
+                        }
+                        
+                    }
+                }
                 PushLog(*logger_, log_data_->channel_id_, hold_idx_);
                 hold_idx_ = -1;
                 log_data_ = nullptr;
@@ -334,6 +392,7 @@ namespace FNLog
             return *this << "]";
         }
 
+
         template<class _Elem, class _Alloc>
         LogStream & operator <<(const std::vector<_Elem, _Alloc> & val) { return write_container(val, "vector:", sizeof("vector:") - 1);}
         template<class _Elem, class _Alloc>
@@ -352,7 +411,38 @@ namespace FNLog
         {return write_container(val, "unordered_set:", sizeof("unordered_set:") - 1);}
         template<class _Traits, class _Allocator>
         LogStream & operator <<(const std::basic_string<char, _Traits, _Allocator> & str) { return write_buffer(str.c_str(), (int)str.length());}
+        template<int BLANK_SIZE>
+        LogStream & operator <<(const LogBlankAlign<BLANK_SIZE>& blanks)
+        {
+            if (log_data_ && log_data_->content_len_ + BLANK_SIZE < LogData::LOG_SIZE)
+            {
+                for (int i = log_data_->content_len_;  i < BLANK_SIZE; i++)
+                {
+                    write_char_unsafe(' ');
+                }
+            }
+            return *this;
+        }
+        LogStream & operator <<(const LogPercent& blanks)
+        {
+            if (log_data_ && log_data_->content_len_ + 40 < LogData::LOG_SIZE)
+            {
+                if (blanks.v_ < 0.000001)
+                {
+                    write_buffer("00.00%", (int)strlen("00.00%"));
+                }
+                else
+                {
+                    log_data_->content_len_ += write_double_unsafe(log_data_->content_ + log_data_->content_len_, blanks.v_*100.0);
+                    write_char_unsafe('%');
+                }
+            }
+            return *this;
+        }
+
         
+
+
     public:
         LogData * log_data_ = nullptr;
         Logger* logger_ = nullptr;

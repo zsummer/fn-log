@@ -46,6 +46,7 @@
 #include "fn_out_file_device.h"
 #include "fn_out_screen_device.h"
 #include "fn_out_udp_device.h"
+#include "fn_out_virtual_device.h"
 #include "fn_fmt.h"
 
 namespace FNLog
@@ -67,6 +68,9 @@ namespace FNLog
         case DEVICE_OUT_UDP:
             EnterProcOutUDPDevice(logger, channel_id, device_id, log);
             break;
+        case DEVICE_OUT_VIRTUAL:
+            //EnterProcOutVirtualDevice(logger, channel_id, device_id, log);
+            break;        
         default:
             break;
         }
@@ -86,13 +90,28 @@ namespace FNLog
             {
                 continue;
             }
-            if (AtomicLoadC(device, DEVICE_CFG_CATEGORY) > 0)
+            long long begin_category = AtomicLoadC(device, DEVICE_CFG_CATEGORY);
+            long long category_count = AtomicLoadC(device, DEVICE_CFG_CATEGORY_EXTEND);
+            unsigned long long category_filter = (unsigned long long)AtomicLoadC(device, DEVICE_CFG_CATEGORY_FILTER);
+            long long begin_identify = AtomicLoadC(device, DEVICE_CFG_IDENTIFY);
+            long long identify_count =AtomicLoadC(device, DEVICE_CFG_IDENTIFY_EXTEND);
+            unsigned long long identify_filter = (unsigned long long)AtomicLoadC(device, DEVICE_CFG_IDENTIFY_FILTER);
+
+            if (category_count > 0 && (log.category_ < begin_category || log.category_ >= begin_category + category_count))
             {
-                if (log.category_ < AtomicLoadC(device, DEVICE_CFG_CATEGORY)
-                    || log.category_ > AtomicLoadC(device, DEVICE_CFG_CATEGORY) + AtomicLoadC(device, DEVICE_CFG_CATEGORY_EXTEND))
-                {
-                    continue;
-                }
+                continue;
+            }
+            if (identify_count > 0 && (log.identify_ < begin_identify || log.identify_ >= begin_identify + identify_count))
+            {
+                continue;
+            }
+            if (category_filter && (category_filter & ((1ULL) << (unsigned int)log.category_)) == 0)
+            {
+                continue;
+            }
+            if (identify_filter && (identify_filter & ((1ULL) << (unsigned int)log.identify_)) == 0)
+            {
+                continue;
             }
             EnterProcDevice(logger, channel.channel_id_, device_id, log);
         }
@@ -192,15 +211,22 @@ namespace FNLog
     
     
 
-    inline void InitLogData(Logger& logger, LogData& log, int channel_id, int priority, int category, unsigned int prefix)
+    inline void InitLogData(Logger& logger, LogData& log, int channel_id, int priority, int category, unsigned long long identify, unsigned int prefix)
     {
         log.channel_id_ = channel_id;
         log.priority_ = priority;
         log.category_ = category;
+        log.identify_ = identify;
+        log.code_line_ = 0;
+        log.code_func_len_ = 0;
+        log.code_file_len_ = 0;
+        log.code_file_ = "";
+        log.code_func_ = "";
+        log.prefix_len_ = 0;
         log.content_len_ = 0;
         log.content_[log.content_len_] = '\0';
 
-#ifdef _WIN32
+#ifdef WIN32
         FILETIME ft;
         GetSystemTimeAsFileTime(&ft);
         unsigned long long now = ft.dwHighDateTime;
@@ -218,12 +244,8 @@ namespace FNLog
         log.precise_ = tm.tv_usec / 1000;
 #endif
         log.thread_ = 0;
-        if (prefix == LOG_PREFIX_NULL)
-        {
-            return;
-        }
 
-#ifdef _WIN32
+#ifdef WIN32
         static thread_local unsigned int therad_id = GetCurrentThreadId();
         log.thread_ = therad_id;
 #elif defined(__APPLE__)
@@ -234,50 +256,112 @@ namespace FNLog
         static thread_local unsigned int therad_id = (unsigned int)syscall(SYS_gettid);
         log.thread_ = therad_id;
 #endif
-        if (prefix & LOG_PREFIX_TIMESTAMP)
-        {
-            log.content_len_ += write_date_unsafe(log.content_ + log.content_len_, log.timestamp_, log.precise_);
-        }
-        if (prefix & LOG_PREFIX_PRIORITY)
-        {
-            log.content_len_ += write_log_priority_unsafe(log.content_ + log.content_len_, log.priority_);
-        }
-        if (prefix & LOG_PREFIX_THREAD)
-        {
-            log.content_len_ += write_log_thread_unsafe(log.content_ + log.content_len_, log.thread_);
-        }
         log.content_[log.content_len_] = '\0';
+        log.prefix_len_ = log.content_len_;
         return;
     }
-
-    inline int HoldChannel(Logger& logger, int channel_id, int priority, int category)
+#ifdef __GNUG__
+#pragma GCC push_options
+#pragma GCC optimize ("O2")
+#endif
+    inline bool BlockInput(Logger& logger, int channel_id, int priority, int category, long long identify)
     {
-        if (channel_id >= logger.shm_->channel_size_ || channel_id < 0)
+        if (logger.shm_ == NULL || channel_id >= logger.shm_->channel_size_ || channel_id < 0)
         {
-            return -1;
+            return true;
         }
         if (logger.logger_state_ != LOGGER_STATE_RUNNING)
         {
-            return -2;
+            return true;
         }
         Channel& channel = logger.shm_->channels_[channel_id];
-        RingBuffer& ring_buffer = logger.shm_->ring_buffers_[channel_id];
         if (channel.channel_state_ != CHANNEL_STATE_RUNNING)
         {
-            return -3;
+            return true;
         }
         if (priority < AtomicLoadC(channel, CHANNEL_CFG_PRIORITY))
         {
-            return -4;
+            return true;
         }
-        if (AtomicLoadC(channel, CHANNEL_CFG_CATEGORY) > 0)
+        long long begin_category = AtomicLoadC(channel, CHANNEL_CFG_CATEGORY);
+        long long category_count = AtomicLoadC(channel, CHANNEL_CFG_CATEGORY_EXTEND);
+        unsigned long long category_filter = (unsigned long long)AtomicLoadC(channel, CHANNEL_CFG_CATEGORY_FILTER);
+        long long begin_identify = AtomicLoadC(channel, CHANNEL_CFG_IDENTIFY);
+        long long identify_count = AtomicLoadC(channel, CHANNEL_CFG_IDENTIFY_EXTEND);
+        unsigned long long identify_filter = (unsigned long long)AtomicLoadC(channel, CHANNEL_CFG_IDENTIFY_FILTER);
+
+        if (category_count > 0 && (category < begin_category || category >= begin_category + category_count))
         {
-            if (category < AtomicLoadC(channel, CHANNEL_CFG_CATEGORY)
-                || category > AtomicLoadC(channel, CHANNEL_CFG_CATEGORY) + AtomicLoadC(channel, CHANNEL_CFG_CATEGORY_EXTEND))
+            return true;
+        }
+        if (identify_count > 0 && (identify < begin_identify || identify >= begin_identify + identify_count))
+        {
+            return true;
+        }
+        if (category_filter && (category_filter & ((1ULL) << (unsigned int)category)) == 0)
+        {
+            return true;
+        }
+        if (identify_filter && (identify_filter & ((1ULL) << (unsigned int)identify)) == 0)
+        {
+            return true;
+        }
+
+        bool need_write = false;
+        
+        for (int i = 0; i < channel.device_size_; i++)
+        {
+            Device::ConfigFields& fields = channel.devices_[i].config_fields_;
+            long long field_able = fields[FNLog::DEVICE_CFG_ABLE];
+            long long field_priority = fields[FNLog::DEVICE_CFG_PRIORITY];
+            long long field_begin_category = fields[FNLog::DEVICE_CFG_CATEGORY];
+            long long field_category_count = fields[FNLog::DEVICE_CFG_CATEGORY_EXTEND];
+            unsigned long long field_category_filter = (unsigned long long)fields[FNLog::DEVICE_CFG_CATEGORY_FILTER];
+            long long field_begin_identify = fields[FNLog::DEVICE_CFG_IDENTIFY];
+            long long field_identify_count = fields[FNLog::DEVICE_CFG_IDENTIFY_EXTEND];
+            unsigned long long field_identify_filter = (unsigned long long)fields[FNLog::DEVICE_CFG_IDENTIFY_FILTER];
+
+            if (field_able && priority >= field_priority)
             {
-                return -5;
+                if (field_category_count > 0 && (category < field_begin_category || category >= field_begin_category + field_category_count))
+                {
+                    continue;
+                }
+                if (field_identify_count > 0 && (identify < field_begin_identify || identify >= field_begin_identify + field_identify_count))
+                {
+                    continue;
+                }
+                if (field_category_filter &&  (field_category_filter & ((1ULL) << (unsigned int)category)) == 0)
+                {
+                    continue;
+                }
+                if (field_identify_filter &&  (field_identify_filter & ((1ULL) << (unsigned int)identify)) == 0)
+                {
+                    continue;
+                }
+                need_write = true;
+                break;
             }
         }
+        if (!need_write)
+        {
+            return true;
+        }
+        
+        return false;
+    }
+#ifdef __GNUG__
+#pragma GCC pop_options
+#endif
+    inline int HoldChannel(Logger& logger, int channel_id, int priority, int category, long long identify)
+    {
+        if (BlockInput(logger, channel_id, priority, category, identify))
+        {
+            return -1;
+        }
+        Channel& channel = logger.shm_->channels_[channel_id];
+        RingBuffer& ring_buffer = logger.shm_->ring_buffers_[channel_id];
+        
         int state = 0;
         do
         {
@@ -312,7 +396,7 @@ namespace FNLog
                 break;
             }
         } while (true);
-        return -10;
+        return -11;
     }
 
     inline int PushChannel(Logger& logger, int channel_id, int hold_idx)
@@ -363,6 +447,37 @@ namespace FNLog
             EnterProcChannel(logger, channel_id); //no affect channel.single_thread_write_
         }
         return 0;
+    }
+
+
+    inline int TransmitChannel(Logger& logger, int channel_id, const LogData& log)
+    {
+        if (log.channel_id_ == channel_id)
+        {
+            return -1;
+        }
+        int hold_idx = FNLog::HoldChannel(logger, channel_id, log.priority_, log.category_, log.identify_);
+        if (hold_idx < 0)
+        {
+            return -2;
+        }
+        LogData& trans_log = logger.shm_->ring_buffers_[channel_id].buffer_[hold_idx];
+        trans_log.channel_id_ = channel_id;
+        trans_log.priority_ = log.priority_;
+        trans_log.category_ = log.category_;
+        trans_log.identify_ = log.identify_;
+        trans_log.code_line_ = log.code_line_;
+        trans_log.code_func_len_ = log.code_func_len_;
+        trans_log.code_file_len_ = log.code_file_len_;
+        trans_log.code_func_ = log.code_func_;
+        trans_log.code_file_ = log.code_file_;
+        trans_log.timestamp_ = log.timestamp_;
+        trans_log.precise_ = log.precise_;
+        trans_log.thread_ = log.thread_;
+        trans_log.prefix_len_ = log.prefix_len_;
+        trans_log.content_len_ = log.content_len_ > 0 ? log.content_len_ - 1: log.content_len_;
+        memcpy(trans_log.content_, log.content_, log.content_len_);
+        return PushChannel(logger, channel_id, hold_idx);
     }
 }
 

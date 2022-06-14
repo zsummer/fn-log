@@ -17,7 +17,7 @@ R"----(
 
 )----";
 
-int total_loop_ = 2000000;
+int total_loop_ = 800000;
 int cur_loop_ = 0;
 void thread_proc(int index)
 {

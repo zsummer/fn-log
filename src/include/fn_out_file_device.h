@@ -213,7 +213,7 @@ namespace FNLog
 
         path += name;
 
-        if (path.length() >= Device::MAX_PATH_LEN + Device::MAX_NAME_LEN)
+        if (path.length() >= Device::MAX_PATH_LEN + Device::MAX_LOGGER_NAME_LEN)
         {
             AtomicStoreL(device, DEVICE_LOG_LAST_TRY_CREATE_ERROR, 1);
             AtomicStoreL(device, DEVICE_LOG_LAST_TRY_CREATE_TIMESTAMP, log.timestamp_);

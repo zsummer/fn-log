@@ -1,0 +1,81 @@
+name: Build
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+env:
+  # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
+  BUILD_TYPE: Release
+
+jobs:
+  build:
+    # The CMake configure and build commands are platform agnostic and should work equally
+    # well on Windows or Mac.  You can convert this to a matrix build if you need
+    # cross-platform coverage.
+    strategy:    
+      matrix:
+        cc: [gcc, clang]
+        os: [ubuntu-latest, macos-latest]
+        #os: [ubuntu-latest, macos-latest, windows-latest]
+    # See: https://docs.github.com/en/free-pro-team@latest/actions/learn-github-actions/managing-complex-workflows#using-a-build-matrix
+    runs-on: ${{ matrix.os }}
+
+    steps:
+    - uses: actions/checkout@v2
+      env:
+        CC: ${{ matrix.cc }}
+    - name: Configure CMake
+      # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
+      # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
+      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
+
+    - name: Build
+
+      # Build your program with the given configuration
+      run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
+
+    - name: Test
+      working-directory: ${{github.workspace}}/build
+      # Execute tests defined by the CMake configuration.  
+      # See https://cmake.org/cmake/help/latest/manual/ctest.1.html for more detail
+      run: |
+        cd ${{github.workspace}}/bin
+          ./test_buffer
+          ./test_filter
+          ./test_load_config
+          ./test_udp >/dev/null 2>&1
+          ./test_buffer_correct
+          ./test_fast_debug
+          ./test_fast_default
+          ./test_coverage
+          ./test_channel_normal
+          ./stress_multi-thread-env_main_reboot
+          ./stress_multi-thread-env_concurrent_reboot 50000 >/dev/null 2>&1
+          ./stress_multi-thread-env_concurrent_reboot >/dev/null 2>&1
+          ./stress_multi-thread-env_main_reboot
+          ./benchmark_multi-thread
+          ./benchmark_multi-thread_nofile
+          ./benchmark_multi-thread_sync
+          ./benchmark_multi-thread_sync_nofile
+          ./benchmark_serialize_integer
+          ./benchmark_sync_bat_write
+          ./benchmark_normal
+          ./benchmark_udp
+          ./benchmark_fast
+          ./benchmark_virtual_device
+          if [ "$RUNNER_OS" == "Linux" ]; then
+            ipcs -m
+            ipcs -mt
+            ./test_shm
+            ipcs -m
+            ipcs -mt
+            ./test_shm
+            ipcs -m
+            ipcs -mt
+            ./benchmark_multi-thread_travis_shm
+          else
+              echo "$RUNNER_OS not supported full test"
+          fi

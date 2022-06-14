@@ -47,11 +47,134 @@
 
 namespace FNLog
 {
-#ifdef __GNUC__
+#if __GNUG__ && __GNUC__ >= 6
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wclass-memaccess"
 #endif
     
+
+    inline int LoadSharedMemory(Logger& logger)
+    {
+#if !defined(WIN32)
+        if (logger.shm_key_ <= 0)
+        {
+            logger.shm_ = new SHMLogger();
+            memset(logger.shm_, 0, sizeof(SHMLogger));
+            return 0;
+        }
+        SHMLogger* shm = nullptr;
+        int idx = shmget(logger.shm_key_, 0, 0);
+        if (idx < 0 && errno != ENOENT)
+        {
+            printf("shmget error. key:<0x%llx>, errno:<%d>. can use 'ipcs -m', 'ipcrm -m' to view and clear.\n",
+                logger.shm_key_, errno);
+            return -1;
+        }
+
+        if (idx < 0)
+        {
+            idx = shmget(logger.shm_key_, sizeof(SHMLogger), IPC_CREAT | IPC_EXCL | 0600);
+            if (idx < 0)
+            {
+                printf("new shm. shmget error. key:<0x%llx>, errno:<%d>.\n", logger.shm_key_, errno);
+                return -2;
+            }
+            void* addr = shmat(idx, nullptr, 0);
+            if (addr == nullptr || addr == (void*)-1)
+            {
+                printf("new shm. shmat error. key:<0x%llx>, idx:<%d>, errno:<%d>.\n", logger.shm_key_, idx, errno);
+                return -3;
+            }
+            memset(addr, 0, sizeof(SHMLogger));
+            shm = (SHMLogger*)addr;
+            shm->shm_size_ = sizeof(SHMLogger);
+            shm->shm_id_ = idx;
+        }
+        else
+        {
+            void* addr = shmat(idx, nullptr, 0);
+            if (addr == nullptr || addr == (void*)-1)
+            {
+                printf("shmat error. key:<%llx>, idx:<%d>, errno:<%d>.\n", logger.shm_key_, idx, errno);
+                return -4;
+            }
+            shm = (SHMLogger*)addr;
+        }
+
+        if (shm->shm_size_ != sizeof(SHMLogger) || shm->shm_id_ != idx)
+        {
+            printf("shm version error. key:<0x%llx>, old id:<%d>, new id:<%d>, old size:<%d> new size:<%d>. "
+                "can use 'ipcs -m', 'ipcrm -m' to view and clear.\n",
+                logger.shm_key_, shm->shm_id_, idx, shm->shm_size_, (int)sizeof(SHMLogger));
+            return -5;
+        }
+        for (int i = 0; i < shm->channel_size_; i++)
+        {
+            if (i >= SHMLogger::MAX_CHANNEL_SIZE)
+            {
+                return -6;
+            }
+
+            if (shm->ring_buffers_[i].write_idx_ >= RingBuffer::BUFFER_LEN
+                || shm->ring_buffers_[i].write_idx_ < 0)
+            {
+                return -7;
+            }
+
+            while (shm->ring_buffers_[i].write_idx_.load() != shm->ring_buffers_[i].hold_idx_.load())
+            {
+                auto& log = shm->ring_buffers_[i].buffer_[shm->ring_buffers_[i].write_idx_];
+                log.data_mark_ = 2;
+                log.priority_ = PRIORITY_FATAL;
+                std::string core_desc = "!!!core recover!!!";
+                log.content_len_ = FN_MIN(log.content_len_, LogData::LOG_SIZE - (int)core_desc.length() - 2);
+                memcpy(&log.content_[log.content_len_], core_desc.c_str(), core_desc.length());
+
+                log.content_len_ += core_desc.length();
+                log.content_[log.content_len_++] = '\n';
+                log.content_[log.content_len_] = '\0';
+
+                shm->ring_buffers_[i].write_idx_ = (shm->ring_buffers_[i].write_idx_ + 1) % RingBuffer::BUFFER_LEN;
+            }
+            shm->ring_buffers_[i].hold_idx_ = shm->ring_buffers_[i].write_idx_.load();
+
+            if (shm->ring_buffers_[i].read_idx_ >= RingBuffer::BUFFER_LEN
+                || shm->ring_buffers_[i].read_idx_ < 0)
+            {
+                return -10;
+            }
+            shm->ring_buffers_[i].proc_idx_ = shm->ring_buffers_[i].read_idx_.load();
+            if (shm->ring_buffers_[i].read_idx_ != 0 || shm->ring_buffers_[i].write_idx_ != 0)
+            {
+                printf("attach shm key:<0x%llx> channel:<%d>, write:<%d>, read:<%d> \n", logger.shm_key_,
+                    i, shm->ring_buffers_[i].write_idx_.load(), (int)shm->ring_buffers_[i].read_idx_.load());
+            }
+        }
+        logger.shm_ = shm;
+#else
+        logger.shm_ = new SHMLogger();
+        memset(logger.shm_, 0, sizeof(SHMLogger));
+#endif
+        return 0;
+    }
+    inline void UnloadSharedMemory(Logger& logger)
+    {
+#if !defined(WIN32)
+        if (logger.shm_ && logger.shm_key_ > 0)
+        {
+            int idx = logger.shm_->shm_id_;
+            shmdt(logger.shm_);
+            shmctl(idx, IPC_RMID, nullptr);
+            logger.shm_ = nullptr;
+        }
+#endif
+        if (logger.shm_)
+        {
+            delete logger.shm_;
+            logger.shm_ = nullptr;
+        }
+    }
+
 
     inline int InitFromYMAL(Logger& logger, const std::string& text, const std::string& path)
     {
@@ -61,11 +184,7 @@ namespace FNLog
             printf("init from ymal:<%s> text error\n", path.c_str());
             return -1;
         }
-        if (logger.shm_ == nullptr)
-        {
-            printf("%s", "init from ymal text error. no shm.\n");
-            return -2;
-        }
+
         std::unique_ptr<LexState> ls(new LexState);
         int ret = ParseLogger(*ls, text);
         if (ret != PEC_NONE)
@@ -85,9 +204,28 @@ namespace FNLog
             printf("%s\n", os.str().c_str());
             return ret;
         }
-
+        if (ls->name_len_ > 0)
+        {
+            memcpy(logger.name_, ls->name_, ls->name_len_+1);
+            logger.name_len_ = ls->name_len_;
+        }
+        if (ls->desc_len_ > 0)
+        {
+            memcpy(logger.desc_, ls->desc_, ls->desc_len_+1);
+            logger.desc_len_ = ls->desc_len_;
+        }
         logger.yaml_path_ = path;
         logger.hot_update_ = ls->hot_update_;
+        logger.shm_key_ = ls->shm_key_;
+        if (logger.shm_  == NULL)
+        {
+            ret = LoadSharedMemory(logger);
+            if (ret != 0)
+            {
+                printf("LoadSharedMemory has error:%d,  yaml:%s\n", ret, text.c_str());
+                return ret;
+            }
+        }
         logger.shm_->channel_size_ = ls->channel_size_;
         for (int i = 0; i < ls->channel_size_; i++)
         {
@@ -191,6 +329,10 @@ namespace FNLog
         {
             return ret;
         }
+        if (!logger.hot_update_)
+        {
+            return -8;
+        }
         logger.hot_update_ = ls->hot_update_;
 
         static_assert(std::is_same<decltype(logger.shm_->channels_[channel_id].config_fields_), decltype(ls->channels_[channel_id].config_fields_)>::value, "");
@@ -200,12 +342,12 @@ namespace FNLog
         Channel& src_chl = ls->channels_[channel_id];
         if (dst_chl.channel_id_ != src_chl.channel_id_ || src_chl.channel_id_ != channel_id)
         {
-            return - 7;
+            return -10;
         }
         for (int field_id = 0; field_id < CHANNEL_CFG_MAX_ID; field_id++)
         {
             //this is multi-thread safe op. 
-            dst_chl.config_fields_[field_id] = src_chl.config_fields_[field_id].load();
+            dst_chl.config_fields_[field_id] = AtomicLoadC(src_chl, field_id);
         }
 
         //single thread op.
@@ -214,21 +356,21 @@ namespace FNLog
             Device& src_dvc = src_chl.devices_[device_id];
             if (src_dvc.device_id_ != device_id)
             {
-                return -8;
+                return -11;
             }
             if (device_id < dst_chl.device_size_)
             {
                 Device& dst_dvc = dst_chl.devices_[device_id];
                 if (dst_dvc.device_id_ != device_id)
                 {
-                    return -9;
+                    return -12;
                 }
                 memcpy(&dst_dvc.config_fields_, &src_dvc.config_fields_, sizeof(dst_dvc.config_fields_));
                 continue;
             }
             if (dst_chl.device_size_ != device_id)
             {
-                return -10;
+                return -13;
             }
             memcpy(&dst_chl.devices_[dst_chl.device_size_++], &src_dvc, sizeof(src_dvc));
             
@@ -237,7 +379,7 @@ namespace FNLog
         return 0;
     }
 
-#ifdef __GNUC__
+#if __GNUG__ && __GNUC__ >= 6
 #pragma GCC diagnostic pop
 #endif
 }

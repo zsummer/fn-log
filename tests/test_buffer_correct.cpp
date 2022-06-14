@@ -80,18 +80,26 @@ int main(int argc, char* argv[])
     FNLOG_ASSERT(buffer[0] == '3', nullptr);
     FNLOG_ASSERT(buffer[1] == '.', nullptr);
     FNLOG_ASSERT(buffer[2] == '1', nullptr);
-
+    memset(buffer, 0, sizeof(buffer));
     FNLOG_ASSERT((write_float_unsafe(buffer, 3.1426f) == 6), "write float pi");
+    memset(buffer, 0, sizeof(buffer));
     FNLOG_ASSERT((write_float_unsafe(buffer, 3.141f) == 5), "write float pi");
+    memset(buffer, 0, sizeof(buffer));
     FNLOG_ASSERT((write_float_unsafe(buffer, 3.14268f) == 6), "write float pi");
+    memset(buffer, 0, sizeof(buffer));
     FNLOG_ASSERT((write_float_unsafe(buffer, -3.14268f) == 7), "write float -pi");
+    memset(buffer, 0, sizeof(buffer));
     FNLOG_ASSERT((write_float_unsafe(buffer, -3.14268E-15f) > 3), "write float -pi");
     FNLOG_ASSERT(std::regex_match(buffer, std::regex("-3\\.14.*15")), "write float -pi");
+    memset(buffer, 0, sizeof(buffer));
     FNLOG_ASSERT((write_float_unsafe(buffer, 3.14268E-15f) > 3), "write float pi");
     FNLOG_ASSERT(std::regex_match(buffer, std::regex("3\\.14.*15")), "write float pi");
-    FNLOG_ASSERT((write_float_unsafe(buffer, 3.14268E15f) > 3), "write float pi");
-    FNLOG_ASSERT(std::regex_match(buffer, std::regex("3\\.14.*15")), "write float pi");
-
+    memset(buffer, 0, sizeof(buffer));
+    FNLOG_ASSERT((write_float_unsafe(buffer, 3.14268E15f) > 10), "write float pi");
+    FNLOG_ASSERT(std::regex_match(buffer, std::regex("314.*")), "write float pi");
+    memset(buffer, 0, sizeof(buffer));
+    FNLOG_ASSERT((write_float_unsafe(buffer, 3.14268E35f) > 10), "write float pi");
+    FNLOG_ASSERT(std::regex_match(buffer, std::regex("3\\.14.*35")), "write float pi");
     memset(buffer, 0, sizeof(buffer));
     FNLOG_ASSERT((write_double_unsafe(buffer, 3.14f) == 4), "write double pi");
     FNLOG_ASSERT(buffer[0] == '3', nullptr);
@@ -117,13 +125,19 @@ int main(int argc, char* argv[])
 
     if (true)
     {
-        auto log = (LOG_STREAM_DEFAULT_LOGGER(0, FNLog::PRIORITY_INFO, 0, 0));
+        auto log = (LOG_STREAM_DEFAULT_LOGGER(0, FNLog::PRIORITY_INFO, 0, 0, 0));
         log.write_number<2>(1);
         FNLOG_ASSERT((log.log_data_->content_[0] == '0'), "0");
         FNLOG_ASSERT((log.log_data_->content_[1] == '1'), "0");
     }
     
+    if (true)
+    {
+        FNLOG_ASSERT(FNLog::short_path("a/b/c", 5) == 0, "0");
+        FNLOG_ASSERT(FNLog::short_path("/a/b/c", 6) == 1, "0");
+        FNLOG_ASSERT(FNLog::short_path("a/b/c/d", 7) == 2, "0");
 
+    }
 
     return 0;
 }

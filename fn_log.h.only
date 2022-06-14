@@ -1,3 +1,7 @@
+#ifdef __GNUG__
+#pragma GCC push_options
+#pragma GCC optimize ("O2")
+#endif
 /*
  *
  * MIT License
@@ -68,7 +72,7 @@
 #include <memory>
 #include <atomic>
 
-#ifdef _WIN32
+#ifdef WIN32
 #ifndef KEEP_INPUT_QUICK_EDIT
 #define KEEP_INPUT_QUICK_EDIT false
 #endif
@@ -171,7 +175,7 @@ namespace FNLog
     {
         if (file_ != nullptr)
         {
-#if !defined(__APPLE__) && !defined(_WIN32) 
+#if !defined(__APPLE__) && !defined(WIN32) 
             if (file_ != nullptr)
             {
                 int fd = fileno(file_);
@@ -247,7 +251,7 @@ namespace FNLog
 
     bool FileHandler::is_dir(const std::string& path)
     {
-#ifdef _WIN32
+#ifdef WIN32
         return PathIsDirectoryA(path.c_str()) ? true : false;
 #else
         DIR* pdir = opendir(path.c_str());
@@ -266,7 +270,7 @@ namespace FNLog
 
     bool FileHandler::is_file(const std::string& path)
     {
-#ifdef _WIN32
+#ifdef WIN32
         return ::_access(path.c_str(), 0) == 0;
 #else
         return ::access(path.c_str(), F_OK) == 0;
@@ -288,7 +292,7 @@ namespace FNLog
             if (cur.length() > 0 && !is_dir(cur))
             {
                 bool ret = false;
-#ifdef _WIN32
+#ifdef WIN32
                 ret = CreateDirectoryA(cur.c_str(), nullptr) ? true : false;
 #else
                 ret = (mkdir(cur.c_str(), S_IRWXU | S_IRWXG | S_IRWXO) == 0);
@@ -309,7 +313,7 @@ namespace FNLog
     {
         std::string pid = "0";
         char buf[260] = { 0 };
-#ifdef _WIN32
+#ifdef WIN32
         DWORD winPID = GetCurrentProcessId();
         sprintf(buf, "%06u", winPID);
         pid = buf;
@@ -324,7 +328,7 @@ namespace FNLog
     {
         std::string name = "process";
         char buf[260] = { 0 };
-#ifdef _WIN32
+#ifdef WIN32
         if (GetModuleFileNameA(nullptr, buf, 259) > 0)
         {
             name = buf;
@@ -373,7 +377,7 @@ namespace FNLog
 
     struct tm FileHandler::time_to_tm(time_t t)
     {
-#ifdef _WIN32
+#ifdef WIN32
 #if _MSC_VER < 1400 //VS2003
         return *localtime(&t);
 #else //vs2005->vs2013->
@@ -432,7 +436,7 @@ namespace FNLog
                 }
             }
         }
-        return len;
+        return 0;
     }
 
 }
@@ -444,19 +448,23 @@ namespace FNLog
 class UDPHandler
 {
 public:
-#ifndef _WIN32
-    using SOCKET = int;
-    static const int INVALID_SOCKET = -1;
+#ifndef WIN32
+    using FNLOG_SOCKET = int;
+    static const int FNLOG_INVALID_SOCKET = -1;
+#else
+    using FNLOG_SOCKET = SOCKET;
+    static const SOCKET FNLOG_INVALID_SOCKET = INVALID_SOCKET;
 #endif 
 
 public:
     UDPHandler()
     {
-        handler_ = INVALID_SOCKET;
+        chunk_1_[0] = '\0';
+        handler_ = FNLOG_INVALID_SOCKET;
     }
     ~UDPHandler()
     {
-        if (handler_ != INVALID_SOCKET)
+        if (handler_ != FNLOG_INVALID_SOCKET)
         {
             close();
         }
@@ -464,7 +472,7 @@ public:
 
     bool is_open()
     {
-        return handler_ != INVALID_SOCKET;
+        return handler_ != FNLOG_INVALID_SOCKET;
     }
 
     void open()
@@ -474,20 +482,20 @@ public:
 
     void close()
     {
-        if (handler_ != INVALID_SOCKET)
+        if (handler_ != FNLOG_INVALID_SOCKET)
         {
-#ifndef _WIN32
+#ifndef WIN32
             ::close(handler_);
 #else
             closesocket(handler_);
 #endif 
-            handler_ = INVALID_SOCKET;
+            handler_ = FNLOG_INVALID_SOCKET;
         }
     }
 
     void write(unsigned int ip, unsigned short port, const char* data, int len)
     {
-        if (handler_ == INVALID_SOCKET)
+        if (handler_ == FNLOG_INVALID_SOCKET)
         {
             return;
         }
@@ -503,7 +511,7 @@ public:
  
 public:
     char chunk_1_[128];
-    SOCKET handler_;
+    FNLOG_SOCKET handler_;
 };
 
 
@@ -558,11 +566,11 @@ public:
 #endif
 
 #ifndef FN_LOG_MAX_LOG_SIZE
-#define FN_LOG_MAX_LOG_SIZE 1000
+#define FN_LOG_MAX_LOG_SIZE 10000
 #endif
 
 #ifndef FN_LOG_MAX_LOG_QUEUE_SIZE //the size need big than push log thread count
-#define FN_LOG_MAX_LOG_QUEUE_SIZE 10000
+#define FN_LOG_MAX_LOG_QUEUE_SIZE 1000
 #endif
 
 
@@ -570,14 +578,8 @@ public:
 #define FN_LOG_HOTUPDATE_INTERVEL 5
 #endif
 
-#ifndef FN_LOG_USE_SHM
-#define FN_LOG_USE_SHM 0
-#endif 
 
-#ifndef FN_LOG_SHM_KEY
-#define FN_LOG_SHM_KEY 0x9110
-#endif 
-
+//#define FN_LOG_USING_ATOM_CFG
 
 namespace FNLog
 {
@@ -598,9 +600,13 @@ namespace FNLog
         LOG_PREFIX_TIMESTAMP = 0x1,
         LOG_PREFIX_PRIORITY = 0x2,
         LOG_PREFIX_THREAD = 0x4,
-        LOG_PREFIX_FILE = 0x8,
-        LOG_PREFIX_FUNCTION = 0x10,
-        LOG_PREFIX_ALL = 0xff
+        LOG_PREFIX_NAME = 0x8,
+        LOG_PREFIX_DESC = 0x10,
+        LOG_PREFIX_FILE = 0x20,
+        LOG_PREFIX_FUNCTION = 0x40,
+        LOG_PREFIX_ALL = 0xff,
+        //LOG_PREFIX_DEFAULT = LOG_PREFIX_ALL,
+        LOG_PREFIX_DEFAULT = LOG_PREFIX_TIMESTAMP | LOG_PREFIX_PRIORITY | LOG_PREFIX_FILE | LOG_PREFIX_FUNCTION,
     };
 
 
@@ -623,12 +629,19 @@ namespace FNLog
         static const int LOG_SIZE = FN_LOG_MAX_LOG_SIZE;
     public:
         std::atomic_int    data_mark_; //0 invalid, 1 hold, 2 ready
-        int    channel_id_;
-        int    priority_;
-        int    category_;
+        int     channel_id_;
+        int     priority_;
+        int     category_; 
+        long long     identify_;
+        int     code_line_;
+        int     code_func_len_;
+        int     code_file_len_;
+        const char* code_func_;
+        const char* code_file_;
         long long timestamp_;        //create timestamp
         int precise_; //create time millionsecond suffix
         unsigned int thread_;
+        int prefix_len_;
         int content_len_;
         char content_[LOG_SIZE]; //content
     };
@@ -640,6 +653,7 @@ namespace FNLog
         DEVICE_OUT_SCREEN,
         DEVICE_OUT_FILE,
         DEVICE_OUT_UDP,
+        DEVICE_OUT_VIRTUAL,
     };
 
 
@@ -649,6 +663,10 @@ namespace FNLog
         DEVICE_CFG_PRIORITY,  
         DEVICE_CFG_CATEGORY,  
         DEVICE_CFG_CATEGORY_EXTEND, 
+        DEVICE_CFG_CATEGORY_FILTER,
+        DEVICE_CFG_IDENTIFY,
+        DEVICE_CFG_IDENTIFY_EXTEND,
+        DEVICE_CFG_IDENTIFY_FILTER,
         DEVICE_CFG_FILE_LIMIT_SIZE, 
         DEVICE_CFG_FILE_ROLLBACK, 
         DEVICE_CFG_UDP_IP,
@@ -676,19 +694,23 @@ namespace FNLog
     public:
         static const int MAX_PATH_SYS_LEN = 255;
         static const int MAX_PATH_LEN = 200;
-        static const int MAX_NAME_LEN = 50;
+        static const int MAX_LOGGER_NAME_LEN = 50;
         static const int MAX_ROLLBACK_LEN = 4;
         static const int MAX_ROLLBACK_PATHS = 5;
-        static_assert(MAX_PATH_LEN + MAX_NAME_LEN + MAX_ROLLBACK_LEN < MAX_PATH_SYS_LEN, "");
+        static_assert(MAX_PATH_LEN + MAX_LOGGER_NAME_LEN + MAX_ROLLBACK_LEN < MAX_PATH_SYS_LEN, "");
         static_assert(LogData::LOG_SIZE > MAX_PATH_SYS_LEN*2, "unsafe size"); // promise format length: date, time, source file path, function length.
         static_assert(MAX_ROLLBACK_PATHS < 10, "");
+#ifdef FN_LOG_USING_ATOM_CFG
         using ConfigFields = std::array<std::atomic_llong, DEVICE_CFG_MAX_ID>;
+#else
+        using ConfigFields = long long[DEVICE_CFG_MAX_ID];
+#endif // FN_LOG_USING_ATOM_CFG
         using LogFields = std::array<std::atomic_llong, DEVICE_LOG_MAX_ID>;
 
     public:
         int device_id_;
         unsigned int out_type_;
-        char out_file_[MAX_NAME_LEN];
+        char out_file_[MAX_LOGGER_NAME_LEN];
         char out_path_[MAX_PATH_LEN];
         ConfigFields config_fields_;
         LogFields log_fields_;
@@ -706,6 +728,10 @@ namespace FNLog
         CHANNEL_CFG_PRIORITY, 
         CHANNEL_CFG_CATEGORY,  
         CHANNEL_CFG_CATEGORY_EXTEND, 
+        CHANNEL_CFG_CATEGORY_FILTER,
+        CHANNEL_CFG_IDENTIFY,
+        CHANNEL_CFG_IDENTIFY_EXTEND,
+        CHANNEL_CFG_IDENTIFY_FILTER,
         CHANNEL_CFG_MAX_ID
     };
 
@@ -746,7 +772,12 @@ namespace FNLog
     struct Channel
     {
     public:
+#ifdef FN_LOG_USING_ATOM_CFG
         using ConfigFields = std::array<std::atomic_llong, CHANNEL_CFG_MAX_ID>;
+#else
+        using ConfigFields = long long[CHANNEL_CFG_MAX_ID];
+#endif // FN_LOG_USING_ATOM_CFG
+
         using LogFields = std::array<std::atomic_llong, CHANNEL_LOG_MAX_ID>;
         static const int MAX_DEVICE_SIZE = 20;
 
@@ -761,6 +792,7 @@ namespace FNLog
         time_t last_hot_check_;
 
         int chunk_;
+        int virtual_device_id_;
         int device_size_;
         Device devices_[MAX_DEVICE_SIZE];
         ConfigFields config_fields_;
@@ -820,7 +852,8 @@ namespace FNLog
     public:
         static const int MAX_CHANNEL_SIZE = SHMLogger::MAX_CHANNEL_SIZE;
         static const int HOTUPDATE_INTERVEL = FN_LOG_HOTUPDATE_INTERVEL;
-
+        static const int MAX_LOGGER_DESC_LEN = 50;
+        static const int MAX_LOGGER_NAME_LEN = 250;
         using ReadLocks = std::array<std::mutex, MAX_CHANNEL_SIZE>;
         using ReadGuard = AutoGuard<std::mutex>;
 
@@ -843,7 +876,12 @@ namespace FNLog
         std::string yaml_path_;
         unsigned int logger_state_;
         StateLock state_lock;
+        char desc_[MAX_LOGGER_DESC_LEN];
+        int desc_len_;
+        char name_[MAX_LOGGER_NAME_LEN];
+        int name_len_;
 
+        long long shm_key_;
         SHMLogger* shm_;
 
         ReadLocks read_locks_;
@@ -866,11 +904,13 @@ namespace FNLog
         return x < y ? y : x;
     }
 
-    template <class M>
-    inline long long AtomicLoadC(M& m, unsigned eid)
-    {
-        return m.config_fields_[eid].load(std::memory_order_relaxed);
-    }
+
+#ifdef FN_LOG_USING_ATOM_CFG
+    #define AtomicLoadC(m, eid) m.config_fields_[eid].load(std::memory_order_relaxed)
+#else
+#define AtomicLoadC(m, eid) m.config_fields_[eid]
+#endif // FN_LOG_USING_ATOM_CFG
+
 
     template <class M>
     inline long long AtomicLoadL(M& m, unsigned eid)
@@ -894,6 +934,7 @@ namespace FNLog
     {
         m.log_fields_[eid].store(v, std::memory_order_relaxed);
     }
+
 }
 
 
@@ -992,14 +1033,21 @@ namespace FNLog
     enum ReseveKey
     {
         RK_NULL,
+        RK_SHM_KEY,
         RK_CHANNEL,
         RK_DEVICE,
         RK_SYNC,
         RK_DISABLE,
         RK_HOT_UPDATE,
+        RK_LOGGER_NAME,
+        PK_LOGGER_DESC,
         RK_PRIORITY,
         RK_CATEGORY,
         RK_CATEGORY_EXTEND,
+        RK_CATEGORY_FILTER,
+        RK_IDENTIFY,
+        RK_IDENTIFY_EXTEND,
+        RK_IDENTIFY_FILTER,
         RK_OUT_TYPE,
         RK_FILE,
         RK_PATH,
@@ -1008,7 +1056,7 @@ namespace FNLog
         RK_UDP_ADDR,
     };
 
-#ifdef __GNUC__
+#if __GNUG__ && __GNUC__ >= 6
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wclass-memaccess"
 #endif
@@ -1029,9 +1077,9 @@ namespace FNLog
             }
             else if (*(begin + 1) == 'a')
             {
-                if (end - begin > (int)sizeof("category") - 1)
+                if (end - begin > (int)sizeof("category_e") - 1)
                 {
-                    return RK_CATEGORY_EXTEND;
+                    return *(begin + 9) == 'e' ? RK_CATEGORY_EXTEND : RK_CATEGORY_FILTER;
                 }
                 else
                 {
@@ -1053,8 +1101,33 @@ namespace FNLog
             return RK_FILE;
         case 'h':
             return RK_HOT_UPDATE;
+        case 'i':
+            if (end - begin > (int)sizeof("identify_e") - 1)
+            {
+                return *(begin + 9) == 'e' ? RK_IDENTIFY_EXTEND : RK_IDENTIFY_FILTER;
+            }
+            else
+            {
+                return RK_IDENTIFY;
+            }
+            break;
         case 'l':
-            return RK_LIMIT_SIZE;
+            if (*(begin + 1) == 'i')
+            {
+                return RK_LIMIT_SIZE;
+            }
+            else if (end - begin > 8)
+            {
+                if (*(begin + 7) == 'n')
+                {
+                    return RK_LOGGER_NAME;
+                }
+                if (*(begin + 7) == 'd')
+                {
+                    return PK_LOGGER_DESC;
+                }
+            }
+            break;
         case 'p':
             if (*(begin + 1) == 'r')
             {
@@ -1070,7 +1143,11 @@ namespace FNLog
         case 'o':
             return RK_OUT_TYPE;
         case 's':
-            return RK_SYNC;
+            if (*(begin+1) == 'y')
+            {
+                return RK_SYNC;
+            }
+            return RK_SHM_KEY;
         case 'u':
             return RK_UDP_ADDR;
         default:
@@ -1119,6 +1196,40 @@ namespace FNLog
         return true;
     }
 
+    inline long long ParseNumber(const char* begin, const char* end)
+    {
+        if (end <= begin)
+        {
+            return 0;
+        }
+
+        if (end - begin > 40 )
+        {
+            return 0;
+        }
+
+        char buff[50];
+        memcpy(buff, begin, end - begin);
+        buff[end - begin] = '\0';
+        return strtoll(buff, NULL, 0);
+    }
+
+    inline bool ParseString(const char* begin, const char* end, char * buffer, int buffer_len, int& write_len)
+    {
+        write_len = 0;
+        if (end <= begin)
+        {
+            return false;
+        }
+        write_len = buffer_len - 1;
+        if (end - begin < write_len)
+        {
+            write_len = (int)(end - begin);
+        }
+        memcpy(buffer, begin, write_len);
+        buffer[write_len] = '\0';
+        return true;
+    }
     inline ChannelType ParseChannelType(const char* begin, const char* end)
     {
         if (end <= begin || *begin != 's')
@@ -1144,17 +1255,17 @@ namespace FNLog
             return DEVICE_OUT_UDP;
         case 's':case 'S':
             return DEVICE_OUT_SCREEN;
+        case 'v':case 'V':
+            return DEVICE_OUT_VIRTUAL;
         }
         return DEVICE_OUT_NULL;
     }
 
-    inline void ParseAddres(const char* begin, const char* end, std::atomic_llong& ip, std::atomic_llong& port)
+    inline std::pair<long long, const char*> ParseAddresIP(const char* begin, const char* end)
     {
-        ip = 0;
-        port = 0;
         if (end <= begin)
         {
-            return;
+            return std::make_pair(0, end);
         }
         const char* ip_begin = begin;
         while ((*ip_begin < '1' || *ip_begin > '9') && ip_begin != end)
@@ -1162,31 +1273,75 @@ namespace FNLog
             ip_begin++;
         }
         const char* ip_end = ip_begin;
-        while (((*ip_end >= '0' && *ip_end <= '9') || *ip_end == '.' ) && ip_end != end)
+        while (((*ip_end >= '0' && *ip_end <= '9') || *ip_end == '.') && ip_end != end)
         {
             ip_end++;
         }
-        if (ip_end <= ip_begin)
+        if (ip_end - ip_begin > 40)
+        {
+            return std::make_pair(0, end);
+        }
+        char buff[50];
+        memcpy(buff, ip_begin, ip_end - ip_begin);
+        buff[ip_end - ip_begin] = '\0';
+        return std::make_pair((long long)inet_addr(buff), ip_end); 
+    }
+
+
+    inline void ParseAddres(const char* begin, const char* end, long long & ip, long long& port)
+    {
+        ip = 0;
+        port = 0;
+        if (end <= begin)
         {
             return;
         }
-
-        const char* port_begin = ip_end;
-        while ((*port_begin < '1' || *port_begin > '9') && port_begin != end)
+        auto result_ip = ParseAddresIP(begin, end);
+        const char* port_begin = result_ip.second;
+        while (port_begin != end && (*port_begin < '1' || *port_begin > '9')  )
         {
             port_begin++;
         }
-        if (end <= port_begin)
+        if (port_begin >= end)
         {
             return;
         }
-        std::string str(ip_begin, ip_end - ip_begin);
-        ip = inet_addr(str.c_str());
-        str.assign(port_begin, end - port_begin);
-        port = htons(atoi(str.c_str()));
+        if (end - port_begin >= 40)
+        {
+            return;
+        }
+        char buff[50];
+        memcpy(buff, port_begin, end - port_begin);
+        buff[end - port_begin] = '\0';
+        port = htons(atoi(buff));
+        ip = result_ip.first;
         return;
     }
 
+    inline unsigned long long ParseBitArray(const char* begin, const char* end)
+    {
+        unsigned long long bitmap = 0;
+        if (end <= begin)
+        {
+            return bitmap;
+        }
+        const char* offset = begin;
+        while (offset < end)
+        {
+            if (*offset >= '0' && *offset <= '9')
+            {
+                int bit_offset = atoi(offset);
+                bitmap |= (1ULL << bit_offset);
+                while (offset < end && (*offset >= '0' && *offset <= '9'))
+                {
+                    offset++;
+                }
+                continue;
+            }
+            offset++;
+        }
+        return bitmap;
+    }
     struct Line
     {
         int blank_;
@@ -1208,7 +1363,12 @@ namespace FNLog
         Line line_;
         SHMLogger::Channels channels_;
         int channel_size_;
+        long long shm_key_;
         bool hot_update_;
+        char desc_[Logger::MAX_LOGGER_DESC_LEN];
+        int desc_len_;
+        char name_[Logger::MAX_LOGGER_NAME_LEN];
+        int name_len_;
     };
 
     inline void InitState(LexState& state)
@@ -1322,7 +1482,7 @@ namespace FNLog
                 if ((ch >= 'a' && ch <= 'z')
                     || (ch >= 'A' && ch <= 'Z')
                     || (ch >= '0' && ch <= '9')
-                    || ch == '_' || ch == '-' || ch == ':' || ch == '/' || ch == '.' || ch == '$' || ch == '~')
+                    || ch == '_' || ch == '-' || ch == ':' || ch == '/' || ch == '.' || ch == ',' || ch == '$' || ch == '~')
                 {
                     switch (ls.line_.block_type_)
                     {
@@ -1400,6 +1560,17 @@ namespace FNLog
             case RK_CATEGORY_EXTEND:
                 device.config_fields_[DEVICE_CFG_CATEGORY_EXTEND] = atoll(ls.line_.val_begin_);
                 break;
+            case RK_CATEGORY_FILTER:
+                device.config_fields_[DEVICE_CFG_CATEGORY_FILTER] = ParseBitArray(ls.line_.val_begin_, ls.line_.val_end_);
+            case RK_IDENTIFY:
+                device.config_fields_[DEVICE_CFG_IDENTIFY] = atoll(ls.line_.val_begin_);
+                break;
+            case RK_IDENTIFY_EXTEND:
+                device.config_fields_[DEVICE_CFG_IDENTIFY_EXTEND] = atoll(ls.line_.val_begin_);
+                break;
+            case RK_IDENTIFY_FILTER:
+                device.config_fields_[DEVICE_CFG_IDENTIFY_FILTER] = ParseBitArray(ls.line_.val_begin_, ls.line_.val_end_);
+                break;
             case RK_LIMIT_SIZE:
                 device.config_fields_[DEVICE_CFG_FILE_LIMIT_SIZE] = atoll(ls.line_.val_begin_) * 1000*1000;
                 break;
@@ -1415,7 +1586,7 @@ namespace FNLog
                 }
                 break;
             case RK_FILE:
-                if (ls.line_.val_end_ - ls.line_.val_begin_ < Device::MAX_NAME_LEN - 1
+                if (ls.line_.val_end_ - ls.line_.val_begin_ < Device::MAX_LOGGER_NAME_LEN - 1
                     && ls.line_.val_end_ - ls.line_.val_begin_ >= 1)
                 {
                     memcpy(device.out_file_, ls.line_.val_begin_, ls.line_.val_end_ - ls.line_.val_begin_);
@@ -1423,7 +1594,15 @@ namespace FNLog
                 }
                 break;
             case RK_UDP_ADDR:
-                ParseAddres(ls.line_.val_begin_, ls.line_.val_end_, device.config_fields_[DEVICE_CFG_UDP_IP], device.config_fields_[DEVICE_CFG_UDP_PORT]);
+                if (true)
+                {
+                    long long ip = 0;
+                    long long port = 0;
+                    ParseAddres(ls.line_.val_begin_, ls.line_.val_end_, ip, port);
+                    device.config_fields_[DEVICE_CFG_UDP_IP] = ip;
+                    device.config_fields_[DEVICE_CFG_UDP_PORT] = port;
+                }
+                
                 if (device.config_fields_[DEVICE_CFG_UDP_IP] == 0)
                 {
                     return PEC_ILLEGAL_ADDR_IP;
@@ -1482,6 +1661,18 @@ namespace FNLog
             case RK_CATEGORY_EXTEND:
                 channel.config_fields_[CHANNEL_CFG_CATEGORY_EXTEND] = atoi(ls.line_.val_begin_);
                 break;
+            case RK_CATEGORY_FILTER:
+                channel.config_fields_[CHANNEL_CFG_CATEGORY_FILTER] = ParseBitArray(ls.line_.val_begin_, ls.line_.val_end_);
+                break;
+            case RK_IDENTIFY:
+                channel.config_fields_[CHANNEL_CFG_IDENTIFY] = atoi(ls.line_.val_begin_);
+                break;
+            case RK_IDENTIFY_EXTEND:
+                channel.config_fields_[CHANNEL_CFG_IDENTIFY_EXTEND] = atoi(ls.line_.val_begin_);
+                break;
+            case RK_IDENTIFY_FILTER:
+                channel.config_fields_[CHANNEL_CFG_IDENTIFY_FILTER] = ParseBitArray(ls.line_.val_begin_, ls.line_.val_end_);
+                break;
             case RK_DEVICE:
                 if (ls.line_.line_type_ != LINE_ARRAY)
                 {
@@ -1502,6 +1693,10 @@ namespace FNLog
                     memset(&device, 0, sizeof(device));
                     device.device_id_ = device_id;
                     ret = ParseDevice(ls, device, ls.line_.blank_);
+                    if (device.out_type_ == DEVICE_OUT_VIRTUAL)
+                    {
+                        channel.virtual_device_id_ = device.device_id_;
+                    }
                     if (ret != PEC_NONE || ls.line_.line_type_ == LINE_EOF)
                     {
                         return ret;
@@ -1534,6 +1729,8 @@ namespace FNLog
         ls.current_ = ls.first_;
         ls.line_.line_type_ = LINE_NULL;
         ls.line_number_ = 1;
+        ls.desc_len_ = 0;
+        ls.name_len_ = 0;
         do
         {
             const char* current = ls.current_;
@@ -1557,6 +1754,15 @@ namespace FNLog
             {
             case RK_HOT_UPDATE:
                 ls.hot_update_ = ParseBool(ls.line_.val_begin_, ls.line_.val_end_);//"disable"
+                break;
+            case RK_LOGGER_NAME:
+                ParseString(ls.line_.val_begin_, ls.line_.val_end_, ls.name_, Logger::MAX_LOGGER_NAME_LEN, ls.name_len_);
+                break;
+            case PK_LOGGER_DESC:
+                ParseString(ls.line_.val_begin_, ls.line_.val_end_, ls.desc_, Logger::MAX_LOGGER_DESC_LEN, ls.desc_len_);
+                break;
+            case RK_SHM_KEY:
+                ls.shm_key_ = ParseNumber(ls.line_.val_begin_, ls.line_.val_end_);
                 break;
             case RK_CHANNEL:
                 if (ls.line_.line_type_ != LINE_ARRAY)
@@ -1595,7 +1801,7 @@ namespace FNLog
         return PEC_NONE;
     }
 
-#ifdef __GNUC__
+#if __GNUG__ && __GNUC__ >= 6
 #pragma GCC diagnostic pop
 #endif
 
@@ -1653,7 +1859,7 @@ namespace FNLog
 {
 
 
-#ifndef _WIN32
+#ifndef WIN32
     struct PriorityRender
     {
         const char* const priority_name_;
@@ -1795,7 +2001,7 @@ namespace FNLog
 
 
         int real_wide = 0;
-#ifndef _WIN32
+#ifndef WIN32
         real_wide = sizeof(number) * 8 - __builtin_clzll(number);
 #else
         unsigned long win_index = 0;
@@ -1860,7 +2066,7 @@ namespace FNLog
             "0123456789abcdefghijk";
 
         int real_wide = 0;
-#ifndef _WIN32
+#ifndef WIN32
         real_wide = sizeof(number) * 8 - __builtin_clzll(number);
 #else
         unsigned long win_index = 0;
@@ -1887,160 +2093,69 @@ namespace FNLog
         int fp_class = std::fpclassify(number);
         switch (fp_class)
         {
-        case FP_NAN:
-            memcpy(dst, "nan", 3);
-            return 3;
+        case FP_SUBNORMAL:
+        case FP_ZERO:
+            *dst = '0';
+            return 1;
         case FP_INFINITE:
             memcpy(dst, "inf", 3);
             return 3;
+        case FP_NAN:
+            memcpy(dst, "nan", 3);
+            return 3;
+        case FP_NORMAL:
+            break;
+        default:
+            return 0;
         }
 
 
         double fabst = std::fabs(number);
-
-        
         if (fabst < 0.0001 || fabst > 0xFFFFFFFFFFFFFFFULL)
         {
-            char * buf = gcvt(number, 16, dst);
-            (void)buf;
+            if (fabst < 0.0001 && fabst > 0.0000001)
+            {
+                sprintf(dst, "%.08lf", fabst);
+            }
+            else
+            {
+                char* buf = gcvt(number, 16, dst);
+                (void)buf;
+            }
             return (int)strlen(dst);
         }
-
-        if (number < 0.0)
+        bool is_neg = std::signbit(number);
+        int neg_offset = 0;
+        if (is_neg)
         {
-            double intpart = 0;
-            unsigned long long fractpart = (unsigned long long)(modf(fabst, &intpart) * 10000);
             *dst = '-';
-            int writed_len = 1 + write_dec_unsafe<0>(dst + 1, (unsigned long long)intpart);
-            if (fractpart > 0)
-            {
-                *(dst + writed_len) = '.';
-                return writed_len + 1 + write_dec_unsafe<4>(dst + writed_len + 1, (unsigned long long)fractpart);
-            }
-            return writed_len;
+            neg_offset = 1;
         }
 
         double intpart = 0;
         unsigned long long fractpart = (unsigned long long)(modf(fabst, &intpart) * 10000);
-        int writed_len = write_dec_unsafe<0>(dst, (unsigned long long)intpart);
+        int base_offset = write_dec_unsafe<0>(dst + neg_offset, (unsigned long long)intpart);
         if (fractpart > 0)
         {
-            *(dst + writed_len) = '.';
-            writed_len++;
-            int wide = 4;
-            int fp = (int)fractpart;
-            while (fp % 10 == 0 && wide > 1)
+            *(dst + neg_offset + base_offset) = '.';
+            int fractpat_offset = 1 + write_dec_unsafe<4>(dst + neg_offset + base_offset + 1, (unsigned long long)fractpart);
+            for (int i = neg_offset + base_offset + fractpat_offset - 1; i > neg_offset + base_offset + 2; i--)
             {
-                wide--;
-                fp /= 10;
-            }
-            writed_len += wide;
-            fp = (int)fractpart;
-            switch (wide)
-            {
-            case 1:
-                *(dst + writed_len - 1) = "0123456789"[fp / 1000];
-                break;
-            case 2:
-                *(dst + writed_len - 2) = "0123456789"[fp / 1000];
-                *(dst + writed_len - 1) = "0123456789"[fp / 100 % 10];
-                break;
-            case 3:
-                *(dst + writed_len - 3) = "0123456789"[fp / 1000];
-                *(dst + writed_len - 2) = "0123456789"[fp / 100 % 10];
-                *(dst + writed_len - 1) = "0123456789"[fp / 10 % 10];
-                break;
-            case 4:
-                *(dst + writed_len - 4) = "0123456789"[fp / 1000];
-                *(dst + writed_len - 3) = "0123456789"[fp / 100 % 10];
-                *(dst + writed_len - 2) = "0123456789"[fp / 10 % 10];
-                *(dst + writed_len - 1) = "0123456789"[fp % 10];
-                break;
-            default:
+                if (*(dst + i) == '0')
+                {
+                    fractpat_offset--;
+                    continue;
+                }
                 break;
             }
+            return neg_offset + base_offset + fractpat_offset;
         }
-        return writed_len;
+        return neg_offset + base_offset;
     }
 
     inline int write_float_unsafe(char* dst, float number)
     {
-        if (std::isnan(number))
-        {
-            memcpy(dst, "nan", 3);
-            return 3;
-        }
-        else if (std::isinf(number))
-        {
-            memcpy(dst, "inf", 3);
-            return 3;
-        }
-
-        double fabst = std::fabs(number);
-
-
-        if (fabst < 0.0001 || fabst > 0xFFFFFFFULL)
-        {
-            char* buf = gcvt(number, 7, dst);
-            (void)buf;
-            return (int)strlen(dst);
-        }
-
-        if (number < 0.0)
-        {
-            double intpart = 0;
-            unsigned long long fractpart = (unsigned long long)(modf(fabst, &intpart) * 10000);
-            *dst = '-';
-            int writed_len = 1 + write_dec_unsafe<0>(dst + 1, (unsigned long long)intpart);
-            if (fractpart > 0)
-            {
-                *(dst + writed_len) = '.';
-                return writed_len + 1 + write_dec_unsafe<4>(dst + writed_len + 1, (unsigned long long)fractpart);
-            }
-            return writed_len;
-        }
-
-        double intpart = 0;
-        unsigned long long fractpart = (unsigned long long)(modf(fabst, &intpart) * 10000);
-        int writed_len = write_dec_unsafe<0>(dst, (unsigned long long)intpart);
-        if (fractpart > 0)
-        {
-            *(dst + writed_len) = '.';
-            writed_len++;
-            int wide = 4;
-            int fp = (int)fractpart;
-            while (fp %10 == 0 && wide > 1)
-            {
-                wide--;
-                fp /= 10;
-            }
-            writed_len += wide;
-            fp = (int)fractpart;
-            switch (wide)
-            {
-            case 1:
-                *(dst + writed_len - 1) = "0123456789"[fp / 1000];
-                break;
-            case 2:
-                *(dst + writed_len - 2) = "0123456789"[fp / 1000];
-                *(dst + writed_len - 1) = "0123456789"[fp / 100 % 10];
-                break;
-            case 3:
-                *(dst + writed_len - 3) = "0123456789"[fp / 1000];
-                *(dst + writed_len - 2) = "0123456789"[fp / 100 % 10];
-                *(dst + writed_len - 1) = "0123456789"[fp / 10 % 10];
-                break;
-            case 4:
-                *(dst + writed_len - 4) = "0123456789"[fp / 1000];
-                *(dst + writed_len - 3) = "0123456789"[fp / 100 % 10];
-                *(dst + writed_len - 2) = "0123456789"[fp / 10 % 10];
-                *(dst + writed_len - 1) = "0123456789"[fp % 10];
-                break;
-            default:
-                break;
-            }
-        }
-        return writed_len;
+        return write_double_unsafe(dst, number);
     }
 
     inline int write_date_unsafe(char* dst, long long timestamp, unsigned int precise)
@@ -2104,8 +2219,6 @@ namespace FNLog
     inline int write_log_thread_unsafe(char* dst, unsigned int thread_id)
     {
         int write_bytes = 0;
-        *(dst + write_bytes) = ' ';
-        write_bytes++;
         *(dst + write_bytes) = '[';
         write_bytes++;
         write_bytes += write_dec_unsafe<0>(dst + write_bytes, (unsigned long long) thread_id);
@@ -2178,11 +2291,134 @@ namespace FNLog
 
 namespace FNLog
 {
-#ifdef __GNUC__
+#if __GNUG__ && __GNUC__ >= 6
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wclass-memaccess"
 #endif
     
+
+    inline int LoadSharedMemory(Logger& logger)
+    {
+#if !defined(WIN32)
+        if (logger.shm_key_ <= 0)
+        {
+            logger.shm_ = new SHMLogger();
+            memset(logger.shm_, 0, sizeof(SHMLogger));
+            return 0;
+        }
+        SHMLogger* shm = nullptr;
+        int idx = shmget(logger.shm_key_, 0, 0);
+        if (idx < 0 && errno != ENOENT)
+        {
+            printf("shmget error. key:<0x%llx>, errno:<%d>. can use 'ipcs -m', 'ipcrm -m' to view and clear.\n",
+                logger.shm_key_, errno);
+            return -1;
+        }
+
+        if (idx < 0)
+        {
+            idx = shmget(logger.shm_key_, sizeof(SHMLogger), IPC_CREAT | IPC_EXCL | 0600);
+            if (idx < 0)
+            {
+                printf("new shm. shmget error. key:<0x%llx>, errno:<%d>.\n", logger.shm_key_, errno);
+                return -2;
+            }
+            void* addr = shmat(idx, nullptr, 0);
+            if (addr == nullptr || addr == (void*)-1)
+            {
+                printf("new shm. shmat error. key:<0x%llx>, idx:<%d>, errno:<%d>.\n", logger.shm_key_, idx, errno);
+                return -3;
+            }
+            memset(addr, 0, sizeof(SHMLogger));
+            shm = (SHMLogger*)addr;
+            shm->shm_size_ = sizeof(SHMLogger);
+            shm->shm_id_ = idx;
+        }
+        else
+        {
+            void* addr = shmat(idx, nullptr, 0);
+            if (addr == nullptr || addr == (void*)-1)
+            {
+                printf("shmat error. key:<%llx>, idx:<%d>, errno:<%d>.\n", logger.shm_key_, idx, errno);
+                return -4;
+            }
+            shm = (SHMLogger*)addr;
+        }
+
+        if (shm->shm_size_ != sizeof(SHMLogger) || shm->shm_id_ != idx)
+        {
+            printf("shm version error. key:<0x%llx>, old id:<%d>, new id:<%d>, old size:<%d> new size:<%d>. "
+                "can use 'ipcs -m', 'ipcrm -m' to view and clear.\n",
+                logger.shm_key_, shm->shm_id_, idx, shm->shm_size_, (int)sizeof(SHMLogger));
+            return -5;
+        }
+        for (int i = 0; i < shm->channel_size_; i++)
+        {
+            if (i >= SHMLogger::MAX_CHANNEL_SIZE)
+            {
+                return -6;
+            }
+
+            if (shm->ring_buffers_[i].write_idx_ >= RingBuffer::BUFFER_LEN
+                || shm->ring_buffers_[i].write_idx_ < 0)
+            {
+                return -7;
+            }
+
+            while (shm->ring_buffers_[i].write_idx_.load() != shm->ring_buffers_[i].hold_idx_.load())
+            {
+                auto& log = shm->ring_buffers_[i].buffer_[shm->ring_buffers_[i].write_idx_];
+                log.data_mark_ = 2;
+                log.priority_ = PRIORITY_FATAL;
+                std::string core_desc = "!!!core recover!!!";
+                log.content_len_ = FN_MIN(log.content_len_, LogData::LOG_SIZE - (int)core_desc.length() - 2);
+                memcpy(&log.content_[log.content_len_], core_desc.c_str(), core_desc.length());
+
+                log.content_len_ += core_desc.length();
+                log.content_[log.content_len_++] = '\n';
+                log.content_[log.content_len_] = '\0';
+
+                shm->ring_buffers_[i].write_idx_ = (shm->ring_buffers_[i].write_idx_ + 1) % RingBuffer::BUFFER_LEN;
+            }
+            shm->ring_buffers_[i].hold_idx_ = shm->ring_buffers_[i].write_idx_.load();
+
+            if (shm->ring_buffers_[i].read_idx_ >= RingBuffer::BUFFER_LEN
+                || shm->ring_buffers_[i].read_idx_ < 0)
+            {
+                return -10;
+            }
+            shm->ring_buffers_[i].proc_idx_ = shm->ring_buffers_[i].read_idx_.load();
+            if (shm->ring_buffers_[i].read_idx_ != 0 || shm->ring_buffers_[i].write_idx_ != 0)
+            {
+                printf("attach shm key:<0x%llx> channel:<%d>, write:<%d>, read:<%d> \n", logger.shm_key_,
+                    i, shm->ring_buffers_[i].write_idx_.load(), (int)shm->ring_buffers_[i].read_idx_.load());
+            }
+        }
+        logger.shm_ = shm;
+#else
+        logger.shm_ = new SHMLogger();
+        memset(logger.shm_, 0, sizeof(SHMLogger));
+#endif
+        return 0;
+    }
+    inline void UnloadSharedMemory(Logger& logger)
+    {
+#if !defined(WIN32)
+        if (logger.shm_ && logger.shm_key_ > 0)
+        {
+            int idx = logger.shm_->shm_id_;
+            shmdt(logger.shm_);
+            shmctl(idx, IPC_RMID, nullptr);
+            logger.shm_ = nullptr;
+        }
+#endif
+        if (logger.shm_)
+        {
+            delete logger.shm_;
+            logger.shm_ = nullptr;
+        }
+    }
+
 
     inline int InitFromYMAL(Logger& logger, const std::string& text, const std::string& path)
     {
@@ -2192,11 +2428,7 @@ namespace FNLog
             printf("init from ymal:<%s> text error\n", path.c_str());
             return -1;
         }
-        if (logger.shm_ == nullptr)
-        {
-            printf("%s", "init from ymal text error. no shm.\n");
-            return -2;
-        }
+
         std::unique_ptr<LexState> ls(new LexState);
         int ret = ParseLogger(*ls, text);
         if (ret != PEC_NONE)
@@ -2216,9 +2448,28 @@ namespace FNLog
             printf("%s\n", os.str().c_str());
             return ret;
         }
-
+        if (ls->name_len_ > 0)
+        {
+            memcpy(logger.name_, ls->name_, ls->name_len_+1);
+            logger.name_len_ = ls->name_len_;
+        }
+        if (ls->desc_len_ > 0)
+        {
+            memcpy(logger.desc_, ls->desc_, ls->desc_len_+1);
+            logger.desc_len_ = ls->desc_len_;
+        }
         logger.yaml_path_ = path;
         logger.hot_update_ = ls->hot_update_;
+        logger.shm_key_ = ls->shm_key_;
+        if (logger.shm_  == NULL)
+        {
+            ret = LoadSharedMemory(logger);
+            if (ret != 0)
+            {
+                printf("LoadSharedMemory has error:%d,  yaml:%s\n", ret, text.c_str());
+                return ret;
+            }
+        }
         logger.shm_->channel_size_ = ls->channel_size_;
         for (int i = 0; i < ls->channel_size_; i++)
         {
@@ -2322,6 +2573,10 @@ namespace FNLog
         {
             return ret;
         }
+        if (!logger.hot_update_)
+        {
+            return -8;
+        }
         logger.hot_update_ = ls->hot_update_;
 
         static_assert(std::is_same<decltype(logger.shm_->channels_[channel_id].config_fields_), decltype(ls->channels_[channel_id].config_fields_)>::value, "");
@@ -2331,12 +2586,12 @@ namespace FNLog
         Channel& src_chl = ls->channels_[channel_id];
         if (dst_chl.channel_id_ != src_chl.channel_id_ || src_chl.channel_id_ != channel_id)
         {
-            return - 7;
+            return -10;
         }
         for (int field_id = 0; field_id < CHANNEL_CFG_MAX_ID; field_id++)
         {
             //this is multi-thread safe op. 
-            dst_chl.config_fields_[field_id] = src_chl.config_fields_[field_id].load();
+            dst_chl.config_fields_[field_id] = AtomicLoadC(src_chl, field_id);
         }
 
         //single thread op.
@@ -2345,21 +2600,21 @@ namespace FNLog
             Device& src_dvc = src_chl.devices_[device_id];
             if (src_dvc.device_id_ != device_id)
             {
-                return -8;
+                return -11;
             }
             if (device_id < dst_chl.device_size_)
             {
                 Device& dst_dvc = dst_chl.devices_[device_id];
                 if (dst_dvc.device_id_ != device_id)
                 {
-                    return -9;
+                    return -12;
                 }
                 memcpy(&dst_dvc.config_fields_, &src_dvc.config_fields_, sizeof(dst_dvc.config_fields_));
                 continue;
             }
             if (dst_chl.device_size_ != device_id)
             {
-                return -10;
+                return -13;
             }
             memcpy(&dst_chl.devices_[dst_chl.device_size_++], &src_dvc, sizeof(src_dvc));
             
@@ -2368,7 +2623,7 @@ namespace FNLog
         return 0;
     }
 
-#ifdef __GNUC__
+#if __GNUG__ && __GNUC__ >= 6
 #pragma GCC diagnostic pop
 #endif
 }
@@ -2589,7 +2844,7 @@ namespace FNLog
 
         path += name;
 
-        if (path.length() >= Device::MAX_PATH_LEN + Device::MAX_NAME_LEN)
+        if (path.length() >= Device::MAX_PATH_LEN + Device::MAX_LOGGER_NAME_LEN)
         {
             AtomicStoreL(device, DEVICE_LOG_LAST_TRY_CREATE_ERROR, 1);
             AtomicStoreL(device, DEVICE_LOG_LAST_TRY_CREATE_TIMESTAMP, log.timestamp_);
@@ -2781,7 +3036,7 @@ namespace FNLog
         {
             priority = PRIORITY_ALARM;
         }
-#ifndef _WIN32
+#ifndef WIN32
         printf("%s%s\e[0m", PRIORITY_RENDER[priority].scolor_, log.content_);
 #else
 
@@ -2799,7 +3054,7 @@ namespace FNLog
         }
         else
         {
-            SetConsoleTextAttribute(sc_handle, PRIORITY_RENDER[priority].color_);
+            SetConsoleTextAttribute(sc_handle, (old_info.wAttributes& ~7u) |PRIORITY_RENDER[priority].color_);
             printf("%s", log.content_);
             SetConsoleTextAttribute(sc_handle, old_info.wAttributes);
         }
@@ -2808,6 +3063,79 @@ namespace FNLog
 
 
 
+}
+
+
+#endif
+/*
+ *
+ * MIT License
+ *
+ * Copyright (C) 2021 YaweiZhang <yawei.zhang@foxmail.com>.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ *
+ * ===============================================================================
+ *
+ * (end of COPYRIGHT)
+ */
+
+
+ /*
+  * AUTHORS:  YaweiZhang <yawei.zhang@foxmail.com>
+  * VERSION:  1.0.0
+  * PURPOSE:  fn-log is a cpp-based logging utility.
+  * CREATION: 2019.4.20
+  * RELEASED: 2019.6.27
+  * QQGROUP:  524700770
+  */
+
+
+#pragma once
+#ifndef _FN_LOG_OUT_VIRTUAL_DEVICE_H_
+#define _FN_LOG_OUT_VIRTUAL_DEVICE_H_
+
+
+namespace FNLog
+{
+    using VirtualDevicePtr = void (*)(const LogData& log);
+
+    inline VirtualDevicePtr& RefVirtualDevice()
+    {
+        static VirtualDevicePtr g_virtual_device_ptr = NULL;
+        return g_virtual_device_ptr;
+    }
+    inline void SetVirtualDevice(VirtualDevicePtr vdp)
+    {
+        RefVirtualDevice() = vdp;
+    }
+
+    inline void EnterProcOutVirtualDevice(Logger& logger, int channel_id, int device_id, LogData& log)
+    {
+        if (RefVirtualDevice())
+        {
+            Device& device = logger.shm_->channels_[channel_id].devices_[device_id];
+            AtomicAddL(device, DEVICE_LOG_TOTAL_WRITE_LINE);
+            AtomicAddLV(device, DEVICE_LOG_TOTAL_WRITE_BYTE, log.content_len_);
+            (*RefVirtualDevice())(log);
+        }
+    }
 }
 
 
@@ -2876,6 +3204,9 @@ namespace FNLog
         case DEVICE_OUT_UDP:
             EnterProcOutUDPDevice(logger, channel_id, device_id, log);
             break;
+        case DEVICE_OUT_VIRTUAL:
+            //EnterProcOutVirtualDevice(logger, channel_id, device_id, log);
+            break;        
         default:
             break;
         }
@@ -2895,13 +3226,28 @@ namespace FNLog
             {
                 continue;
             }
-            if (AtomicLoadC(device, DEVICE_CFG_CATEGORY) > 0)
+            long long begin_category = AtomicLoadC(device, DEVICE_CFG_CATEGORY);
+            long long category_count = AtomicLoadC(device, DEVICE_CFG_CATEGORY_EXTEND);
+            unsigned long long category_filter = (unsigned long long)AtomicLoadC(device, DEVICE_CFG_CATEGORY_FILTER);
+            long long begin_identify = AtomicLoadC(device, DEVICE_CFG_IDENTIFY);
+            long long identify_count =AtomicLoadC(device, DEVICE_CFG_IDENTIFY_EXTEND);
+            unsigned long long identify_filter = (unsigned long long)AtomicLoadC(device, DEVICE_CFG_IDENTIFY_FILTER);
+
+            if (category_count > 0 && (log.category_ < begin_category || log.category_ >= begin_category + category_count))
             {
-                if (log.category_ < AtomicLoadC(device, DEVICE_CFG_CATEGORY)
-                    || log.category_ > AtomicLoadC(device, DEVICE_CFG_CATEGORY) + AtomicLoadC(device, DEVICE_CFG_CATEGORY_EXTEND))
-                {
-                    continue;
-                }
+                continue;
+            }
+            if (identify_count > 0 && (log.identify_ < begin_identify || log.identify_ >= begin_identify + identify_count))
+            {
+                continue;
+            }
+            if (category_filter && (category_filter & ((1ULL) << (unsigned int)log.category_)) == 0)
+            {
+                continue;
+            }
+            if (identify_filter && (identify_filter & ((1ULL) << (unsigned int)log.identify_)) == 0)
+            {
+                continue;
             }
             EnterProcDevice(logger, channel.channel_id_, device_id, log);
         }
@@ -3001,15 +3347,22 @@ namespace FNLog
     
     
 
-    inline void InitLogData(Logger& logger, LogData& log, int channel_id, int priority, int category, unsigned int prefix)
+    inline void InitLogData(Logger& logger, LogData& log, int channel_id, int priority, int category, unsigned long long identify, unsigned int prefix)
     {
         log.channel_id_ = channel_id;
         log.priority_ = priority;
         log.category_ = category;
+        log.identify_ = identify;
+        log.code_line_ = 0;
+        log.code_func_len_ = 0;
+        log.code_file_len_ = 0;
+        log.code_file_ = "";
+        log.code_func_ = "";
+        log.prefix_len_ = 0;
         log.content_len_ = 0;
         log.content_[log.content_len_] = '\0';
 
-#ifdef _WIN32
+#ifdef WIN32
         FILETIME ft;
         GetSystemTimeAsFileTime(&ft);
         unsigned long long now = ft.dwHighDateTime;
@@ -3027,12 +3380,8 @@ namespace FNLog
         log.precise_ = tm.tv_usec / 1000;
 #endif
         log.thread_ = 0;
-        if (prefix == LOG_PREFIX_NULL)
-        {
-            return;
-        }
 
-#ifdef _WIN32
+#ifdef WIN32
         static thread_local unsigned int therad_id = GetCurrentThreadId();
         log.thread_ = therad_id;
 #elif defined(__APPLE__)
@@ -3043,50 +3392,112 @@ namespace FNLog
         static thread_local unsigned int therad_id = (unsigned int)syscall(SYS_gettid);
         log.thread_ = therad_id;
 #endif
-        if (prefix & LOG_PREFIX_TIMESTAMP)
-        {
-            log.content_len_ += write_date_unsafe(log.content_ + log.content_len_, log.timestamp_, log.precise_);
-        }
-        if (prefix & LOG_PREFIX_PRIORITY)
-        {
-            log.content_len_ += write_log_priority_unsafe(log.content_ + log.content_len_, log.priority_);
-        }
-        if (prefix & LOG_PREFIX_THREAD)
-        {
-            log.content_len_ += write_log_thread_unsafe(log.content_ + log.content_len_, log.thread_);
-        }
         log.content_[log.content_len_] = '\0';
+        log.prefix_len_ = log.content_len_;
         return;
     }
-
-    inline int HoldChannel(Logger& logger, int channel_id, int priority, int category)
+#ifdef __GNUG__
+#pragma GCC push_options
+#pragma GCC optimize ("O2")
+#endif
+    inline bool BlockInput(Logger& logger, int channel_id, int priority, int category, long long identify)
     {
-        if (channel_id >= logger.shm_->channel_size_ || channel_id < 0)
+        if (logger.shm_ == NULL || channel_id >= logger.shm_->channel_size_ || channel_id < 0)
         {
-            return -1;
+            return true;
         }
         if (logger.logger_state_ != LOGGER_STATE_RUNNING)
         {
-            return -2;
+            return true;
         }
         Channel& channel = logger.shm_->channels_[channel_id];
-        RingBuffer& ring_buffer = logger.shm_->ring_buffers_[channel_id];
         if (channel.channel_state_ != CHANNEL_STATE_RUNNING)
         {
-            return -3;
+            return true;
         }
         if (priority < AtomicLoadC(channel, CHANNEL_CFG_PRIORITY))
         {
-            return -4;
+            return true;
         }
-        if (AtomicLoadC(channel, CHANNEL_CFG_CATEGORY) > 0)
+        long long begin_category = AtomicLoadC(channel, CHANNEL_CFG_CATEGORY);
+        long long category_count = AtomicLoadC(channel, CHANNEL_CFG_CATEGORY_EXTEND);
+        unsigned long long category_filter = (unsigned long long)AtomicLoadC(channel, CHANNEL_CFG_CATEGORY_FILTER);
+        long long begin_identify = AtomicLoadC(channel, CHANNEL_CFG_IDENTIFY);
+        long long identify_count = AtomicLoadC(channel, CHANNEL_CFG_IDENTIFY_EXTEND);
+        unsigned long long identify_filter = (unsigned long long)AtomicLoadC(channel, CHANNEL_CFG_IDENTIFY_FILTER);
+
+        if (category_count > 0 && (category < begin_category || category >= begin_category + category_count))
         {
-            if (category < AtomicLoadC(channel, CHANNEL_CFG_CATEGORY)
-                || category > AtomicLoadC(channel, CHANNEL_CFG_CATEGORY) + AtomicLoadC(channel, CHANNEL_CFG_CATEGORY_EXTEND))
+            return true;
+        }
+        if (identify_count > 0 && (identify < begin_identify || identify >= begin_identify + identify_count))
+        {
+            return true;
+        }
+        if (category_filter && (category_filter & ((1ULL) << (unsigned int)category)) == 0)
+        {
+            return true;
+        }
+        if (identify_filter && (identify_filter & ((1ULL) << (unsigned int)identify)) == 0)
+        {
+            return true;
+        }
+
+        bool need_write = false;
+        
+        for (int i = 0; i < channel.device_size_; i++)
+        {
+            Device::ConfigFields& fields = channel.devices_[i].config_fields_;
+            long long field_able = fields[FNLog::DEVICE_CFG_ABLE];
+            long long field_priority = fields[FNLog::DEVICE_CFG_PRIORITY];
+            long long field_begin_category = fields[FNLog::DEVICE_CFG_CATEGORY];
+            long long field_category_count = fields[FNLog::DEVICE_CFG_CATEGORY_EXTEND];
+            unsigned long long field_category_filter = (unsigned long long)fields[FNLog::DEVICE_CFG_CATEGORY_FILTER];
+            long long field_begin_identify = fields[FNLog::DEVICE_CFG_IDENTIFY];
+            long long field_identify_count = fields[FNLog::DEVICE_CFG_IDENTIFY_EXTEND];
+            unsigned long long field_identify_filter = (unsigned long long)fields[FNLog::DEVICE_CFG_IDENTIFY_FILTER];
+
+            if (field_able && priority >= field_priority)
             {
-                return -5;
+                if (field_category_count > 0 && (category < field_begin_category || category >= field_begin_category + field_category_count))
+                {
+                    continue;
+                }
+                if (field_identify_count > 0 && (identify < field_begin_identify || identify >= field_begin_identify + field_identify_count))
+                {
+                    continue;
+                }
+                if (field_category_filter &&  (field_category_filter & ((1ULL) << (unsigned int)category)) == 0)
+                {
+                    continue;
+                }
+                if (field_identify_filter &&  (field_identify_filter & ((1ULL) << (unsigned int)identify)) == 0)
+                {
+                    continue;
+                }
+                need_write = true;
+                break;
             }
         }
+        if (!need_write)
+        {
+            return true;
+        }
+        
+        return false;
+    }
+#ifdef __GNUG__
+#pragma GCC pop_options
+#endif
+    inline int HoldChannel(Logger& logger, int channel_id, int priority, int category, long long identify)
+    {
+        if (BlockInput(logger, channel_id, priority, category, identify))
+        {
+            return -1;
+        }
+        Channel& channel = logger.shm_->channels_[channel_id];
+        RingBuffer& ring_buffer = logger.shm_->ring_buffers_[channel_id];
+        
         int state = 0;
         do
         {
@@ -3121,7 +3532,7 @@ namespace FNLog
                 break;
             }
         } while (true);
-        return -10;
+        return -11;
     }
 
     inline int PushChannel(Logger& logger, int channel_id, int hold_idx)
@@ -3172,6 +3583,37 @@ namespace FNLog
             EnterProcChannel(logger, channel_id); //no affect channel.single_thread_write_
         }
         return 0;
+    }
+
+
+    inline int TransmitChannel(Logger& logger, int channel_id, const LogData& log)
+    {
+        if (log.channel_id_ == channel_id)
+        {
+            return -1;
+        }
+        int hold_idx = FNLog::HoldChannel(logger, channel_id, log.priority_, log.category_, log.identify_);
+        if (hold_idx < 0)
+        {
+            return -2;
+        }
+        LogData& trans_log = logger.shm_->ring_buffers_[channel_id].buffer_[hold_idx];
+        trans_log.channel_id_ = channel_id;
+        trans_log.priority_ = log.priority_;
+        trans_log.category_ = log.category_;
+        trans_log.identify_ = log.identify_;
+        trans_log.code_line_ = log.code_line_;
+        trans_log.code_func_len_ = log.code_func_len_;
+        trans_log.code_file_len_ = log.code_file_len_;
+        trans_log.code_func_ = log.code_func_;
+        trans_log.code_file_ = log.code_file_;
+        trans_log.timestamp_ = log.timestamp_;
+        trans_log.precise_ = log.precise_;
+        trans_log.thread_ = log.thread_;
+        trans_log.prefix_len_ = log.prefix_len_;
+        trans_log.content_len_ = log.content_len_ > 0 ? log.content_len_ - 1: log.content_len_;
+        memcpy(trans_log.content_, log.content_, log.content_len_);
+        return PushChannel(logger, channel_id, hold_idx);
     }
 }
 
@@ -3225,7 +3667,7 @@ namespace FNLog
 namespace FNLog
 {
 
-#ifdef __GNUC__
+#if __GNUG__ && __GNUC__ >= 6
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wclass-memaccess"
 #endif
@@ -3353,7 +3795,7 @@ namespace FNLog
             printf("start error. state:<%u> not uninit:<%u>.\n", logger.logger_state_, LOGGER_STATE_UNINIT);
             return -1;
         }
-        if (logger.shm_->channel_size_ > Logger::MAX_CHANNEL_SIZE || logger.shm_->channel_size_ <= 0)
+        if (logger.shm_ == NULL || logger.shm_->channel_size_ > Logger::MAX_CHANNEL_SIZE || logger.shm_->channel_size_ <= 0)
         {
             printf("start error. channel size:<%d> invalid.\n", logger.shm_->channel_size_);
             return -2;
@@ -3446,10 +3888,15 @@ namespace FNLog
     {
         if (logger.logger_state_ != LOGGER_STATE_UNINIT)
         {
-            printf("parse and start error. state:<%u> not uninit:<%u>.\n", logger.logger_state_, LOGGER_STATE_UNINIT);
+            printf("parse and start error. state:<%u> not uninit:<%u> by fast try.\n", logger.logger_state_, LOGGER_STATE_UNINIT);
             return -1;
         }
         Logger::StateLockGuard state_guard(logger.state_lock);
+        if (logger.logger_state_ != LOGGER_STATE_UNINIT)
+        {
+            printf("parse and start error. state:<%u> not uninit:<%u> in locked check.\n", logger.logger_state_, LOGGER_STATE_UNINIT);
+            return -2;
+        }
         int ret = InitFromYMAL(logger, config_content, "");
         if (ret != 0)
         {
@@ -3576,7 +4023,7 @@ namespace FNLog
         for (int i = 0; i < logger.shm_->channel_size_; i++)
         {
             auto& channel = logger.shm_->channels_[i];
-            channel.config_fields_[cce].store(v);
+            channel.config_fields_[cce] = v;
         }
     }
 
@@ -3590,137 +4037,31 @@ namespace FNLog
                 auto& device = channel.devices_[j];
                 if (device.out_type_ == out_type || out_type == DEVICE_OUT_NULL)
                 {
-                    device.config_fields_[dce].store(v);
+                    device.config_fields_[dce] = v;
                 }
             }
         }
     }
 
 
-    inline void LoadSharedMemory(Logger& logger)
-    {
-#if FN_LOG_USE_SHM && !defined(_WIN32)
-        SHMLogger* shm = nullptr;
-        int idx = shmget(FN_LOG_SHM_KEY, 0, 0);
-        if (idx < 0 && errno != ENOENT)
-        {
-            printf("shmget error. key:<0x%x>, errno:<%d>. can use 'ipcs -m', 'ipcrm -m' to view and clear.\n", 
-                FN_LOG_SHM_KEY, errno);
-            return;
-        }
-
-        if (idx < 0)
-        {
-            idx = shmget(FN_LOG_SHM_KEY, sizeof(SHMLogger), IPC_CREAT | IPC_EXCL | 0600);
-            if (idx < 0)
-            {
-                printf("new shm. shmget error. key:<0x%x>, errno:<%d>.\n", FN_LOG_SHM_KEY, errno);
-                return;
-            }
-            void* addr = shmat(idx, nullptr, 0);
-            if (addr == nullptr || addr == (void*)-1)
-            {
-                printf("new shm. shmat error. key:<0x%x>, idx:<%d>, errno:<%d>.\n", FN_LOG_SHM_KEY, idx, errno);
-                return;
-            }
-            memset(addr, 0, sizeof(SHMLogger));
-            shm = (SHMLogger*)addr;
-            shm->shm_size_ = sizeof(SHMLogger);
-            shm->shm_id_ = idx;
-        }
-        else
-        {
-            void* addr = shmat(idx, nullptr, 0);
-            if (addr == nullptr || addr == (void*)-1)
-            {
-                printf("shmat error. key:<%x>, idx:<%d>, errno:<%d>.\n", FN_LOG_SHM_KEY, idx, errno);
-                return;
-            }
-            shm = (SHMLogger*)addr;
-        }
-
-        if (shm->shm_size_ != sizeof(SHMLogger) || shm->shm_id_ != idx)
-        {
-            printf("shm version error. key:<0x%x>, old id:<%d>, new id:<%d>, old size:<%d> new size:<%d>. "
-                "can use 'ipcs -m', 'ipcrm -m' to view and clear.\n",
-                FN_LOG_SHM_KEY, shm->shm_id_, idx, shm->shm_size_, (int)sizeof(SHMLogger));
-            return;
-        }
-        for (int i = 0; i < shm->channel_size_; i++)
-        {
-            if (i >= SHMLogger::MAX_CHANNEL_SIZE)
-            {
-                return;
-            }
-
-            if (shm->ring_buffers_[i].write_idx_ >= RingBuffer::BUFFER_LEN
-                || shm->ring_buffers_[i].write_idx_ < 0)
-            {
-                return;
-            }
-
-            while (shm->ring_buffers_[i].write_idx_.load() != shm->ring_buffers_[i].hold_idx_.load())
-            {
-                auto& log = shm->ring_buffers_[i].buffer_[shm->ring_buffers_[i].write_idx_];
-                log.data_mark_ = 2;
-                log.priority_ = PRIORITY_FATAL;
-                std::string core_desc = "!!!core recover!!!";
-                log.content_len_ = FN_MIN(log.content_len_, LogData::LOG_SIZE - (int)core_desc.length() -2 );
-                memcpy(&log.content_[log.content_len_], core_desc.c_str(), core_desc.length());
-
-                log.content_len_ += core_desc.length();
-                log.content_[log.content_len_++] = '\n';
-                log.content_[log.content_len_] = '\0';
-
-                shm->ring_buffers_[i].write_idx_ = (shm->ring_buffers_[i].write_idx_ + 1) % RingBuffer::BUFFER_LEN;
-            }
-            shm->ring_buffers_[i].hold_idx_ = shm->ring_buffers_[i].write_idx_.load();
-
-            if (shm->ring_buffers_[i].read_idx_ >= RingBuffer::BUFFER_LEN
-                || shm->ring_buffers_[i].read_idx_ < 0)
-            {
-                return;
-            }
-            shm->ring_buffers_[i].proc_idx_ = shm->ring_buffers_[i].read_idx_.load();
-            if (shm->ring_buffers_[i].read_idx_ != 0 || shm->ring_buffers_[i].write_idx_ != 0)
-            {
-                printf("attach shm channel:<%d>, write:<%d>, read:<%d> \n",
-                    i, shm->ring_buffers_[i].write_idx_.load(), (int)shm->ring_buffers_[i].read_idx_.load());
-            }
-        }
-        logger.shm_ = shm;
-#else
-        logger.shm_ = new SHMLogger();
-        memset(logger.shm_, 0, sizeof(SHMLogger));
-        
-#endif
-    }
-    inline void UnloadSharedMemory(Logger& logger)
-    {
-#if FN_LOG_USE_SHM && !defined(_WIN32)
-        if (logger.shm_)
-        {
-            int idx = logger.shm_->shm_id_;
-            shmdt(logger.shm_);
-            shmctl(idx, IPC_RMID, nullptr);
-            logger.shm_ = nullptr;
-        }
-#else
-        if (logger.shm_)
-        {
-            delete logger.shm_;
-            logger.shm_ = nullptr;
-        }
-#endif
-    }
 
     inline void InitLogger(Logger& logger)
     {
         logger.hot_update_ = false;
         logger.logger_state_ = LOGGER_STATE_UNINIT;
-        LoadSharedMemory(logger);
+        memset(logger.desc_, 0, Logger::MAX_LOGGER_DESC_LEN);
+        logger.desc_len_ = 0;
+        memset(logger.name_, 0, Logger::MAX_LOGGER_NAME_LEN);
+        logger.name_len_ = 0;
+        std::string name = FileHandler::process_name();
+        name = name.substr(0, Logger::MAX_LOGGER_NAME_LEN - 1);
+        memcpy(logger.name_, name.c_str(), name.length() + 1);
+        logger.name_len_ = (int)name.length();
+        logger.shm_key_ = 0;
+        logger.shm_ = NULL;
+        
 
-#if ((defined _WIN32) && !KEEP_INPUT_QUICK_EDIT)
+#if ((defined WIN32) && !KEEP_INPUT_QUICK_EDIT)
         HANDLE input_handle = ::GetStdHandle(STD_INPUT_HANDLE);
         if (input_handle != INVALID_HANDLE_VALUE)
         {
@@ -3754,7 +4095,7 @@ namespace FNLog
         UnloadSharedMemory(*this);
     }
 
-#ifdef __GNUC__
+#if __GNUG__ && __GNUC__ >= 6
 #pragma GCC diagnostic pop
 #endif
 
@@ -3809,6 +4150,19 @@ namespace FNLog
 
 namespace FNLog
 {
+    template<int BLANK_SIZE>
+    struct LogBlankAlign
+    {
+        //static const int blank_size = BLANK_SIZE;
+    };
+
+
+    struct LogPercent
+    {
+        LogPercent(float v) :v_(v) {}
+        float v_;
+    };
+
     class LogStream
     {
     public:
@@ -3825,13 +4179,13 @@ namespace FNLog
             other.hold_idx_ = -1;
         }
 
-        explicit LogStream(Logger& logger, int channel_id, int priority, int category, 
+        explicit LogStream(Logger& logger, int channel_id, int priority, int category, long long identify,
             const char * const file_name, int file_name_len, int line,
             const char * const func_name, int func_name_len, unsigned int prefix)
         {
             logger_ = nullptr;
             log_data_ = nullptr;
-            int hold_idx = HoldChannel(logger, channel_id, priority, category);
+            int hold_idx = HoldChannel(logger, channel_id, priority, category, identify);
             if (hold_idx < 0)
             {
                 return;
@@ -3839,7 +4193,7 @@ namespace FNLog
 
             try
             {
-                InitLogData(logger, logger.shm_->ring_buffers_[channel_id].buffer_[hold_idx], channel_id, priority, category, prefix);
+                InitLogData(logger, logger.shm_->ring_buffers_[channel_id].buffer_[hold_idx], channel_id, priority, category, identify, prefix);
             }
             catch (const std::exception&)
             {
@@ -3849,13 +4203,43 @@ namespace FNLog
             logger_ = &logger;
             log_data_ = &logger.shm_->ring_buffers_[channel_id].buffer_[hold_idx];
             hold_idx_ = hold_idx;
+            log_data_->code_line_ = line;
+            log_data_->code_func_ = func_name;
+            log_data_->code_func_len_ = func_name_len;
+            log_data_->code_file_ = file_name;
+            log_data_->code_file_len_ = file_name_len;
             if (prefix == LOG_PREFIX_NULL)
             {
                 return;
             }
+            if (prefix & LOG_PREFIX_TIMESTAMP)
+            {
+                log_data_->content_len_ += write_date_unsafe(log_data_->content_ + log_data_->content_len_, log_data_->timestamp_, log_data_->precise_);
+            }
+            if (prefix & LOG_PREFIX_PRIORITY)
+            {
+                log_data_->content_len_ += write_log_priority_unsafe(log_data_->content_ + log_data_->content_len_, log_data_->priority_);
+            }
+            if (prefix & LOG_PREFIX_THREAD)
+            {
+                log_data_->content_len_ += write_log_thread_unsafe(log_data_->content_ + log_data_->content_len_, log_data_->thread_);
+            }
+            if (prefix & LOG_PREFIX_NAME)
+            {
+                write_char_unsafe('[');
+                write_buffer_unsafe(logger.name_, logger.name_len_);
+                write_char_unsafe(']');
+            }
+            if (prefix & LOG_PREFIX_DESC)
+            {
+                write_char_unsafe('[');
+                write_buffer_unsafe(logger.desc_, logger.desc_len_);
+                write_char_unsafe(']');
+            }
             if (prefix & LOG_PREFIX_FILE)
             {
-                write_char_unsafe(' ');
+                write_char_unsafe('[');
+                write_char_unsafe('(');
                 if (file_name && file_name_len > 0)
                 {
                     int jump_bytes = short_path(file_name, file_name_len);
@@ -3865,14 +4249,14 @@ namespace FNLog
                 {
                     write_buffer_unsafe("nofile", 6);
                 }
+                write_char_unsafe(')');
                 write_char_unsafe(':');
-                write_char_unsafe('<');
                 *this << (unsigned long long)line;
-                write_char_unsafe('>');
-                write_char_unsafe(' ');
+                write_char_unsafe(']');
             }
             if (prefix & LOG_PREFIX_FUNCTION)
             {
+                write_char_unsafe('(');
                 if (func_name && func_name_len > 0)
                 {
                     write_buffer_unsafe(func_name, func_name_len);
@@ -3881,14 +4265,29 @@ namespace FNLog
                 {
                     write_buffer_unsafe("null", 4);
                 }
-                write_char_unsafe(' ');
+                write_char_unsafe(')');
             }
+            write_char_unsafe(' ');
+            log_data_->prefix_len_ = log_data_->content_len_;
         }
         
         ~LogStream()
         {
             if (log_data_) 
             {
+                if (RefVirtualDevice() != NULL)
+                {
+                    Channel& channel = logger_->shm_->channels_[log_data_->channel_id_];
+                    if (channel.virtual_device_id_ >= 0)
+                    {
+                        Device& device = channel.devices_[channel.virtual_device_id_];
+                        if (log_data_->priority_ >= device.config_fields_[DEVICE_CFG_PRIORITY])
+                        {
+                            (*RefVirtualDevice())(*log_data_);
+                        }
+                        
+                    }
+                }
                 PushLog(*logger_, log_data_->channel_id_, hold_idx_);
                 hold_idx_ = -1;
                 log_data_ = nullptr;
@@ -4094,6 +4493,7 @@ namespace FNLog
             return *this << "]";
         }
 
+
         template<class _Elem, class _Alloc>
         LogStream & operator <<(const std::vector<_Elem, _Alloc> & val) { return write_container(val, "vector:", sizeof("vector:") - 1);}
         template<class _Elem, class _Alloc>
@@ -4112,7 +4512,38 @@ namespace FNLog
         {return write_container(val, "unordered_set:", sizeof("unordered_set:") - 1);}
         template<class _Traits, class _Allocator>
         LogStream & operator <<(const std::basic_string<char, _Traits, _Allocator> & str) { return write_buffer(str.c_str(), (int)str.length());}
+        template<int BLANK_SIZE>
+        LogStream & operator <<(const LogBlankAlign<BLANK_SIZE>& blanks)
+        {
+            if (log_data_ && log_data_->content_len_ + BLANK_SIZE < LogData::LOG_SIZE)
+            {
+                for (int i = log_data_->content_len_;  i < BLANK_SIZE; i++)
+                {
+                    write_char_unsafe(' ');
+                }
+            }
+            return *this;
+        }
+        LogStream & operator <<(const LogPercent& blanks)
+        {
+            if (log_data_ && log_data_->content_len_ + 40 < LogData::LOG_SIZE)
+            {
+                if (blanks.v_ < 0.000001)
+                {
+                    write_buffer("00.00%", (int)strlen("00.00%"));
+                }
+                else
+                {
+                    log_data_->content_len_ += write_double_unsafe(log_data_->content_ + log_data_->content_len_, blanks.v_*100.0);
+                    write_char_unsafe('%');
+                }
+            }
+            return *this;
+        }
+
         
+
+
     public:
         LogData * log_data_ = nullptr;
         Logger* logger_ = nullptr;
@@ -4269,34 +4700,34 @@ namespace FNLog
 
 //--------------------BASE STREAM MACRO ---------------------------
 
-#define LOG_STREAM_ORIGIN(logger, channel, priority, category, prefix) \
-FNLog::LogStream(logger, channel, priority, category, \
+#define LOG_STREAM_ORIGIN(logger, channel, priority, category, identify, prefix) \
+FNLog::LogStream(logger, channel, priority, category, identify,\
 __FILE__, sizeof(__FILE__) - 1, \
 __LINE__, __FUNCTION__, sizeof(__FUNCTION__) -1, prefix)
 
-#define LOG_STREAM_DEFAULT_LOGGER(channel, priority, category, prefix) \
-    LOG_STREAM_ORIGIN(FNLog::GetDefaultLogger(), channel, priority, category, prefix)
+#define LOG_STREAM_DEFAULT_LOGGER(channel, priority, category, identify, prefix) \
+    LOG_STREAM_ORIGIN(FNLog::GetDefaultLogger(), channel, priority, category, identify, prefix)
 
-#define LOG_STREAM_DEFAULT_LOGGER_WITH_PREFIX(channel, priority, category) \
-    LOG_STREAM_DEFAULT_LOGGER(channel, priority, category, FNLog::LOG_PREFIX_ALL)
+#define LOG_STREAM_DEFAULT_LOGGER_WITH_PREFIX(channel, priority, category, identify) \
+    LOG_STREAM_DEFAULT_LOGGER(channel, priority, category, identify, FNLog::LOG_PREFIX_DEFAULT)
 
 
 //--------------------CPP STREAM STYLE FORMAT ---------------------------
-#define LogTraceStream(channel_id, category) LOG_STREAM_DEFAULT_LOGGER_WITH_PREFIX(channel_id, FNLog::PRIORITY_TRACE, category)
-#define LogDebugStream(channel_id, category) LOG_STREAM_DEFAULT_LOGGER_WITH_PREFIX(channel_id, FNLog::PRIORITY_DEBUG, category)
-#define LogInfoStream(channel_id,  category) LOG_STREAM_DEFAULT_LOGGER_WITH_PREFIX(channel_id, FNLog::PRIORITY_INFO,  category)
-#define LogWarnStream(channel_id,  category) LOG_STREAM_DEFAULT_LOGGER_WITH_PREFIX(channel_id, FNLog::PRIORITY_WARN,  category)
-#define LogErrorStream(channel_id, category) LOG_STREAM_DEFAULT_LOGGER_WITH_PREFIX(channel_id, FNLog::PRIORITY_ERROR, category)
-#define LogAlarmStream(channel_id, category) LOG_STREAM_DEFAULT_LOGGER_WITH_PREFIX(channel_id, FNLog::PRIORITY_ALARM, category)
-#define LogFatalStream(channel_id, category) LOG_STREAM_DEFAULT_LOGGER_WITH_PREFIX(channel_id, FNLog::PRIORITY_FATAL, category)
+#define LogTraceStream(channel_id, category, identify) LOG_STREAM_DEFAULT_LOGGER_WITH_PREFIX(channel_id, FNLog::PRIORITY_TRACE, category, identify)
+#define LogDebugStream(channel_id, category, identify) LOG_STREAM_DEFAULT_LOGGER_WITH_PREFIX(channel_id, FNLog::PRIORITY_DEBUG, category, identify)
+#define LogInfoStream(channel_id,  category, identify) LOG_STREAM_DEFAULT_LOGGER_WITH_PREFIX(channel_id, FNLog::PRIORITY_INFO,  category, identify)
+#define LogWarnStream(channel_id,  category, identify) LOG_STREAM_DEFAULT_LOGGER_WITH_PREFIX(channel_id, FNLog::PRIORITY_WARN,  category, identify)
+#define LogErrorStream(channel_id, category, identify) LOG_STREAM_DEFAULT_LOGGER_WITH_PREFIX(channel_id, FNLog::PRIORITY_ERROR, category, identify)
+#define LogAlarmStream(channel_id, category, identify) LOG_STREAM_DEFAULT_LOGGER_WITH_PREFIX(channel_id, FNLog::PRIORITY_ALARM, category, identify)
+#define LogFatalStream(channel_id, category, identify) LOG_STREAM_DEFAULT_LOGGER_WITH_PREFIX(channel_id, FNLog::PRIORITY_FATAL, category, identify)
 
-#define LogTrace() LogTraceStream(0, 0)
-#define LogDebug() LogDebugStream(0, 0)
-#define LogInfo()  LogInfoStream(0, 0)
-#define LogWarn()  LogWarnStream(0, 0)
-#define LogError() LogErrorStream(0, 0)
-#define LogAlarm() LogAlarmStream(0, 0)
-#define LogFatal() LogFatalStream(0, 0)
+#define LogTrace() LogTraceStream(0, 0, 0)
+#define LogDebug() LogDebugStream(0, 0, 0)
+#define LogInfo()  LogInfoStream(0, 0, 0)
+#define LogWarn()  LogWarnStream(0, 0, 0)
+#define LogError() LogErrorStream(0, 0, 0)
+#define LogAlarm() LogAlarmStream(0, 0, 0)
+#define LogFatal() LogFatalStream(0, 0, 0)
 
 
 //--------------------CPP TEMPLATE STYLE FORMAT ---------------------------
@@ -4312,47 +4743,51 @@ FNLog::LogStream& LogTemplatePack(FNLog::LogStream&& ls, Args&& ... args)
     return ls;
 }
 
-#define LogTracePack(channel_id, category, ...)  LogTemplatePack(LOG_STREAM_DEFAULT_LOGGER_WITH_PREFIX(channel_id, FNLog::PRIORITY_TRACE, category), ##__VA_ARGS__)
-#define LogDebugPack(channel_id, category, ...)  LogTemplatePack(LOG_STREAM_DEFAULT_LOGGER_WITH_PREFIX(channel_id, FNLog::PRIORITY_DEBUG, category), ##__VA_ARGS__)
-#define LogInfoPack(channel_id,  category, ...)  LogTemplatePack(LOG_STREAM_DEFAULT_LOGGER_WITH_PREFIX(channel_id, FNLog::PRIORITY_INFO,  category), ##__VA_ARGS__)
-#define LogWarnPack(channel_id,  category, ...)  LogTemplatePack(LOG_STREAM_DEFAULT_LOGGER_WITH_PREFIX(channel_id, FNLog::PRIORITY_WARN,  category), ##__VA_ARGS__)
-#define LogErrorPack(channel_id, category, ...)  LogTemplatePack(LOG_STREAM_DEFAULT_LOGGER_WITH_PREFIX(channel_id, FNLog::PRIORITY_ERROR, category), ##__VA_ARGS__)
-#define LogAlarmPack(channel_id, category, ...)  LogTemplatePack(LOG_STREAM_DEFAULT_LOGGER_WITH_PREFIX(channel_id, FNLog::PRIORITY_ALARM, category), ##__VA_ARGS__)
-#define LogFatalPack(channel_id, category, ...)  LogTemplatePack(LOG_STREAM_DEFAULT_LOGGER_WITH_PREFIX(channel_id, FNLog::PRIORITY_FATAL, category), ##__VA_ARGS__)
+#define LogTracePack(channel_id, category, identify, ...)  LogTemplatePack(LOG_STREAM_DEFAULT_LOGGER_WITH_PREFIX(channel_id, FNLog::PRIORITY_TRACE, category, identify), ##__VA_ARGS__)
+#define LogDebugPack(channel_id, category, identify, ...)  LogTemplatePack(LOG_STREAM_DEFAULT_LOGGER_WITH_PREFIX(channel_id, FNLog::PRIORITY_DEBUG, category, identify), ##__VA_ARGS__)
+#define LogInfoPack(channel_id,  category, identify, ...)  LogTemplatePack(LOG_STREAM_DEFAULT_LOGGER_WITH_PREFIX(channel_id, FNLog::PRIORITY_INFO,  category, identify), ##__VA_ARGS__)
+#define LogWarnPack(channel_id,  category, identify, ...)  LogTemplatePack(LOG_STREAM_DEFAULT_LOGGER_WITH_PREFIX(channel_id, FNLog::PRIORITY_WARN,  category, identify), ##__VA_ARGS__)
+#define LogErrorPack(channel_id, category, identify, ...)  LogTemplatePack(LOG_STREAM_DEFAULT_LOGGER_WITH_PREFIX(channel_id, FNLog::PRIORITY_ERROR, category, identify), ##__VA_ARGS__)
+#define LogAlarmPack(channel_id, category, identify, ...)  LogTemplatePack(LOG_STREAM_DEFAULT_LOGGER_WITH_PREFIX(channel_id, FNLog::PRIORITY_ALARM, category, identify), ##__VA_ARGS__)
+#define LogFatalPack(channel_id, category, identify, ...)  LogTemplatePack(LOG_STREAM_DEFAULT_LOGGER_WITH_PREFIX(channel_id, FNLog::PRIORITY_FATAL, category, identify), ##__VA_ARGS__)
 
-#define PackTrace(...) LogTracePack(0, 0, ##__VA_ARGS__)
-#define PackDebug(...) LogDebugPack(0, 0, ##__VA_ARGS__)
-#define PackInfo( ...) LogInfoPack( 0, 0, ##__VA_ARGS__)
-#define PackWarn( ...) LogWarnPack( 0, 0, ##__VA_ARGS__)
-#define PackError(...) LogErrorPack(0, 0, ##__VA_ARGS__)
-#define PackAlarm(...) LogAlarmPack(0, 0, ##__VA_ARGS__)
-#define PackFatal(...) LogFatalPack(0, 0, ##__VA_ARGS__)
+#define PackTrace(...) LogTracePack(0, 0, 0, ##__VA_ARGS__)
+#define PackDebug(...) LogDebugPack(0, 0, 0, ##__VA_ARGS__)
+#define PackInfo( ...) LogInfoPack( 0, 0, 0, ##__VA_ARGS__)
+#define PackWarn( ...) LogWarnPack( 0, 0, 0, ##__VA_ARGS__)
+#define PackError(...) LogErrorPack(0, 0, 0, ##__VA_ARGS__)
+#define PackAlarm(...) LogAlarmPack(0, 0, 0, ##__VA_ARGS__)
+#define PackFatal(...) LogFatalPack(0, 0, 0, ##__VA_ARGS__)
 
 
 //--------------------CPP MACRO STREAM STYLE FORMAT ---------------------------
 
-#define LOG_TRACE(channel_id, category, log) LOG_STREAM_DEFAULT_LOGGER_WITH_PREFIX(channel_id, FNLog::PRIORITY_TRACE, category) << log
-#define LOG_DEBUG(channel_id, category, log) LOG_STREAM_DEFAULT_LOGGER_WITH_PREFIX(channel_id, FNLog::PRIORITY_DEBUG, category) << log
-#define LOG_INFO(channel_id,  category, log) LOG_STREAM_DEFAULT_LOGGER_WITH_PREFIX(channel_id, FNLog::PRIORITY_INFO,  category) << log
-#define LOG_WARN(channel_id,  category, log) LOG_STREAM_DEFAULT_LOGGER_WITH_PREFIX(channel_id, FNLog::PRIORITY_WARN,  category) << log
-#define LOG_ERROR(channel_id, category, log) LOG_STREAM_DEFAULT_LOGGER_WITH_PREFIX(channel_id, FNLog::PRIORITY_ERROR, category) << log
-#define LOG_ALARM(channel_id, category, log) LOG_STREAM_DEFAULT_LOGGER_WITH_PREFIX(channel_id, FNLog::PRIORITY_ALARM, category) << log
-#define LOG_FATAL(channel_id, category, log) LOG_STREAM_DEFAULT_LOGGER_WITH_PREFIX(channel_id, FNLog::PRIORITY_FATAL, category) << log
+#define LOG_TRACE(channel_id, category, identify, log) LOG_STREAM_DEFAULT_LOGGER_WITH_PREFIX(channel_id, FNLog::PRIORITY_TRACE, category, identify) << log
+#define LOG_DEBUG(channel_id, category, identify, log) LOG_STREAM_DEFAULT_LOGGER_WITH_PREFIX(channel_id, FNLog::PRIORITY_DEBUG, category, identify) << log
+#define LOG_INFO(channel_id,  category, identify, log) LOG_STREAM_DEFAULT_LOGGER_WITH_PREFIX(channel_id, FNLog::PRIORITY_INFO,  category, identify) << log
+#define LOG_WARN(channel_id,  category, identify, log) LOG_STREAM_DEFAULT_LOGGER_WITH_PREFIX(channel_id, FNLog::PRIORITY_WARN,  category, identify) << log
+#define LOG_ERROR(channel_id, category, identify, log) LOG_STREAM_DEFAULT_LOGGER_WITH_PREFIX(channel_id, FNLog::PRIORITY_ERROR, category, identify) << log
+#define LOG_ALARM(channel_id, category, identify, log) LOG_STREAM_DEFAULT_LOGGER_WITH_PREFIX(channel_id, FNLog::PRIORITY_ALARM, category, identify) << log
+#define LOG_FATAL(channel_id, category, identify, log) LOG_STREAM_DEFAULT_LOGGER_WITH_PREFIX(channel_id, FNLog::PRIORITY_FATAL, category, identify) << log
 
-#define LOGT(log) LOG_TRACE(0, 0, log)
-#define LOGD(log) LOG_DEBUG(0, 0, log)
-#define LOGI(log) LOG_INFO(0, 0, log)
-#define LOGW(log) LOG_WARN(0, 0, log)
-#define LOGE(log) LOG_ERROR(0, 0, log)
-#define LOGA(log) LOG_ALARM(0, 0, log)
-#define LOGF(log) LOG_FATAL(0, 0, log)
+#define LOGT(log) LOG_TRACE(0, 0, 0, log)
+#define LOGD(log) LOG_DEBUG(0, 0, 0, log)
+#define LOGI(log) LOG_INFO(0,  0, 0, log)
+#define LOGW(log) LOG_WARN(0,  0, 0, log)
+#define LOGE(log) LOG_ERROR(0, 0, 0, log)
+#define LOGA(log) LOG_ALARM(0, 0, 0, log)
+#define LOGF(log) LOG_FATAL(0, 0, 0, log)
 
 
 //--------------------C STYLE FORMAT ---------------------------
-#ifdef _WIN32
-#define LOG_FORMAT(channel_id, priority, category, prefix, logformat, ...) \
+#ifdef WIN32
+#define LOG_FORMAT(channel_id, priority, category, identify, prefix, logformat, ...) \
 do{ \
-    FNLog::LogStream __log_stream(LOG_STREAM_DEFAULT_LOGGER(channel_id, priority, category, prefix));\
+    if (FNLog::BlockInput(FNLog::GetDefaultLogger(), channel_id, priority, category, identify))  \
+    { \
+        break;   \
+    } \
+    FNLog::LogStream __log_stream(LOG_STREAM_DEFAULT_LOGGER(channel_id, priority, category, identify, prefix));\
     if (__log_stream.log_data_)\
     {\
         int __log_len = _snprintf_s(__log_stream.log_data_ ->content_ + __log_stream.log_data_ ->content_len_, FNLog::LogData::LOG_SIZE - __log_stream.log_data_ ->content_len_, _TRUNCATE, logformat, ##__VA_ARGS__); \
@@ -4361,9 +4796,14 @@ do{ \
     }\
 } while (0)
 #else
-#define LOG_FORMAT(channel_id, priority, category, prefix, logformat, ...) \
+// function format warn:   void(int x1, int x2, const char *args, ...) __attribute__((format(printf, 3, 4)));    
+#define LOG_FORMAT(channel_id, priority, category, identify, prefix, logformat, ...) \
 do{ \
-    FNLog::LogStream __log_stream(LOG_STREAM_DEFAULT_LOGGER(channel_id, priority, category, prefix));\
+    if (FNLog::BlockInput(FNLog::GetDefaultLogger(), channel_id, priority, category, identify))  \
+    { \
+        break;   \
+    } \
+    FNLog::LogStream __log_stream(LOG_STREAM_DEFAULT_LOGGER(channel_id, priority, category, identify, prefix));\
     if (__log_stream.log_data_)\
     {\
         int __log_len = snprintf(__log_stream.log_data_ ->content_ + __log_stream.log_data_ ->content_len_, FNLog::LogData::LOG_SIZE - __log_stream.log_data_ ->content_len_, logformat, ##__VA_ARGS__); \
@@ -4373,20 +4813,20 @@ do{ \
 } while (0)
 #endif
 
-#define LOGFMT_TRACE(channel_id, category, fmt, ...)  LOG_FORMAT(channel_id, FNLog::PRIORITY_TRACE, category, FNLog::LOG_PREFIX_ALL, fmt, ##__VA_ARGS__)
-#define LOGFMT_DEBUG(channel_id, category, fmt, ...)  LOG_FORMAT(channel_id, FNLog::PRIORITY_DEBUG, category, FNLog::LOG_PREFIX_ALL, fmt, ##__VA_ARGS__)
-#define LOGFMT_INFO( channel_id, category, fmt, ...)  LOG_FORMAT(channel_id, FNLog::PRIORITY_INFO,  category, FNLog::LOG_PREFIX_ALL, fmt, ##__VA_ARGS__)
-#define LOGFMT_WARN( channel_id, category, fmt, ...)  LOG_FORMAT(channel_id, FNLog::PRIORITY_WARN,  category, FNLog::LOG_PREFIX_ALL, fmt, ##__VA_ARGS__)
-#define LOGFMT_ERROR(channel_id, category, fmt, ...)  LOG_FORMAT(channel_id, FNLog::PRIORITY_ERROR, category, FNLog::LOG_PREFIX_ALL, fmt, ##__VA_ARGS__)
-#define LOGFMT_ALARM(channel_id, category, fmt, ...)  LOG_FORMAT(channel_id, FNLog::PRIORITY_ALARM, category, FNLog::LOG_PREFIX_ALL, fmt, ##__VA_ARGS__)
-#define LOGFMT_FATAL(channel_id, category, fmt, ...)  LOG_FORMAT(channel_id, FNLog::PRIORITY_FATAL, category, FNLog::LOG_PREFIX_ALL, fmt, ##__VA_ARGS__)
-#define LOGFMTT(fmt, ...) LOGFMT_TRACE(0, 0, fmt,  ##__VA_ARGS__)
-#define LOGFMTD(fmt, ...) LOGFMT_DEBUG(0, 0, fmt,  ##__VA_ARGS__)
-#define LOGFMTI(fmt, ...) LOGFMT_INFO( 0, 0, fmt,  ##__VA_ARGS__)
-#define LOGFMTW(fmt, ...) LOGFMT_WARN( 0, 0, fmt,  ##__VA_ARGS__)
-#define LOGFMTE(fmt, ...) LOGFMT_ERROR(0, 0, fmt,  ##__VA_ARGS__)
-#define LOGFMTA(fmt, ...) LOGFMT_ALARM(0, 0, fmt,  ##__VA_ARGS__)
-#define LOGFMTF(fmt, ...) LOGFMT_FATAL(0, 0, fmt,  ##__VA_ARGS__)
+#define LOGFMT_TRACE(channel_id, category, identify, fmt, ...)  LOG_FORMAT(channel_id, FNLog::PRIORITY_TRACE, category, identify, FNLog::LOG_PREFIX_DEFAULT, fmt, ##__VA_ARGS__)
+#define LOGFMT_DEBUG(channel_id, category, identify, fmt, ...)  LOG_FORMAT(channel_id, FNLog::PRIORITY_DEBUG, category, identify, FNLog::LOG_PREFIX_DEFAULT, fmt, ##__VA_ARGS__)
+#define LOGFMT_INFO( channel_id, category, identify, fmt, ...)  LOG_FORMAT(channel_id, FNLog::PRIORITY_INFO,  category, identify, FNLog::LOG_PREFIX_DEFAULT, fmt, ##__VA_ARGS__)
+#define LOGFMT_WARN( channel_id, category, identify, fmt, ...)  LOG_FORMAT(channel_id, FNLog::PRIORITY_WARN,  category, identify, FNLog::LOG_PREFIX_DEFAULT, fmt, ##__VA_ARGS__)
+#define LOGFMT_ERROR(channel_id, category, identify, fmt, ...)  LOG_FORMAT(channel_id, FNLog::PRIORITY_ERROR, category, identify, FNLog::LOG_PREFIX_DEFAULT, fmt, ##__VA_ARGS__)
+#define LOGFMT_ALARM(channel_id, category, identify, fmt, ...)  LOG_FORMAT(channel_id, FNLog::PRIORITY_ALARM, category, identify, FNLog::LOG_PREFIX_DEFAULT, fmt, ##__VA_ARGS__)
+#define LOGFMT_FATAL(channel_id, category, identify, fmt, ...)  LOG_FORMAT(channel_id, FNLog::PRIORITY_FATAL, category, identify, FNLog::LOG_PREFIX_DEFAULT, fmt, ##__VA_ARGS__)
+#define LOGFMTT(fmt, ...) LOGFMT_TRACE(0, 0, 0, fmt,  ##__VA_ARGS__)
+#define LOGFMTD(fmt, ...) LOGFMT_DEBUG(0, 0, 0, fmt,  ##__VA_ARGS__)
+#define LOGFMTI(fmt, ...) LOGFMT_INFO( 0, 0, 0, fmt,  ##__VA_ARGS__)
+#define LOGFMTW(fmt, ...) LOGFMT_WARN( 0, 0, 0, fmt,  ##__VA_ARGS__)
+#define LOGFMTE(fmt, ...) LOGFMT_ERROR(0, 0, 0, fmt,  ##__VA_ARGS__)
+#define LOGFMTA(fmt, ...) LOGFMT_ALARM(0, 0, 0, fmt,  ##__VA_ARGS__)
+#define LOGFMTF(fmt, ...) LOGFMT_FATAL(0, 0, 0, fmt,  ##__VA_ARGS__)
 
 
 #endif
@@ -4466,4 +4906,7 @@ namespace FNLog
 
 }
 
+#endif
+#ifdef __GNUG__
+#pragma GCC pop_options
 #endif

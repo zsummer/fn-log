@@ -46,8 +46,14 @@ int main(int argc, char* argv[])
     PackAlarm("now time:", time(nullptr), ";");
     PackFatal("now time:", time(nullptr), ";");
 
+    LogInfo() << "random1:" << ((unsigned long long)rand() * rand()) << FNLog::LogBlankAlign<110>() << "random2:" << ((unsigned long long)rand() * rand()) << ";";
+    LogInfo() << "random1:" << ((unsigned long long)rand() * rand()) << FNLog::LogBlankAlign<110>() << "random2:" << ((unsigned long long)rand() * rand()) << ";";
+    LogInfo() << "random1:" << ((unsigned long long)rand() * rand()) << FNLog::LogBlankAlign<110>() << "random2:" << ((unsigned long long)rand() * rand()) << ";";
+    LogInfo() << "random1:" << ((unsigned long long)rand() * rand()) << FNLog::LogBlankAlign<110>() << "random2:" << ((unsigned long long)rand() * rand()) << ";";
+    LogInfo() << "random1:" << ((unsigned long long)rand() * rand()) << FNLog::LogBlankAlign<110>() << "random2:" << ((unsigned long long)rand() * rand()) << ";";
+    LogInfo() << "random1:" << ((unsigned long long)rand() * rand()) << FNLog::LogBlankAlign<110>() << "random2:" << ((unsigned long long)rand() * rand()) << ";";
+    LogInfo() << "random1:" << ((unsigned long long)rand() * rand()) << FNLog::LogBlankAlign<110>() << "random2:" << ((unsigned long long)rand() * rand()) << ";";
 
-    
     LogAlarm() << "finish";
 
 

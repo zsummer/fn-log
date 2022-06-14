@@ -93,14 +93,21 @@ namespace FNLog
     enum ReseveKey
     {
         RK_NULL,
+        RK_SHM_KEY,
         RK_CHANNEL,
         RK_DEVICE,
         RK_SYNC,
         RK_DISABLE,
         RK_HOT_UPDATE,
+        RK_LOGGER_NAME,
+        PK_LOGGER_DESC,
         RK_PRIORITY,
         RK_CATEGORY,
         RK_CATEGORY_EXTEND,
+        RK_CATEGORY_FILTER,
+        RK_IDENTIFY,
+        RK_IDENTIFY_EXTEND,
+        RK_IDENTIFY_FILTER,
         RK_OUT_TYPE,
         RK_FILE,
         RK_PATH,
@@ -109,7 +116,7 @@ namespace FNLog
         RK_UDP_ADDR,
     };
 
-#ifdef __GNUC__
+#if __GNUG__ && __GNUC__ >= 6
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wclass-memaccess"
 #endif
@@ -130,9 +137,9 @@ namespace FNLog
             }
             else if (*(begin + 1) == 'a')
             {
-                if (end - begin > (int)sizeof("category") - 1)
+                if (end - begin > (int)sizeof("category_e") - 1)
                 {
-                    return RK_CATEGORY_EXTEND;
+                    return *(begin + 9) == 'e' ? RK_CATEGORY_EXTEND : RK_CATEGORY_FILTER;
                 }
                 else
                 {
@@ -154,8 +161,33 @@ namespace FNLog
             return RK_FILE;
         case 'h':
             return RK_HOT_UPDATE;
+        case 'i':
+            if (end - begin > (int)sizeof("identify_e") - 1)
+            {
+                return *(begin + 9) == 'e' ? RK_IDENTIFY_EXTEND : RK_IDENTIFY_FILTER;
+            }
+            else
+            {
+                return RK_IDENTIFY;
+            }
+            break;
         case 'l':
-            return RK_LIMIT_SIZE;
+            if (*(begin + 1) == 'i')
+            {
+                return RK_LIMIT_SIZE;
+            }
+            else if (end - begin > 8)
+            {
+                if (*(begin + 7) == 'n')
+                {
+                    return RK_LOGGER_NAME;
+                }
+                if (*(begin + 7) == 'd')
+                {
+                    return PK_LOGGER_DESC;
+                }
+            }
+            break;
         case 'p':
             if (*(begin + 1) == 'r')
             {
@@ -171,7 +203,11 @@ namespace FNLog
         case 'o':
             return RK_OUT_TYPE;
         case 's':
-            return RK_SYNC;
+            if (*(begin+1) == 'y')
+            {
+                return RK_SYNC;
+            }
+            return RK_SHM_KEY;
         case 'u':
             return RK_UDP_ADDR;
         default:
@@ -220,6 +256,40 @@ namespace FNLog
         return true;
     }
 
+    inline long long ParseNumber(const char* begin, const char* end)
+    {
+        if (end <= begin)
+        {
+            return 0;
+        }
+
+        if (end - begin > 40 )
+        {
+            return 0;
+        }
+
+        char buff[50];
+        memcpy(buff, begin, end - begin);
+        buff[end - begin] = '\0';
+        return strtoll(buff, NULL, 0);
+    }
+
+    inline bool ParseString(const char* begin, const char* end, char * buffer, int buffer_len, int& write_len)
+    {
+        write_len = 0;
+        if (end <= begin)
+        {
+            return false;
+        }
+        write_len = buffer_len - 1;
+        if (end - begin < write_len)
+        {
+            write_len = (int)(end - begin);
+        }
+        memcpy(buffer, begin, write_len);
+        buffer[write_len] = '\0';
+        return true;
+    }
     inline ChannelType ParseChannelType(const char* begin, const char* end)
     {
         if (end <= begin || *begin != 's')
@@ -245,17 +315,17 @@ namespace FNLog
             return DEVICE_OUT_UDP;
         case 's':case 'S':
             return DEVICE_OUT_SCREEN;
+        case 'v':case 'V':
+            return DEVICE_OUT_VIRTUAL;
         }
         return DEVICE_OUT_NULL;
     }
 
-    inline void ParseAddres(const char* begin, const char* end, std::atomic_llong& ip, std::atomic_llong& port)
+    inline std::pair<long long, const char*> ParseAddresIP(const char* begin, const char* end)
     {
-        ip = 0;
-        port = 0;
         if (end <= begin)
         {
-            return;
+            return std::make_pair(0, end);
         }
         const char* ip_begin = begin;
         while ((*ip_begin < '1' || *ip_begin > '9') && ip_begin != end)
@@ -263,31 +333,75 @@ namespace FNLog
             ip_begin++;
         }
         const char* ip_end = ip_begin;
-        while (((*ip_end >= '0' && *ip_end <= '9') || *ip_end == '.' ) && ip_end != end)
+        while (((*ip_end >= '0' && *ip_end <= '9') || *ip_end == '.') && ip_end != end)
         {
             ip_end++;
         }
-        if (ip_end <= ip_begin)
+        if (ip_end - ip_begin > 40)
+        {
+            return std::make_pair(0, end);
+        }
+        char buff[50];
+        memcpy(buff, ip_begin, ip_end - ip_begin);
+        buff[ip_end - ip_begin] = '\0';
+        return std::make_pair((long long)inet_addr(buff), ip_end); 
+    }
+
+
+    inline void ParseAddres(const char* begin, const char* end, long long & ip, long long& port)
+    {
+        ip = 0;
+        port = 0;
+        if (end <= begin)
         {
             return;
         }
-
-        const char* port_begin = ip_end;
-        while ((*port_begin < '1' || *port_begin > '9') && port_begin != end)
+        auto result_ip = ParseAddresIP(begin, end);
+        const char* port_begin = result_ip.second;
+        while (port_begin != end && (*port_begin < '1' || *port_begin > '9')  )
         {
             port_begin++;
         }
-        if (end <= port_begin)
+        if (port_begin >= end)
         {
             return;
         }
-        std::string str(ip_begin, ip_end - ip_begin);
-        ip = inet_addr(str.c_str());
-        str.assign(port_begin, end - port_begin);
-        port = htons(atoi(str.c_str()));
+        if (end - port_begin >= 40)
+        {
+            return;
+        }
+        char buff[50];
+        memcpy(buff, port_begin, end - port_begin);
+        buff[end - port_begin] = '\0';
+        port = htons(atoi(buff));
+        ip = result_ip.first;
         return;
     }
 
+    inline unsigned long long ParseBitArray(const char* begin, const char* end)
+    {
+        unsigned long long bitmap = 0;
+        if (end <= begin)
+        {
+            return bitmap;
+        }
+        const char* offset = begin;
+        while (offset < end)
+        {
+            if (*offset >= '0' && *offset <= '9')
+            {
+                int bit_offset = atoi(offset);
+                bitmap |= (1ULL << bit_offset);
+                while (offset < end && (*offset >= '0' && *offset <= '9'))
+                {
+                    offset++;
+                }
+                continue;
+            }
+            offset++;
+        }
+        return bitmap;
+    }
     struct Line
     {
         int blank_;
@@ -309,7 +423,12 @@ namespace FNLog
         Line line_;
         SHMLogger::Channels channels_;
         int channel_size_;
+        long long shm_key_;
         bool hot_update_;
+        char desc_[Logger::MAX_LOGGER_DESC_LEN];
+        int desc_len_;
+        char name_[Logger::MAX_LOGGER_NAME_LEN];
+        int name_len_;
     };
 
     inline void InitState(LexState& state)
@@ -423,7 +542,7 @@ namespace FNLog
                 if ((ch >= 'a' && ch <= 'z')
                     || (ch >= 'A' && ch <= 'Z')
                     || (ch >= '0' && ch <= '9')
-                    || ch == '_' || ch == '-' || ch == ':' || ch == '/' || ch == '.' || ch == '$' || ch == '~')
+                    || ch == '_' || ch == '-' || ch == ':' || ch == '/' || ch == '.' || ch == ',' || ch == '$' || ch == '~')
                 {
                     switch (ls.line_.block_type_)
                     {
@@ -501,6 +620,17 @@ namespace FNLog
             case RK_CATEGORY_EXTEND:
                 device.config_fields_[DEVICE_CFG_CATEGORY_EXTEND] = atoll(ls.line_.val_begin_);
                 break;
+            case RK_CATEGORY_FILTER:
+                device.config_fields_[DEVICE_CFG_CATEGORY_FILTER] = ParseBitArray(ls.line_.val_begin_, ls.line_.val_end_);
+            case RK_IDENTIFY:
+                device.config_fields_[DEVICE_CFG_IDENTIFY] = atoll(ls.line_.val_begin_);
+                break;
+            case RK_IDENTIFY_EXTEND:
+                device.config_fields_[DEVICE_CFG_IDENTIFY_EXTEND] = atoll(ls.line_.val_begin_);
+                break;
+            case RK_IDENTIFY_FILTER:
+                device.config_fields_[DEVICE_CFG_IDENTIFY_FILTER] = ParseBitArray(ls.line_.val_begin_, ls.line_.val_end_);
+                break;
             case RK_LIMIT_SIZE:
                 device.config_fields_[DEVICE_CFG_FILE_LIMIT_SIZE] = atoll(ls.line_.val_begin_) * 1000*1000;
                 break;
@@ -516,7 +646,7 @@ namespace FNLog
                 }
                 break;
             case RK_FILE:
-                if (ls.line_.val_end_ - ls.line_.val_begin_ < Device::MAX_NAME_LEN - 1
+                if (ls.line_.val_end_ - ls.line_.val_begin_ < Device::MAX_LOGGER_NAME_LEN - 1
                     && ls.line_.val_end_ - ls.line_.val_begin_ >= 1)
                 {
                     memcpy(device.out_file_, ls.line_.val_begin_, ls.line_.val_end_ - ls.line_.val_begin_);
@@ -524,7 +654,15 @@ namespace FNLog
                 }
                 break;
             case RK_UDP_ADDR:
-                ParseAddres(ls.line_.val_begin_, ls.line_.val_end_, device.config_fields_[DEVICE_CFG_UDP_IP], device.config_fields_[DEVICE_CFG_UDP_PORT]);
+                if (true)
+                {
+                    long long ip = 0;
+                    long long port = 0;
+                    ParseAddres(ls.line_.val_begin_, ls.line_.val_end_, ip, port);
+                    device.config_fields_[DEVICE_CFG_UDP_IP] = ip;
+                    device.config_fields_[DEVICE_CFG_UDP_PORT] = port;
+                }
+                
                 if (device.config_fields_[DEVICE_CFG_UDP_IP] == 0)
                 {
                     return PEC_ILLEGAL_ADDR_IP;
@@ -583,6 +721,18 @@ namespace FNLog
             case RK_CATEGORY_EXTEND:
                 channel.config_fields_[CHANNEL_CFG_CATEGORY_EXTEND] = atoi(ls.line_.val_begin_);
                 break;
+            case RK_CATEGORY_FILTER:
+                channel.config_fields_[CHANNEL_CFG_CATEGORY_FILTER] = ParseBitArray(ls.line_.val_begin_, ls.line_.val_end_);
+                break;
+            case RK_IDENTIFY:
+                channel.config_fields_[CHANNEL_CFG_IDENTIFY] = atoi(ls.line_.val_begin_);
+                break;
+            case RK_IDENTIFY_EXTEND:
+                channel.config_fields_[CHANNEL_CFG_IDENTIFY_EXTEND] = atoi(ls.line_.val_begin_);
+                break;
+            case RK_IDENTIFY_FILTER:
+                channel.config_fields_[CHANNEL_CFG_IDENTIFY_FILTER] = ParseBitArray(ls.line_.val_begin_, ls.line_.val_end_);
+                break;
             case RK_DEVICE:
                 if (ls.line_.line_type_ != LINE_ARRAY)
                 {
@@ -603,6 +753,10 @@ namespace FNLog
                     memset(&device, 0, sizeof(device));
                     device.device_id_ = device_id;
                     ret = ParseDevice(ls, device, ls.line_.blank_);
+                    if (device.out_type_ == DEVICE_OUT_VIRTUAL)
+                    {
+                        channel.virtual_device_id_ = device.device_id_;
+                    }
                     if (ret != PEC_NONE || ls.line_.line_type_ == LINE_EOF)
                     {
                         return ret;
@@ -635,6 +789,8 @@ namespace FNLog
         ls.current_ = ls.first_;
         ls.line_.line_type_ = LINE_NULL;
         ls.line_number_ = 1;
+        ls.desc_len_ = 0;
+        ls.name_len_ = 0;
         do
         {
             const char* current = ls.current_;
@@ -658,6 +814,15 @@ namespace FNLog
             {
             case RK_HOT_UPDATE:
                 ls.hot_update_ = ParseBool(ls.line_.val_begin_, ls.line_.val_end_);//"disable"
+                break;
+            case RK_LOGGER_NAME:
+                ParseString(ls.line_.val_begin_, ls.line_.val_end_, ls.name_, Logger::MAX_LOGGER_NAME_LEN, ls.name_len_);
+                break;
+            case PK_LOGGER_DESC:
+                ParseString(ls.line_.val_begin_, ls.line_.val_end_, ls.desc_, Logger::MAX_LOGGER_DESC_LEN, ls.desc_len_);
+                break;
+            case RK_SHM_KEY:
+                ls.shm_key_ = ParseNumber(ls.line_.val_begin_, ls.line_.val_end_);
                 break;
             case RK_CHANNEL:
                 if (ls.line_.line_type_ != LINE_ARRAY)
@@ -696,7 +861,7 @@ namespace FNLog
         return PEC_NONE;
     }
 
-#ifdef __GNUC__
+#if __GNUG__ && __GNUC__ >= 6
 #pragma GCC diagnostic pop
 #endif
 

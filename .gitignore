@@ -28,19 +28,26 @@
 
 # Compiled Dir
 build
+build_*
 build-*
 .DS_Store
 .vs
 .vscode
 xcodes
+vs_sln
+
 
 # Executables
 *.exe
 *.out
 *.app
+*.bin
 bin/test_*
 bin/stress_*
 bin/benchmark_*
+bin/Debug
+bin/Release
+.gdb_history
 
 # log
 bin/*.log.*

@@ -49,7 +49,7 @@ namespace FNLog
 {
 
 
-#ifndef _WIN32
+#ifndef WIN32
     struct PriorityRender
     {
         const char* const priority_name_;
@@ -191,7 +191,7 @@ namespace FNLog
 
 
         int real_wide = 0;
-#ifndef _WIN32
+#ifndef WIN32
         real_wide = sizeof(number) * 8 - __builtin_clzll(number);
 #else
         unsigned long win_index = 0;
@@ -256,7 +256,7 @@ namespace FNLog
             "0123456789abcdefghijk";
 
         int real_wide = 0;
-#ifndef _WIN32
+#ifndef WIN32
         real_wide = sizeof(number) * 8 - __builtin_clzll(number);
 #else
         unsigned long win_index = 0;
@@ -283,160 +283,69 @@ namespace FNLog
         int fp_class = std::fpclassify(number);
         switch (fp_class)
         {
-        case FP_NAN:
-            memcpy(dst, "nan", 3);
-            return 3;
+        case FP_SUBNORMAL:
+        case FP_ZERO:
+            *dst = '0';
+            return 1;
         case FP_INFINITE:
             memcpy(dst, "inf", 3);
             return 3;
+        case FP_NAN:
+            memcpy(dst, "nan", 3);
+            return 3;
+        case FP_NORMAL:
+            break;
+        default:
+            return 0;
         }
 
 
         double fabst = std::fabs(number);
-
-        
         if (fabst < 0.0001 || fabst > 0xFFFFFFFFFFFFFFFULL)
         {
-            char * buf = gcvt(number, 16, dst);
-            (void)buf;
+            if (fabst < 0.0001 && fabst > 0.0000001)
+            {
+                sprintf(dst, "%.08lf", fabst);
+            }
+            else
+            {
+                char* buf = gcvt(number, 16, dst);
+                (void)buf;
+            }
             return (int)strlen(dst);
         }
-
-        if (number < 0.0)
+        bool is_neg = std::signbit(number);
+        int neg_offset = 0;
+        if (is_neg)
         {
-            double intpart = 0;
-            unsigned long long fractpart = (unsigned long long)(modf(fabst, &intpart) * 10000);
             *dst = '-';
-            int writed_len = 1 + write_dec_unsafe<0>(dst + 1, (unsigned long long)intpart);
-            if (fractpart > 0)
-            {
-                *(dst + writed_len) = '.';
-                return writed_len + 1 + write_dec_unsafe<4>(dst + writed_len + 1, (unsigned long long)fractpart);
-            }
-            return writed_len;
+            neg_offset = 1;
         }
 
         double intpart = 0;
         unsigned long long fractpart = (unsigned long long)(modf(fabst, &intpart) * 10000);
-        int writed_len = write_dec_unsafe<0>(dst, (unsigned long long)intpart);
+        int base_offset = write_dec_unsafe<0>(dst + neg_offset, (unsigned long long)intpart);
         if (fractpart > 0)
         {
-            *(dst + writed_len) = '.';
-            writed_len++;
-            int wide = 4;
-            int fp = (int)fractpart;
-            while (fp % 10 == 0 && wide > 1)
+            *(dst + neg_offset + base_offset) = '.';
+            int fractpat_offset = 1 + write_dec_unsafe<4>(dst + neg_offset + base_offset + 1, (unsigned long long)fractpart);
+            for (int i = neg_offset + base_offset + fractpat_offset - 1; i > neg_offset + base_offset + 2; i--)
             {
-                wide--;
-                fp /= 10;
-            }
-            writed_len += wide;
-            fp = (int)fractpart;
-            switch (wide)
-            {
-            case 1:
-                *(dst + writed_len - 1) = "0123456789"[fp / 1000];
-                break;
-            case 2:
-                *(dst + writed_len - 2) = "0123456789"[fp / 1000];
-                *(dst + writed_len - 1) = "0123456789"[fp / 100 % 10];
-                break;
-            case 3:
-                *(dst + writed_len - 3) = "0123456789"[fp / 1000];
-                *(dst + writed_len - 2) = "0123456789"[fp / 100 % 10];
-                *(dst + writed_len - 1) = "0123456789"[fp / 10 % 10];
-                break;
-            case 4:
-                *(dst + writed_len - 4) = "0123456789"[fp / 1000];
-                *(dst + writed_len - 3) = "0123456789"[fp / 100 % 10];
-                *(dst + writed_len - 2) = "0123456789"[fp / 10 % 10];
-                *(dst + writed_len - 1) = "0123456789"[fp % 10];
-                break;
-            default:
+                if (*(dst + i) == '0')
+                {
+                    fractpat_offset--;
+                    continue;
+                }
                 break;
             }
+            return neg_offset + base_offset + fractpat_offset;
         }
-        return writed_len;
+        return neg_offset + base_offset;
     }
 
     inline int write_float_unsafe(char* dst, float number)
     {
-        if (std::isnan(number))
-        {
-            memcpy(dst, "nan", 3);
-            return 3;
-        }
-        else if (std::isinf(number))
-        {
-            memcpy(dst, "inf", 3);
-            return 3;
-        }
-
-        double fabst = std::fabs(number);
-
-
-        if (fabst < 0.0001 || fabst > 0xFFFFFFFULL)
-        {
-            char* buf = gcvt(number, 7, dst);
-            (void)buf;
-            return (int)strlen(dst);
-        }
-
-        if (number < 0.0)
-        {
-            double intpart = 0;
-            unsigned long long fractpart = (unsigned long long)(modf(fabst, &intpart) * 10000);
-            *dst = '-';
-            int writed_len = 1 + write_dec_unsafe<0>(dst + 1, (unsigned long long)intpart);
-            if (fractpart > 0)
-            {
-                *(dst + writed_len) = '.';
-                return writed_len + 1 + write_dec_unsafe<4>(dst + writed_len + 1, (unsigned long long)fractpart);
-            }
-            return writed_len;
-        }
-
-        double intpart = 0;
-        unsigned long long fractpart = (unsigned long long)(modf(fabst, &intpart) * 10000);
-        int writed_len = write_dec_unsafe<0>(dst, (unsigned long long)intpart);
-        if (fractpart > 0)
-        {
-            *(dst + writed_len) = '.';
-            writed_len++;
-            int wide = 4;
-            int fp = (int)fractpart;
-            while (fp %10 == 0 && wide > 1)
-            {
-                wide--;
-                fp /= 10;
-            }
-            writed_len += wide;
-            fp = (int)fractpart;
-            switch (wide)
-            {
-            case 1:
-                *(dst + writed_len - 1) = "0123456789"[fp / 1000];
-                break;
-            case 2:
-                *(dst + writed_len - 2) = "0123456789"[fp / 1000];
-                *(dst + writed_len - 1) = "0123456789"[fp / 100 % 10];
-                break;
-            case 3:
-                *(dst + writed_len - 3) = "0123456789"[fp / 1000];
-                *(dst + writed_len - 2) = "0123456789"[fp / 100 % 10];
-                *(dst + writed_len - 1) = "0123456789"[fp / 10 % 10];
-                break;
-            case 4:
-                *(dst + writed_len - 4) = "0123456789"[fp / 1000];
-                *(dst + writed_len - 3) = "0123456789"[fp / 100 % 10];
-                *(dst + writed_len - 2) = "0123456789"[fp / 10 % 10];
-                *(dst + writed_len - 1) = "0123456789"[fp % 10];
-                break;
-            default:
-                break;
-            }
-        }
-        return writed_len;
+        return write_double_unsafe(dst, number);
     }
 
     inline int write_date_unsafe(char* dst, long long timestamp, unsigned int precise)
@@ -500,8 +409,6 @@ namespace FNLog
     inline int write_log_thread_unsafe(char* dst, unsigned int thread_id)
     {
         int write_bytes = 0;
-        *(dst + write_bytes) = ' ';
-        write_bytes++;
         *(dst + write_bytes) = '[';
         write_bytes++;
         write_bytes += write_dec_unsafe<0>(dst + write_bytes, (unsigned long long) thread_id);

@@ -49,11 +49,11 @@
 #endif
 
 #ifndef FN_LOG_MAX_LOG_SIZE
-#define FN_LOG_MAX_LOG_SIZE 1000
+#define FN_LOG_MAX_LOG_SIZE 10000
 #endif
 
 #ifndef FN_LOG_MAX_LOG_QUEUE_SIZE //the size need big than push log thread count
-#define FN_LOG_MAX_LOG_QUEUE_SIZE 10000
+#define FN_LOG_MAX_LOG_QUEUE_SIZE 1000
 #endif
 
 
@@ -61,14 +61,8 @@
 #define FN_LOG_HOTUPDATE_INTERVEL 5
 #endif
 
-#ifndef FN_LOG_USE_SHM
-#define FN_LOG_USE_SHM 0
-#endif 
 
-#ifndef FN_LOG_SHM_KEY
-#define FN_LOG_SHM_KEY 0x9110
-#endif 
-
+//#define FN_LOG_USING_ATOM_CFG
 
 namespace FNLog
 {
@@ -89,9 +83,13 @@ namespace FNLog
         LOG_PREFIX_TIMESTAMP = 0x1,
         LOG_PREFIX_PRIORITY = 0x2,
         LOG_PREFIX_THREAD = 0x4,
-        LOG_PREFIX_FILE = 0x8,
-        LOG_PREFIX_FUNCTION = 0x10,
-        LOG_PREFIX_ALL = 0xff
+        LOG_PREFIX_NAME = 0x8,
+        LOG_PREFIX_DESC = 0x10,
+        LOG_PREFIX_FILE = 0x20,
+        LOG_PREFIX_FUNCTION = 0x40,
+        LOG_PREFIX_ALL = 0xff,
+        //LOG_PREFIX_DEFAULT = LOG_PREFIX_ALL,
+        LOG_PREFIX_DEFAULT = LOG_PREFIX_TIMESTAMP | LOG_PREFIX_PRIORITY | LOG_PREFIX_FILE | LOG_PREFIX_FUNCTION,
     };
 
 
@@ -114,12 +112,19 @@ namespace FNLog
         static const int LOG_SIZE = FN_LOG_MAX_LOG_SIZE;
     public:
         std::atomic_int    data_mark_; //0 invalid, 1 hold, 2 ready
-        int    channel_id_;
-        int    priority_;
-        int    category_;
+        int     channel_id_;
+        int     priority_;
+        int     category_; 
+        long long     identify_;
+        int     code_line_;
+        int     code_func_len_;
+        int     code_file_len_;
+        const char* code_func_;
+        const char* code_file_;
         long long timestamp_;        //create timestamp
         int precise_; //create time millionsecond suffix
         unsigned int thread_;
+        int prefix_len_;
         int content_len_;
         char content_[LOG_SIZE]; //content
     };
@@ -131,6 +136,7 @@ namespace FNLog
         DEVICE_OUT_SCREEN,
         DEVICE_OUT_FILE,
         DEVICE_OUT_UDP,
+        DEVICE_OUT_VIRTUAL,
     };
 
 
@@ -140,6 +146,10 @@ namespace FNLog
         DEVICE_CFG_PRIORITY,  
         DEVICE_CFG_CATEGORY,  
         DEVICE_CFG_CATEGORY_EXTEND, 
+        DEVICE_CFG_CATEGORY_FILTER,
+        DEVICE_CFG_IDENTIFY,
+        DEVICE_CFG_IDENTIFY_EXTEND,
+        DEVICE_CFG_IDENTIFY_FILTER,
         DEVICE_CFG_FILE_LIMIT_SIZE, 
         DEVICE_CFG_FILE_ROLLBACK, 
         DEVICE_CFG_UDP_IP,
@@ -167,19 +177,23 @@ namespace FNLog
     public:
         static const int MAX_PATH_SYS_LEN = 255;
         static const int MAX_PATH_LEN = 200;
-        static const int MAX_NAME_LEN = 50;
+        static const int MAX_LOGGER_NAME_LEN = 50;
         static const int MAX_ROLLBACK_LEN = 4;
         static const int MAX_ROLLBACK_PATHS = 5;
-        static_assert(MAX_PATH_LEN + MAX_NAME_LEN + MAX_ROLLBACK_LEN < MAX_PATH_SYS_LEN, "");
+        static_assert(MAX_PATH_LEN + MAX_LOGGER_NAME_LEN + MAX_ROLLBACK_LEN < MAX_PATH_SYS_LEN, "");
         static_assert(LogData::LOG_SIZE > MAX_PATH_SYS_LEN*2, "unsafe size"); // promise format length: date, time, source file path, function length.
         static_assert(MAX_ROLLBACK_PATHS < 10, "");
+#ifdef FN_LOG_USING_ATOM_CFG
         using ConfigFields = std::array<std::atomic_llong, DEVICE_CFG_MAX_ID>;
+#else
+        using ConfigFields = long long[DEVICE_CFG_MAX_ID];
+#endif // FN_LOG_USING_ATOM_CFG
         using LogFields = std::array<std::atomic_llong, DEVICE_LOG_MAX_ID>;
 
     public:
         int device_id_;
         unsigned int out_type_;
-        char out_file_[MAX_NAME_LEN];
+        char out_file_[MAX_LOGGER_NAME_LEN];
         char out_path_[MAX_PATH_LEN];
         ConfigFields config_fields_;
         LogFields log_fields_;
@@ -197,6 +211,10 @@ namespace FNLog
         CHANNEL_CFG_PRIORITY, 
         CHANNEL_CFG_CATEGORY,  
         CHANNEL_CFG_CATEGORY_EXTEND, 
+        CHANNEL_CFG_CATEGORY_FILTER,
+        CHANNEL_CFG_IDENTIFY,
+        CHANNEL_CFG_IDENTIFY_EXTEND,
+        CHANNEL_CFG_IDENTIFY_FILTER,
         CHANNEL_CFG_MAX_ID
     };
 
@@ -237,7 +255,12 @@ namespace FNLog
     struct Channel
     {
     public:
+#ifdef FN_LOG_USING_ATOM_CFG
         using ConfigFields = std::array<std::atomic_llong, CHANNEL_CFG_MAX_ID>;
+#else
+        using ConfigFields = long long[CHANNEL_CFG_MAX_ID];
+#endif // FN_LOG_USING_ATOM_CFG
+
         using LogFields = std::array<std::atomic_llong, CHANNEL_LOG_MAX_ID>;
         static const int MAX_DEVICE_SIZE = 20;
 
@@ -252,6 +275,7 @@ namespace FNLog
         time_t last_hot_check_;
 
         int chunk_;
+        int virtual_device_id_;
         int device_size_;
         Device devices_[MAX_DEVICE_SIZE];
         ConfigFields config_fields_;
@@ -311,7 +335,8 @@ namespace FNLog
     public:
         static const int MAX_CHANNEL_SIZE = SHMLogger::MAX_CHANNEL_SIZE;
         static const int HOTUPDATE_INTERVEL = FN_LOG_HOTUPDATE_INTERVEL;
-
+        static const int MAX_LOGGER_DESC_LEN = 50;
+        static const int MAX_LOGGER_NAME_LEN = 250;
         using ReadLocks = std::array<std::mutex, MAX_CHANNEL_SIZE>;
         using ReadGuard = AutoGuard<std::mutex>;
 
@@ -334,7 +359,12 @@ namespace FNLog
         std::string yaml_path_;
         unsigned int logger_state_;
         StateLock state_lock;
+        char desc_[MAX_LOGGER_DESC_LEN];
+        int desc_len_;
+        char name_[MAX_LOGGER_NAME_LEN];
+        int name_len_;
 
+        long long shm_key_;
         SHMLogger* shm_;
 
         ReadLocks read_locks_;
@@ -357,11 +387,13 @@ namespace FNLog
         return x < y ? y : x;
     }
 
-    template <class M>
-    inline long long AtomicLoadC(M& m, unsigned eid)
-    {
-        return m.config_fields_[eid].load(std::memory_order_relaxed);
-    }
+
+#ifdef FN_LOG_USING_ATOM_CFG
+    #define AtomicLoadC(m, eid) m.config_fields_[eid].load(std::memory_order_relaxed)
+#else
+#define AtomicLoadC(m, eid) m.config_fields_[eid]
+#endif // FN_LOG_USING_ATOM_CFG
+
 
     template <class M>
     inline long long AtomicLoadL(M& m, unsigned eid)
@@ -385,6 +417,7 @@ namespace FNLog
     {
         m.log_fields_[eid].store(v, std::memory_order_relaxed);
     }
+
 }
 
 

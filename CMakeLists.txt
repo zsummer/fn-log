@@ -41,6 +41,7 @@ project(fn-log)
 
 # 
 # execute_process
+set(CMAKE_VERBOSE_MAKEFILEON ON)
 if( NOT CMAKE_CONFIGURATION_TYPES )
     set( CMAKE_CONFIGURATION_TYPES Debug Release )
 endif( NOT CMAKE_CONFIGURATION_TYPES )
@@ -102,9 +103,6 @@ else()
     LINK_LIBRARIES(pthread m c)
 endif()
 
-if(USE_SHM)
-    ADD_DEFINITIONS(-DFN_LOG_USE_SHM=1)
-endif()
 
 #输出
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin)

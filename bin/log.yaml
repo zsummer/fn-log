@@ -1,15 +1,16 @@
 # 配表文件  
-
+ #logger_name: 
+ logger_desc: 1.1.4.1
  hot_update: true
 # 0通道为多线程带文件和屏显输出
  - channel: 0  
-    priority: info
+    priority: trace
     category: 0
     category_extend: 0
     -device: 0
         disable: false
         out_type: file
-        priority: info
+        priority: trace
         category: 0
         category_extend: 0
         path: "./log/"

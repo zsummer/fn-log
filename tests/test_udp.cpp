@@ -23,7 +23,7 @@ R"----(
 
 int main(int argc, char* argv[])
 {
-#ifdef _WIN32
+#ifdef WIN32
 
     WSADATA wsaData;
     if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0)
@@ -47,7 +47,7 @@ int main(int argc, char* argv[])
         LogDebug() << "now time:" << (long long)time(nullptr) << ";";
     }
 
-    LogAlarmStream(0, 1) << "finish";
+    LogAlarmStream(0, 1, 0) << "finish";
 
     return 0;
 }

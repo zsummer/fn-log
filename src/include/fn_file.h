@@ -68,7 +68,7 @@
 #include <memory>
 #include <atomic>
 
-#ifdef _WIN32
+#ifdef WIN32
 #ifndef KEEP_INPUT_QUICK_EDIT
 #define KEEP_INPUT_QUICK_EDIT false
 #endif
@@ -171,7 +171,7 @@ namespace FNLog
     {
         if (file_ != nullptr)
         {
-#if !defined(__APPLE__) && !defined(_WIN32) 
+#if !defined(__APPLE__) && !defined(WIN32) 
             if (file_ != nullptr)
             {
                 int fd = fileno(file_);
@@ -247,7 +247,7 @@ namespace FNLog
 
     bool FileHandler::is_dir(const std::string& path)
     {
-#ifdef _WIN32
+#ifdef WIN32
         return PathIsDirectoryA(path.c_str()) ? true : false;
 #else
         DIR* pdir = opendir(path.c_str());
@@ -266,7 +266,7 @@ namespace FNLog
 
     bool FileHandler::is_file(const std::string& path)
     {
-#ifdef _WIN32
+#ifdef WIN32
         return ::_access(path.c_str(), 0) == 0;
 #else
         return ::access(path.c_str(), F_OK) == 0;
@@ -288,7 +288,7 @@ namespace FNLog
             if (cur.length() > 0 && !is_dir(cur))
             {
                 bool ret = false;
-#ifdef _WIN32
+#ifdef WIN32
                 ret = CreateDirectoryA(cur.c_str(), nullptr) ? true : false;
 #else
                 ret = (mkdir(cur.c_str(), S_IRWXU | S_IRWXG | S_IRWXO) == 0);
@@ -309,7 +309,7 @@ namespace FNLog
     {
         std::string pid = "0";
         char buf[260] = { 0 };
-#ifdef _WIN32
+#ifdef WIN32
         DWORD winPID = GetCurrentProcessId();
         sprintf(buf, "%06u", winPID);
         pid = buf;
@@ -324,7 +324,7 @@ namespace FNLog
     {
         std::string name = "process";
         char buf[260] = { 0 };
-#ifdef _WIN32
+#ifdef WIN32
         if (GetModuleFileNameA(nullptr, buf, 259) > 0)
         {
             name = buf;
@@ -373,7 +373,7 @@ namespace FNLog
 
     struct tm FileHandler::time_to_tm(time_t t)
     {
-#ifdef _WIN32
+#ifdef WIN32
 #if _MSC_VER < 1400 //VS2003
         return *localtime(&t);
 #else //vs2005->vs2013->
@@ -432,7 +432,7 @@ namespace FNLog
                 }
             }
         }
-        return len;
+        return 0;
     }
 
 }
@@ -444,19 +444,23 @@ namespace FNLog
 class UDPHandler
 {
 public:
-#ifndef _WIN32
-    using SOCKET = int;
-    static const int INVALID_SOCKET = -1;
+#ifndef WIN32
+    using FNLOG_SOCKET = int;
+    static const int FNLOG_INVALID_SOCKET = -1;
+#else
+    using FNLOG_SOCKET = SOCKET;
+    static const SOCKET FNLOG_INVALID_SOCKET = INVALID_SOCKET;
 #endif 
 
 public:
     UDPHandler()
     {
-        handler_ = INVALID_SOCKET;
+        chunk_1_[0] = '\0';
+        handler_ = FNLOG_INVALID_SOCKET;
     }
     ~UDPHandler()
     {
-        if (handler_ != INVALID_SOCKET)
+        if (handler_ != FNLOG_INVALID_SOCKET)
         {
             close();
         }
@@ -464,7 +468,7 @@ public:
 
     bool is_open()
     {
-        return handler_ != INVALID_SOCKET;
+        return handler_ != FNLOG_INVALID_SOCKET;
     }
 
     void open()
@@ -474,20 +478,20 @@ public:
 
     void close()
     {
-        if (handler_ != INVALID_SOCKET)
+        if (handler_ != FNLOG_INVALID_SOCKET)
         {
-#ifndef _WIN32
+#ifndef WIN32
             ::close(handler_);
 #else
             closesocket(handler_);
 #endif 
-            handler_ = INVALID_SOCKET;
+            handler_ = FNLOG_INVALID_SOCKET;
         }
     }
 
     void write(unsigned int ip, unsigned short port, const char* data, int len)
     {
-        if (handler_ == INVALID_SOCKET)
+        if (handler_ == FNLOG_INVALID_SOCKET)
         {
             return;
         }
@@ -503,7 +507,7 @@ public:
  
 public:
     char chunk_1_[128];
-    SOCKET handler_;
+    FNLOG_SOCKET handler_;
 };
 
 
