@@ -113,6 +113,7 @@ namespace FNLog
         RK_PATH,
         RK_LIMIT_SIZE,
         RK_ROLLBACK,
+        RK_FILE_STUFF_UP,
         RK_UDP_ADDR,
     };
 
@@ -206,6 +207,10 @@ namespace FNLog
             if (*(begin+1) == 'y')
             {
                 return RK_SYNC;
+            }
+            else if (*(begin + 1) == 't')
+            {
+                return RK_FILE_STUFF_UP;
             }
             return RK_SHM_KEY;
         case 'u':
@@ -636,6 +641,9 @@ namespace FNLog
                 break;
             case RK_ROLLBACK:
                 device.config_fields_[DEVICE_CFG_FILE_ROLLBACK] = atoll(ls.line_.val_begin_);
+                break;
+            case RK_FILE_STUFF_UP:
+                device.config_fields_[DEVICE_CFG_FILE_STUFF_UP] = ParseBool(ls.line_.val_begin_, ls.line_.val_end_);  
                 break;
             case RK_PATH:
                 if (ls.line_.val_end_ - ls.line_.val_begin_ < Device::MAX_PATH_LEN - 1

@@ -172,7 +172,9 @@ namespace FNLog
             file_over = true;
         }
 
-        if (!sameday || file_over)
+        bool stuff_up = (bool)AtomicLoadC(device, DEVICE_CFG_FILE_STUFF_UP);
+
+        if (file_over  || (!sameday && !stuff_up))
         {
             AtomicStoreL(device, DEVICE_LOG_CUR_FILE_SIZE, 0);
             if (writer.is_open())
@@ -222,10 +224,13 @@ namespace FNLog
 
         if (AtomicLoadC(device, DEVICE_CFG_FILE_ROLLBACK) > 0 || AtomicLoadC(device, DEVICE_CFG_FILE_LIMIT_SIZE) > 0)
         {
-            //when no rollback but has limit size. need try rollback once.
-            long long limit_roll = device.config_fields_[DEVICE_CFG_FILE_ROLLBACK];
-            limit_roll = limit_roll > 0 ? limit_roll : 1;
-            FileHandler::rollback(path, 1, (int)limit_roll);
+            if (!stuff_up || file_over)
+            {
+                //when no rollback but has limit size. need try rollback once.
+                long long limit_roll = device.config_fields_[DEVICE_CFG_FILE_ROLLBACK];
+                limit_roll = limit_roll > 0 ? limit_roll : 1;
+                FileHandler::rollback(path, 1, (int)limit_roll);
+            }
         }
 
         struct stat file_stat;
