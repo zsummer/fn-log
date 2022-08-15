@@ -203,6 +203,21 @@ cd ../bin
   > default: false  
   > desc: moniter yaml file modify and update logger option.  
 
+- [x] shm_key 
+  > option: hex number  
+  > default: 0  
+  > desc: fn-log will used the number to create at shm memory , if already has shm memory will load it and run continue.    
+
+- [x] logger_name 
+  > option:    
+  > default:  
+  > desc: logger name    
+
+- [x] logger_desc 
+  > option:   
+  > default:  
+  > desc: logger desc   
+
 ### Channel Option: (channel.)   
 - [x] sync
   > option: async sync 
@@ -229,9 +244,9 @@ cd ../bin
   > desc: the device will ignore in proc log when this option is disable state.  
 
 - [x] out_type  
-  > option: null, file, udp, screen  
+  > option: null, file, udp, screen, virtual   
   > default: null  
-  > desc: as the option name.  
+  > desc: as the option name.   only one virtual device per one channel.  
 
 - [x] priority  
   > option: trace debug info warn error alarm fatal   
@@ -273,7 +288,14 @@ cd ../bin
   > default: 0  
   > desc: in out_type:file valid.  
   > desc: 0 is no limit, and other number is rollback file limit size (M byte).   
+
+- [x] stuff_up
+  > option: 
+  > default: false  
+  > desc: in out_type:file valid.  
+  > desc: rollback files when they are out limit size.   
   
+
   ```
   stress_test_2019.log
   stress_test_2019.log.1
