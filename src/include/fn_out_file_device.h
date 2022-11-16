@@ -46,17 +46,16 @@ namespace FNLog
 {
 
     //support
-    //[$PNAME $PID $YEAR $MON $DAY $HOUR $MIN $SEC]
-    inline std::string MakeFileName(const std::string& fmt_name, int channel_id, int device_id, const struct tm& t)
+    // 
+    inline std::string FmtName(const std::string& fmt_name, int channel_id, int device_id, const struct tm& t)
     {
-        std::string name = fmt_name;
-        if (name.empty())
+        if (fmt_name.empty())
         {
-            name = "$PNAME_$YEAR$MON$DAY_$PID.";
-            name += std::to_string(channel_id);
-            name += std::to_string(device_id);
+            return fmt_name;
         }
-        name += ".log";
+
+        std::string name = fmt_name;
+
         size_t pos = 0;
         do
         {
@@ -66,7 +65,7 @@ namespace FNLog
             {
                 break;
             }
-            if (name.length() - pos < 8)//min(escape) + ".log"
+            if (name.length() - pos <3)//min(escape) 
             {
                 break;
             }
@@ -156,6 +155,31 @@ namespace FNLog
         return name;
     }
 
+
+    //[$PNAME $PID $YEAR $MON $DAY $HOUR $MIN $SEC]
+    inline std::string MakeFileName(const std::string& fmt_name, int channel_id, int device_id, const struct tm& t)
+    {
+        std::string name = fmt_name;
+        if (name.empty())
+        {
+            name = "$PNAME_$YEAR$MON$DAY_$PID.";
+            name += std::to_string(channel_id);
+            name += std::to_string(device_id);
+        }
+        name += ".log";
+        return FmtName(name, channel_id, device_id, t);
+    }
+    //[$PNAME $PID $YEAR $MON $DAY $HOUR $MIN $SEC]
+    inline std::string MakePathName(const std::string& fmt_name, int channel_id, int device_id, const struct tm& t)
+    {
+        if (fmt_name.empty())
+        {
+            return "./log/";
+        }
+        return FmtName(fmt_name, channel_id, device_id, t);
+    }
+
+
     inline void OpenFileDevice(Logger & logger, Channel & channel, Device & device, FileHandler & writer, LogData & log)
     {
         bool sameday = true;
@@ -200,8 +224,7 @@ namespace FNLog
         }
 
         std::string name = MakeFileName(device.out_file_, channel.channel_id_, device.device_id_, t);
-
-        std::string path = device.out_path_;
+        std::string path = MakePathName(device.out_path_, channel.channel_id_, device.device_id_, t);
         if (!path.empty())
         {
             std::for_each(path.begin(), path.end(), [](char& ch) {if (ch == '\\') { ch = '/'; } });
