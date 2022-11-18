@@ -23,7 +23,7 @@ R"----(
         priority: trace
         category: 0
         category_extend: 0
-        path: "./$PNAME_$YEAR-$MON-$DAY"
+        path: "./$PNAME_$F"
         file: "$PNAME"
         rollback: 4
         stuff: false
@@ -131,6 +131,52 @@ int main(int argc, char* argv[])
     {
         return ret;
     }
+
+
+    if (true)
+    {
+        tm t = FNLog::FileHandler::time_to_tm(time(NULL));
+        std::string ret = FNLog::FmtName("%F", 0, 0, t);
+        if (ret.size() != strlen("2022-02-02"))
+        {
+            return -1;
+        }
+        std::string ret2 = FNLog::FmtName("$YEAR-$MON-$DAY", 0, 0, t);
+        if (ret != ret2)
+        {
+            return -2;
+        }
+        ret2 = FNLog::FmtName("$YEAR-$MON-$DAY/", 0, 0, t);
+        if (ret + "/" != ret2)
+        {
+            return -2;
+        }
+
+
+        ret = FNLog::FmtName("$", 0, 0, t);
+        if (ret != "$")
+        {
+            return -11;
+        }
+
+        ret = FNLog::FmtName("%", 0, 0, t);
+        if (ret != "%")
+        {
+            return -12;
+        }
+
+        ret = FNLog::FmtName("", 0, 0, t);
+        if (ret != "")
+        {
+            return -13;
+        }
+        ret = FNLog::FmtName("$%$%$$$%%%$$%%%$234df%ee%dws$ds$", 0, 0, t);
+        if (ret != "$%$%$$$%%%$$%%%$234df%ee%dws$ds$")
+        {
+            return -14;
+        }
+    }
+
 
     double now = Now();
     for (size_t i = 0; i < 500000; i++)

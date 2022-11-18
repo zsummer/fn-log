@@ -46,6 +46,48 @@ namespace FNLog
 {
 
     //support
+    inline std::string PreFmtName(const std::string& fmt_name)
+    {
+        if (fmt_name.empty())
+        {
+            return fmt_name;
+        }
+        std::string name = fmt_name;
+        size_t pos = 0;
+        do
+        {
+            bool has_error = false;
+            pos = name.find('%', pos);
+            if (pos == std::string::npos)
+            {
+                break;
+            }
+            if (name.length() - pos < 2)//min(escape) 
+            {
+                break;
+            }
+
+            switch (name[pos + 1])
+            {
+            case 'F':
+                if (true)
+                {
+                    name.replace(pos, 2, "$YEAR-$MON-$DAY");
+                    break;
+                }
+                has_error = true;
+                break;
+            default:
+                has_error = true;
+                break;
+            }
+            if (has_error)
+            {
+                pos++;
+            }
+        } while (true);
+        return name;
+    }
     // 
     inline std::string FmtName(const std::string& fmt_name, int channel_id, int device_id, const struct tm& t)
     {
@@ -54,7 +96,7 @@ namespace FNLog
             return fmt_name;
         }
 
-        std::string name = fmt_name;
+        std::string name = PreFmtName(fmt_name);
 
         size_t pos = 0;
         do
@@ -65,7 +107,7 @@ namespace FNLog
             {
                 break;
             }
-            if (name.length() - pos <3)//min(escape) 
+            if (name.length() - pos <2)//min(escape) 
             {
                 break;
             }
