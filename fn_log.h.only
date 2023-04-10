@@ -102,6 +102,7 @@
 #include <sys/syscall.h>
 #include <sys/ipc.h>
 #include <sys/shm.h>
+#include <stdlib.h>
 #
 #endif
 
@@ -3205,10 +3206,42 @@ namespace FNLog
         RefVirtualDevice() = vdp;
     }
 
+    //the virtual device like log hook;  this virtual device call at the log create time(thread) not at log write thread .    
+    //can used translate log  
     inline void EnterProcOutVirtualDevice(Logger& logger, int channel_id, int device_id, LogData& log)
     {
         if (RefVirtualDevice())
         {
+            Channel& channel = logger.shm_->channels_[channel_id];
+            Device::ConfigFields& fields = channel.devices_[device_id].config_fields_;
+            long long field_begin_category = fields[FNLog::DEVICE_CFG_CATEGORY];
+            long long field_category_count = fields[FNLog::DEVICE_CFG_CATEGORY_EXTEND];
+            unsigned long long field_category_filter = (unsigned long long)fields[FNLog::DEVICE_CFG_CATEGORY_FILTER];
+            long long field_begin_identify = fields[FNLog::DEVICE_CFG_IDENTIFY];
+            long long field_identify_count = fields[FNLog::DEVICE_CFG_IDENTIFY_EXTEND];
+            unsigned long long field_identify_filter = (unsigned long long)fields[FNLog::DEVICE_CFG_IDENTIFY_FILTER];
+
+            if (field_category_count > 0 && (log.category_ < field_begin_category || log.category_ >= field_begin_category + field_category_count))
+            {
+                return;
+            }
+
+            if (field_identify_count > 0 && (log.identify_ < field_begin_identify || log.identify_ >= field_begin_identify + field_identify_count))
+            {
+                return;
+            }
+            if (field_category_filter && (field_category_filter & ((1ULL) << (unsigned int)log.category_)) == 0)
+            {
+                return;
+            }
+            if (field_identify_filter && (field_identify_filter & ((1ULL) << (unsigned int)log.identify_)) == 0)
+            {
+                return;
+            }
+
+            int content_len_ = FN_MIN(log.content_len_, LogData::LOG_SIZE - 1);
+            log.content_[content_len_] = '\0'; //virtual device hook maybe direct used content like c-string 
+
             Device& device = logger.shm_->channels_[channel_id].devices_[device_id];
             AtomicAddL(device, DEVICE_LOG_TOTAL_WRITE_LINE);
             AtomicAddLV(device, DEVICE_LOG_TOTAL_WRITE_BYTE, log.content_len_);
@@ -3664,7 +3697,7 @@ namespace FNLog
         return 0;
     }
 
-
+    //combine virtual device  can transmit log to other channel 
     inline int TransmitChannel(Logger& logger, int channel_id, const LogData& log)
     {
         if (log.channel_id_ == channel_id)
@@ -3690,7 +3723,7 @@ namespace FNLog
         trans_log.precise_ = log.precise_;
         trans_log.thread_ = log.thread_;
         trans_log.prefix_len_ = log.prefix_len_;
-        trans_log.content_len_ = log.content_len_ > 0 ? log.content_len_ - 1: log.content_len_;
+        trans_log.content_len_ = log.content_len_;
         memcpy(trans_log.content_, log.content_, log.content_len_);
         return PushChannel(logger, channel_id, hold_idx);
     }
@@ -4362,7 +4395,9 @@ namespace FNLog
                         Device& device = channel.devices_[channel.virtual_device_id_];
                         if (log_data_->priority_ >= device.config_fields_[DEVICE_CFG_PRIORITY])
                         {
-                            (*RefVirtualDevice())(*log_data_);
+                            //more block check in the proc 
+                            EnterProcOutVirtualDevice(*logger_, log_data_->channel_id_, channel.virtual_device_id_, *log_data_);
+                            //(*RefVirtualDevice())(*log_data_);
                         }
                         
                     }
