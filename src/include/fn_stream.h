@@ -182,7 +182,9 @@ namespace FNLog
                         Device& device = channel.devices_[channel.virtual_device_id_];
                         if (log_data_->priority_ >= device.config_fields_[DEVICE_CFG_PRIORITY])
                         {
-                            (*RefVirtualDevice())(*log_data_);
+                            //more block check in the proc 
+                            EnterProcOutVirtualDevice(*logger_, log_data_->channel_id_, channel.virtual_device_id_, *log_data_);
+                            //(*RefVirtualDevice())(*log_data_);
                         }
                         
                     }

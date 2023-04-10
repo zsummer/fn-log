@@ -449,7 +449,7 @@ namespace FNLog
         return 0;
     }
 
-
+    //combine virtual device  can transmit log to other channel 
     inline int TransmitChannel(Logger& logger, int channel_id, const LogData& log)
     {
         if (log.channel_id_ == channel_id)
@@ -475,7 +475,7 @@ namespace FNLog
         trans_log.precise_ = log.precise_;
         trans_log.thread_ = log.thread_;
         trans_log.prefix_len_ = log.prefix_len_;
-        trans_log.content_len_ = log.content_len_ > 0 ? log.content_len_ - 1: log.content_len_;
+        trans_log.content_len_ = log.content_len_;
         memcpy(trans_log.content_, log.content_, log.content_len_);
         return PushChannel(logger, channel_id, hold_idx);
     }
