@@ -27,5 +27,12 @@ echo "#endif" >> fn_log.h
 cat fn_log.h | sed '/#include.*fn_/d' > fn_log.h.bak
 
 mv fn_log.h.bak  fn_log.h
-mv fn_log.h fn_log.h.only
+mv fn_log.h ./dist/fn_log.h
+cp README.md ./dist/README.md 
+cp LICENSE ./dist/LICENSE 
 
+version=`date +"release version date:%Y-%m-%d %H:%M:%S"`
+echo $version > ./dist/VERSION 
+echo "" >> ./dist/VERSION 
+echo "git log:" >> ./dist/VERSION 
+git log -1 --stat >> ./dist/VERSION 

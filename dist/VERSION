@@ -1,0 +1,14 @@
+release version date:2023-04-23 19:19:13
+
+git log:
+commit 64982dabe8f2f97fcc0797ec3683e2c03b3069e9
+Author: zsummer <yawei.zhang@foxmail.com>
+Date:   Sun Apr 23 19:01:31 2023 +0800
+
+    统计不同日志的数量
+
+ fn_log.h.only            | 28 +++++++++++++++++++++++++++-
+ src/include/fn_channel.h |  8 +++++++-
+ src/include/fn_data.h    |  2 ++
+ src/include/fn_stream.h  | 18 ++++++++++++++++++
+ 4 files changed, 54 insertions(+), 2 deletions(-)
