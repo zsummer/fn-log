@@ -283,6 +283,12 @@ namespace FNLog
         {
             return true;
         }
+        if (priority >= PRIORITY_MAX)
+        {
+            static_assert(PRIORITY_MAX == PRIORITY_FATAL + 1, "safety priority to record channel log CHANNEL_LOG_PRIORITY");
+            priority = PRIORITY_FATAL;
+        }
+
         long long begin_category = AtomicLoadC(channel, CHANNEL_CFG_CATEGORY);
         long long category_count = AtomicLoadC(channel, CHANNEL_CFG_CATEGORY_EXTEND);
         unsigned long long category_filter = (unsigned long long)AtomicLoadC(channel, CHANNEL_CFG_CATEGORY_FILTER);
@@ -422,7 +428,7 @@ namespace FNLog
         log.content_[log.content_len_] = '\0';
 
         log.data_mark_ = 2;
-
+        AtomicAddL(channel, CHANNEL_LOG_PRIORITY + log.priority_);
 
         do
         {

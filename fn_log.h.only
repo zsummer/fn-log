@@ -742,6 +742,8 @@ namespace FNLog
     {
         CHANNEL_LOG_HOLD,
         CHANNEL_LOG_PUSH,
+        CHANNEL_LOG_PRIORITY, //== PRIORITY_TRACE
+        CHANNEL_LOG_PRIORITY_MAX = CHANNEL_LOG_PRIORITY + PRIORITY_MAX,
         CHANNEL_LOG_PROCESSED = CHANNEL_LOG_PUSH + 8,
         CHANNEL_LOG_MAX_ID
     };
@@ -3531,6 +3533,12 @@ namespace FNLog
         {
             return true;
         }
+        if (priority >= PRIORITY_MAX)
+        {
+            static_assert(PRIORITY_MAX == PRIORITY_FATAL + 1, "safety priority to record channel log CHANNEL_LOG_PRIORITY");
+            priority = PRIORITY_FATAL;
+        }
+
         long long begin_category = AtomicLoadC(channel, CHANNEL_CFG_CATEGORY);
         long long category_count = AtomicLoadC(channel, CHANNEL_CFG_CATEGORY_EXTEND);
         unsigned long long category_filter = (unsigned long long)AtomicLoadC(channel, CHANNEL_CFG_CATEGORY_FILTER);
@@ -3670,7 +3678,7 @@ namespace FNLog
         log.content_[log.content_len_] = '\0';
 
         log.data_mark_ = 2;
-
+        AtomicAddL(channel, CHANNEL_LOG_PRIORITY + log.priority_);
 
         do
         {
@@ -4275,6 +4283,7 @@ namespace FNLog
         float v_;
     };
 
+
     class LogStream
     {
     public:
@@ -4663,6 +4672,23 @@ namespace FNLog
         Logger* logger_ = nullptr;
         int hold_idx_ = -1;//ring buffer  
     };
+
+
+
+    FNLog::LogStream& LogArgs(FNLog::LogStream&& ls, const std::string& sep)
+    {
+        return ls;
+    }
+
+    template<typename Arg1, typename ... Args>
+    FNLog::LogStream& LogArgs(FNLog::LogStream&& ls, const std::string& sep, const Arg1& arg1, Args&& ... args)
+    {
+        ls << arg1;
+        std::initializer_list<int>{ (ls << sep << args, '\0') ... };
+        return ls;
+    }
+
+
 }
 
 
