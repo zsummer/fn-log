@@ -4675,20 +4675,6 @@ namespace FNLog
 
 
 
-    FNLog::LogStream& LogArgs(FNLog::LogStream&& ls, const std::string& sep)
-    {
-        return ls;
-    }
-
-    template<typename Arg1, typename ... Args>
-    FNLog::LogStream& LogArgs(FNLog::LogStream&& ls, const std::string& sep, const Arg1& arg1, Args&& ... args)
-    {
-        ls << arg1;
-        std::initializer_list<int>{ (ls << sep << args, '\0') ... };
-        return ls;
-    }
-
-
 }
 
 

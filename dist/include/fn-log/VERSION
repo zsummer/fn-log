@@ -1,11 +1,18 @@
-release fn-log version date:2023-04-26 11:39:14
+release fn-log version date:2023-04-26 20:13:09
 
 git log:
-commit 45e6a5eab55c0d691d0b20b9f811558724f55e18
+commit e50e3136029b9941c7afb667d8c9dec93c27e802
 Author: zsummer <yawei.zhang@foxmail.com>
-Date:   Sun Apr 23 19:32:04 2023 +0800
+Date:   Wed Apr 26 11:39:49 2023 +0800
 
-    default log yaml
+    dist
 
- dist/default_log.yaml | 48 ++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 48 insertions(+)
+ bin/log.yaml                               |  4 ++--
+ dist/VERSION                               | 14 --------------
+ dist/{ => include/fn-log}/LICENSE          |  0
+ dist/{ => include/fn-log}/README.md        |  0
+ dist/include/fn-log/VERSION                | 11 +++++++++++
+ dist/{ => include/fn-log}/default_log.yaml |  0
+ dist/{ => include/fn-log}/fn_log.h         |  0
+ release_version.sh                         | 16 ++++++++--------
+ 8 files changed, 21 insertions(+), 24 deletions(-)
