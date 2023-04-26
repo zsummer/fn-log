@@ -1,0 +1,11 @@
+release fn-log version date:2023-04-26 11:39:14
+
+git log:
+commit 45e6a5eab55c0d691d0b20b9f811558724f55e18
+Author: zsummer <yawei.zhang@foxmail.com>
+Date:   Sun Apr 23 19:32:04 2023 +0800
+
+    default log yaml
+
+ dist/default_log.yaml | 48 ++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 48 insertions(+)

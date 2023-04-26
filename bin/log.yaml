@@ -4,13 +4,13 @@
  hot_update: true
 # 0通道为多线程带文件和屏显输出
  - channel: 0  
-    priority: trace
+    priority: info
     category: 0
     category_extend: 0
     -device: 0
         disable: false
         out_type: file
-        priority: trace
+        priority: info
         category: 0
         category_extend: 0
         path: "./log/"
