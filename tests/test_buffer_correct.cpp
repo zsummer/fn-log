@@ -125,7 +125,7 @@ int main(int argc, char* argv[])
 
     if (true)
     {
-        auto log = (LOG_STREAM_DEFAULT_LOGGER(0, FNLog::PRIORITY_INFO, 0, 0, 0));
+        auto log = std::move(LOG_STREAM_DEFAULT_LOGGER(0, FNLog::PRIORITY_INFO, 0, 0, 0));
         log.write_number<2>(1);
         FNLOG_ASSERT((log.log_data_->content_[0] == '0'), "0");
         FNLOG_ASSERT((log.log_data_->content_[1] == '1'), "0");

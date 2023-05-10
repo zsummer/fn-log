@@ -91,6 +91,8 @@ namespace FNLog
     // 
     inline std::string FmtName(const std::string& fmt_name, int channel_id, int device_id, const struct tm& t)
     {
+        (void)device_id;
+        (void)channel_id;
         if (fmt_name.empty())
         {
             return fmt_name;
@@ -224,6 +226,7 @@ namespace FNLog
 
     inline void OpenFileDevice(Logger & logger, Channel & channel, Device & device, FileHandler & writer, LogData & log)
     {
+        (void)logger;
         bool sameday = true;
         if (log.timestamp_ < AtomicLoadL(device, DEVICE_LOG_CUR_FILE_CREATE_DAY)
             || log.timestamp_ >= AtomicLoadL(device, DEVICE_LOG_CUR_FILE_CREATE_DAY) + 24 * 3600)

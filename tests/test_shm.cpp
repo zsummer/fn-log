@@ -69,7 +69,7 @@ int main(int argc, char* argv[])
         long long proc_count = FNLog::GetChannelLog(FNLog::GetDefaultLogger(), 0, FNLog::CHANNEL_LOG_PUSH);
         if (proc_count % 100000 == 0)
         {
-            auto ss(LogInfo());
+            auto ss(std::move(LogInfo()));
             ss << "now write:" << proc_count;
             if (proc_count == 800000)
             {

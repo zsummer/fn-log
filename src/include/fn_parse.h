@@ -378,7 +378,7 @@ namespace FNLog
         char buff[50];
         memcpy(buff, port_begin, end - port_begin);
         buff[end - port_begin] = '\0';
-        port = htons(atoi(buff));
+        port = htons((unsigned short)atoi(buff));
         ip = result_ip.first;
         return;
     }

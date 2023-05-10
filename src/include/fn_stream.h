@@ -196,7 +196,9 @@ namespace FNLog
                 logger_ = nullptr;
             }
         }
-        
+        //trans LogStream (temporary values) to  LogStream& (left values) 
+        //all user's LogStream operator  only care about LogStream& without temporary.   
+        LogStream& self() { return *this; }
         LogStream& set_category(int category) { if (log_data_) log_data_->category_ = category;  return *this; }
         LogStream& write_char_unsafe(char ch)
         {

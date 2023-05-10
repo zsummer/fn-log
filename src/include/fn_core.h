@@ -54,6 +54,7 @@ namespace FNLog
 
     inline int PushLog(Logger& logger, int channel_id, int hold_idx, bool state_safly_env = false)
     {
+        (void)state_safly_env;
         return PushChannel(logger, channel_id, hold_idx);
     }
 
@@ -76,6 +77,7 @@ namespace FNLog
     //not thread-safe
     inline Device* NewDevice(Logger& logger, Channel& channel, int out_type)
     {
+        (void)logger;
         Device* device = nullptr;
         if (channel.device_size_ < Channel::MAX_DEVICE_SIZE) {
             int device_id = channel.device_size_;
@@ -415,7 +417,7 @@ namespace FNLog
             for (int j = 0; j < channel.device_size_; j++)
             {
                 auto& device = channel.devices_[j];
-                if (device.out_type_ == out_type || out_type == DEVICE_OUT_NULL)
+                if (device.out_type_ == (unsigned int)out_type || out_type == DEVICE_OUT_NULL)
                 {
                     device.config_fields_[dce] = v;
                 }

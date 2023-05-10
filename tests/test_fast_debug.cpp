@@ -1,5 +1,8 @@
 ﻿#include "fn_log.h"
 
+using X = char;
+
+
 int main(int argc, char* argv[])
 {
     int ret = FNLog::FastStartDebugLogger();
@@ -57,5 +60,11 @@ int main(int argc, char* argv[])
     LogAlarm() << "finish";
 
 
+    LogAlarm() << (const X*)"finish";
+
     return 0;
 }
+
+
+
+

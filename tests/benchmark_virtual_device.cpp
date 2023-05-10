@@ -160,7 +160,7 @@ int main(int argc, char *argv[])
     if (true)
     {
         now = Now();
-        FNLog::LogStream ls(LogTraceStream(1, 0, 0) );
+        FNLog::LogStream ls(std::move(LogTraceStream(1, 0, 0) << "s"));
         ls << "asdf" << 0 << ", " << 2.3 << "asdfasdf   from channel 2" << "asdfasdf   from channel 1";
         for (long long i = 0; i < loop_count; i++)
         {

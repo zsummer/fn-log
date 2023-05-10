@@ -20,16 +20,23 @@ public:
 };
 
 //declare  
-FNLog::LogStream& operator << (FNLog::LogStream& ls, const Base& base);
 
 //impl
+FNLog::LogStream& operator << (FNLog::LogStream&& ls, const Base& base)
+{
+    return ls << base.name();
+}
+
 FNLog::LogStream& operator << (FNLog::LogStream& ls, const Base& base)
 {
     return ls << base.name();
 }
 
+
 int main(int argc, char* argv[])
 {
+    (void)argc;
+    (void)argv;
     int ret = FNLog::FastStartDebugLogger();
     if (ret != 0)
     {
@@ -42,6 +49,14 @@ int main(int argc, char* argv[])
     LogInfo() << "Base name:" << b << ", Derived name:" << d;
 
     LogInfo() << "Base name:" << Base() << ", Derived name:" << Derived();
+
+
+    LogInfo() << b << d << b; 
+    FNLog::LogStream (std::move(LogInfo())) << b << d << b;
+
+    FNLog::LogStream(std::move(LogInfo() << "d")) << b << d << b;
+    FNLog::LogStream(std::move(LogInfo() << b)) << b << d << b;
+
 
 
     LogAlarm() << "finish";

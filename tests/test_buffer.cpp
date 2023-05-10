@@ -32,7 +32,7 @@ int main(int argc, char* argv[])
 
     for (int i = 0; i < 1000; i++)
     {
-        auto ls(LogDebug());
+        auto ls(std::move(LogDebug()));
         ls << "log begin test buffer";
         int rd = 0;
         int last_len = 0;
