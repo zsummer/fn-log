@@ -4424,7 +4424,9 @@ namespace FNLog
                 logger_ = nullptr;
             }
         }
-        
+        //trans LogStream (temporary values) to  LogStream& (left values) 
+        //all user's LogStream operator  only care about LogStream& without temporary.   
+        LogStream& self() { return *this; }
         LogStream& set_category(int category) { if (log_data_) log_data_->category_ = category;  return *this; }
         LogStream& write_char_unsafe(char ch)
         {
@@ -4833,13 +4835,18 @@ namespace FNLog
 
 //--------------------BASE STREAM MACRO ---------------------------
 
+//temporary LogStream  
 #define LOG_STREAM_ORIGIN(logger, channel, priority, category, identify, prefix) \
 FNLog::LogStream(logger, channel, priority, category, identify,\
 __FILE__, sizeof(__FILE__) - 1, \
 __LINE__, __FUNCTION__, sizeof(__FUNCTION__) -1, prefix)
 
+//
+#define LOG_STREAM_ORIGIN_REF(logger, channel, priority, category, identify, prefix) \
+    LOG_STREAM_ORIGIN(logger, channel, priority, category, identify, prefix).self()
+
 #define LOG_STREAM_DEFAULT_LOGGER(channel, priority, category, identify, prefix) \
-    LOG_STREAM_ORIGIN(FNLog::GetDefaultLogger(), channel, priority, category, identify, prefix)
+    LOG_STREAM_ORIGIN_REF(FNLog::GetDefaultLogger(), channel, priority, category, identify, prefix)
 
 #define LOG_STREAM_DEFAULT_LOGGER_WITH_PREFIX(channel, priority, category, identify) \
     LOG_STREAM_DEFAULT_LOGGER(channel, priority, category, identify, FNLog::LOG_PREFIX_DEFAULT)
@@ -4864,12 +4871,12 @@ __LINE__, __FUNCTION__, sizeof(__FUNCTION__) -1, prefix)
 
 
 //--------------------CPP TEMPLATE STYLE FORMAT ---------------------------
-inline FNLog::LogStream& LogTemplatePack(FNLog::LogStream&& ls)
+inline FNLog::LogStream& LogTemplatePack(FNLog::LogStream& ls)
 {
     return ls;
 }
 template<typename ... Args>
-FNLog::LogStream& LogTemplatePack(FNLog::LogStream&& ls, Args&& ... args)
+FNLog::LogStream& LogTemplatePack(FNLog::LogStream& ls, Args&& ... args)
 {
     char buff[] = { (ls << args, '\0') ... };
     (void)buff;
@@ -4920,7 +4927,7 @@ do{ \
     { \
         break;   \
     } \
-    FNLog::LogStream __log_stream(LOG_STREAM_DEFAULT_LOGGER(channel_id, priority, category, identify, prefix));\
+    FNLog::LogStream __log_stream(LOG_STREAM_ORIGIN(FNLog::GetDefaultLogger(), channel_id, priority, category, identify, prefix));\
     if (__log_stream.log_data_)\
     {\
         int __log_len = _snprintf_s(__log_stream.log_data_ ->content_ + __log_stream.log_data_ ->content_len_, FNLog::LogData::LOG_SIZE - __log_stream.log_data_ ->content_len_, _TRUNCATE, logformat, ##__VA_ARGS__); \
@@ -4936,7 +4943,7 @@ do{ \
     { \
         break;   \
     } \
-    FNLog::LogStream __log_stream(LOG_STREAM_DEFAULT_LOGGER(channel_id, priority, category, identify, prefix));\
+    FNLog::LogStream __log_stream(LOG_STREAM_ORIGIN(FNLog::GetDefaultLogger(), channel_id, priority, category, identify, prefix));\
     if (__log_stream.log_data_)\
     {\
         int __log_len = snprintf(__log_stream.log_data_ ->content_ + __log_stream.log_data_ ->content_len_, FNLog::LogData::LOG_SIZE - __log_stream.log_data_ ->content_len_, logformat, ##__VA_ARGS__); \
