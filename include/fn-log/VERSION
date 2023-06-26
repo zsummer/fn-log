@@ -1,12 +1,11 @@
-release fn-log version date:2023-06-26 03:46:52
+release fn-log version date:2023-06-26 04:03:50
 
 git log:
-commit 6bce1098a459b8bce9d14a6367eec13863ed7d0f
-Author: zsummer <yawei.zhang@foxmail.com>
-Date:   Wed May 10 19:39:42 2023 +0800
+commit f0efd7dac5167e6853abcf24f424f859d8321e76
+Author: 夏天 <yawei.zhang@foxmail.com>
+Date:   Mon Jun 26 12:03:38 2023 +0800
 
-    release dist
+    Update dist.yml
 
- dist/include/fn-log/VERSION  | 27 +++++++++++++++++++--------
- dist/include/fn-log/fn_log.h | 19 +++++++++++++------
- 2 files changed, 32 insertions(+), 14 deletions(-)
+ .github/workflows/dist.yml | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
