@@ -1,0 +1,24 @@
+release fn-log version date:2023-05-10 19:39:26
+
+git log:
+commit 44749ac1bbf11d5a27f6a3f6c61c4ab95002e69a
+Author: zsummer <yawei.zhang@foxmail.com>
+Date:   Wed May 10 19:39:19 2023 +0800
+
+    clean vs warning C4239;  user's operator only care about lvalues without temporary;
+
+ dist/include/fn-log/VERSION        | 21 ++++++++-------------
+ dist/include/fn-log/fn_log.h       | 11 +++++++++--
+ src/include/fn_channel.h           |  2 ++
+ src/include/fn_core.h              |  4 +++-
+ src/include/fn_macro.h             | 15 ++++++++++-----
+ src/include/fn_out_file_device.h   |  3 +++
+ src/include/fn_parse.h             |  2 +-
+ src/include/fn_stream.h            |  4 +++-
+ tests/benchmark_virtual_device.cpp |  2 +-
+ tests/test_buffer.cpp              |  2 +-
+ tests/test_buffer_correct.cpp      |  2 +-
+ tests/test_fast_debug.cpp          | 11 ++++++++++-
+ tests/test_serialize_object.cpp    | 17 ++++++++++++++++-
+ tests/test_shm.cpp                 |  2 +-
+ 14 files changed, 69 insertions(+), 29 deletions(-)
