@@ -24,7 +24,7 @@ jobs:
       - name: local-dist
         run: |
           cd fn-log-master
-          bash release_version.sh 
+          bash distribute.sh 
           git add ./dist/
           git commit -a --allow-empty -m "[skip ci] auto dist"  
           git push 
