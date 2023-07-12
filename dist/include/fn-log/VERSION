@@ -1,6 +1,6 @@
 version:
-last_sha1(./src)=44749ac1bbf11d5a27f6a3f6c61c4ab95002e69a
-last_date(./src)=2023-05-10 19:39:19 +0800
+last_sha1(./src)=09fdeeb6c120e2a91e02ad475e7422f8f5b83349
+last_date(./src)=2023-07-12 14:19:53 +0800
 
 git log -1 --stat ./src:
-commit 44749ac1bbf11d5a27f6a3f6c61c4ab95002e69a Author: zsummer <yawei.zhang@foxmail.com> Date: Wed May 10 19:39:19 2023 +0800 clean vs warning C4239; user's operator only care about lvalues without temporary; src/include/fn_channel.h | 2 ++ src/include/fn_core.h | 4 +++- src/include/fn_macro.h | 15 ++++++++++----- src/include/fn_out_file_device.h | 3 +++ src/include/fn_parse.h | 2 +- src/include/fn_stream.h | 4 +++- 6 files changed, 22 insertions(+), 8 deletions(-)
+commit 09fdeeb6c120e2a91e02ad475e7422f8f5b83349 Author: zsummer <yawei.zhang@foxmail.com> Date: Wed Jul 12 14:19:53 2023 +0800 remove history legacy compatible code src/include/fn_macro.h | 22 ++++------------------ 1 file changed, 4 insertions(+), 18 deletions(-)
