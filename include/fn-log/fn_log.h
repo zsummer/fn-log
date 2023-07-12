@@ -4920,22 +4920,7 @@ FNLog::LogStream& LogTemplatePack(FNLog::LogStream& ls, Args&& ... args)
 
 
 //--------------------C STYLE FORMAT ---------------------------
-#ifdef WIN32
-#define LOG_FORMAT(channel_id, priority, category, identify, prefix, logformat, ...) \
-do{ \
-    if (FNLog::BlockInput(FNLog::GetDefaultLogger(), channel_id, priority, category, identify))  \
-    { \
-        break;   \
-    } \
-    FNLog::LogStream __log_stream(LOG_STREAM_ORIGIN(FNLog::GetDefaultLogger(), channel_id, priority, category, identify, prefix));\
-    if (__log_stream.log_data_)\
-    {\
-        int __log_len = _snprintf_s(__log_stream.log_data_ ->content_ + __log_stream.log_data_ ->content_len_, FNLog::LogData::LOG_SIZE - __log_stream.log_data_ ->content_len_, _TRUNCATE, logformat, ##__VA_ARGS__); \
-        if (__log_len < 0) __log_len = 0; \
-        __log_stream.log_data_ ->content_len_ += __log_len; \
-    }\
-} while (0)
-#else
+
 // function format warn:   void(int x1, int x2, const char *args, ...) __attribute__((format(printf, 3, 4)));    
 #define LOG_FORMAT(channel_id, priority, category, identify, prefix, logformat, ...) \
 do{ \
@@ -4946,12 +4931,13 @@ do{ \
     FNLog::LogStream __log_stream(LOG_STREAM_ORIGIN(FNLog::GetDefaultLogger(), channel_id, priority, category, identify, prefix));\
     if (__log_stream.log_data_)\
     {\
-        int __log_len = snprintf(__log_stream.log_data_ ->content_ + __log_stream.log_data_ ->content_len_, FNLog::LogData::LOG_SIZE - __log_stream.log_data_ ->content_len_, logformat, ##__VA_ARGS__); \
+        int __log_len = snprintf(__log_stream.log_data_ ->content_ + __log_stream.log_data_ ->content_len_, FNLog::LogData::LOG_SIZE - __log_stream.log_data_->content_len_, logformat, ##__VA_ARGS__); \
         if (__log_len < 0) __log_len = 0; \
+        if (__log_len >= FNLog::LogData::LOG_SIZE - __log_stream.log_data_->content_len_) __log_len = FNLog::LogData::LOG_SIZE - __log_stream.log_data_->content_len_ -1; \
         __log_stream.log_data_ ->content_len_ += __log_len; \
     }\
 } while (0)
-#endif
+
 
 #define LOGFMT_TRACE(channel_id, category, identify, fmt, ...)  LOG_FORMAT(channel_id, FNLog::PRIORITY_TRACE, category, identify, FNLog::LOG_PREFIX_DEFAULT, fmt, ##__VA_ARGS__)
 #define LOGFMT_DEBUG(channel_id, category, identify, fmt, ...)  LOG_FORMAT(channel_id, FNLog::PRIORITY_DEBUG, category, identify, FNLog::LOG_PREFIX_DEFAULT, fmt, ##__VA_ARGS__)
