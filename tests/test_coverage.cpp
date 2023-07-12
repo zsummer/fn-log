@@ -65,10 +65,10 @@ int main(int argc, char* argv[])
         return ret ;
     }
 
+
     LogAlarm() << "log init success";  //sync write
     if (true)
     {
-        
         time_t now = time(NULL);
         struct tm* ptm = localtime(&now);
         std::string result = MakeFileName("$PID$YEAR$MON$DAY$HOUR$MIN$SEC", 0, 0, *ptm);
@@ -82,6 +82,20 @@ int main(int argc, char* argv[])
         FNLOG_ASSERT(!std::regex_search(result, std::regex("PID")), "filename fmt");
         result = MakeFileName("dddd", 0, 0, *ptm);
         FNLOG_ASSERT(std::regex_match(result, std::regex("dddd\\.log")), "filename fmt");
+    }
+
+    if (true)
+    {
+        char* pbig = new char[FN_LOG_MAX_LOG_SIZE + 100];
+        for (int i = 0; i < FN_LOG_MAX_LOG_SIZE + 100; i++)
+        {
+            pbig[i] = '1';
+        }
+        pbig[FN_LOG_MAX_LOG_SIZE + 99] = '\0';
+        LOGFMTI("%s", pbig);
+        LogInfo() << pbig;
+        PackInfo(pbig);
+        
     }
     
     if (true)
