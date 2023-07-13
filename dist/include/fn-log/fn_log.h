@@ -3374,7 +3374,7 @@ namespace FNLog
             }
             state++;
 
-            for (int i = 0; i < RingBuffer::BUFFER_LEN; i++)
+            for (int i = 0; i < FN_MAX(RingBuffer::BUFFER_LEN, 10); i++)
             {
                 if (channel.channel_state_ != CHANNEL_STATE_RUNNING)
                 {
