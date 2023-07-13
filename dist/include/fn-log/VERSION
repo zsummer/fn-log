@@ -1,6 +1,6 @@
 version:
-last_sha1(./src)=09fdeeb6c120e2a91e02ad475e7422f8f5b83349
-last_date(./src)=2023-07-12 14:19:53 +0800
+last_sha1(./src)=507374b17f6cb9dd91b9bf57aa661ed1c9ffe261
+last_date(./src)=2023-07-13 12:22:14 +0800
 
 git log -1 --stat ./src:
-commit 09fdeeb6c120e2a91e02ad475e7422f8f5b83349 Author: zsummer <yawei.zhang@foxmail.com> Date: Wed Jul 12 14:19:53 2023 +0800 remove history legacy compatible code src/include/fn_macro.h | 22 ++++------------------ 1 file changed, 4 insertions(+), 18 deletions(-)
+commit 507374b17f6cb9dd91b9bf57aa661ed1c9ffe261 Author: zsummer <yawei.zhang@foxmail.com> Date: Thu Jul 13 12:19:33 2023 +0800 clean FNLog::ERRNO src/include/fn_channel.h | 16 +++++++---- src/include/fn_core.h | 72 +++++++++++++++++++++++++----------------------- src/include/fn_data.h | 33 ++++++++++++++++++++++ src/include/fn_load.h | 54 ++++++++++++++++++------------------ src/include/fn_parse.h | 4 +-- 5 files changed, 109 insertions(+), 70 deletions(-)

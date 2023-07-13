@@ -760,6 +760,7 @@ namespace FNLog
     {
     public:
         static const int BUFFER_LEN = FN_LOG_MAX_LOG_QUEUE_SIZE;
+        static_assert(BUFFER_LEN > 10, "ring queue size too little");
     public:
         char chunk_1_[CHUNK_SIZE];
         std::atomic_int write_idx_;
@@ -939,6 +940,38 @@ namespace FNLog
         m.log_fields_[eid].store(v, std::memory_order_relaxed);
     }
 
+
+    enum ErrNo
+    {
+        E_SUCCESS = 0,
+        E_INNER_ERROR,
+        E_UNKNOWN_ERROR,
+        E_UNKNOWN_CHANNEL_SYNC,
+        E_ILL_PARAMS,
+        E_LOGGER_STATE_NOT_UNINIT,
+        E_LOGGER_STATE_NOT_INIT,
+        E_LOGGER_STATE_NOT_RUNNING,
+        E_CONFIG_OUT_CHANNEL_MAX,
+        E_CONFIG_DISABLE_HOTUPDATE,
+        E_CONFIG_NOT_FROM_PATHFILE,
+        E_NOT_FIND_CONFIG_FILE,
+        E_CONFIG_FILE_NOT_CHANGE,
+        E_OUT_CHANNEL_SIZE,
+        E_OUT_RINGBUFFER,
+        E_NEW_THREAD_ERROR,
+        E_NEW_THREAD_LOSS,
+        E_SHMGET_PROBE_ERROR,
+        E_SHMGET_CREATE_ERROR,
+        E_SHMAT_ERROR,
+        E_SHM_VERSION_WRONG,
+
+        E_CONFIG_VERSION_MISMATCH,
+
+        E_BASE_ERRNO_MAX
+
+    };
+
+
 }
 
 
@@ -993,8 +1026,8 @@ namespace FNLog
 {
     enum ParseErrorCode
     {
-        PEC_NONE, 
-        PEC_ERROR,
+        PEC_NONE = E_SUCCESS,
+        PEC_ERROR = E_BASE_ERRNO_MAX,
         PEC_ILLEGAL_CHARACTER,
         PEC_ILLEGAL_KEY,
         PEC_NOT_CLOSURE,
@@ -2324,7 +2357,7 @@ namespace FNLog
         {
             printf("shmget error. key:<0x%llx>, errno:<%d>. can use 'ipcs -m', 'ipcrm -m' to view and clear.\n",
                 logger.shm_key_, errno);
-            return -1;
+            return E_SHMGET_ERROR;
         }
 
         if (idx < 0)
@@ -2333,13 +2366,13 @@ namespace FNLog
             if (idx < 0)
             {
                 printf("new shm. shmget error. key:<0x%llx>, errno:<%d>.\n", logger.shm_key_, errno);
-                return -2;
+                return E_SHMGET_CREATE_ERROR;
             }
             void* addr = shmat(idx, nullptr, 0);
             if (addr == nullptr || addr == (void*)-1)
             {
                 printf("new shm. shmat error. key:<0x%llx>, idx:<%d>, errno:<%d>.\n", logger.shm_key_, idx, errno);
-                return -3;
+                return E_SHMAT_ERROR;
             }
             memset(addr, 0, sizeof(SHMLogger));
             shm = (SHMLogger*)addr;
@@ -2352,7 +2385,7 @@ namespace FNLog
             if (addr == nullptr || addr == (void*)-1)
             {
                 printf("shmat error. key:<%llx>, idx:<%d>, errno:<%d>.\n", logger.shm_key_, idx, errno);
-                return -4;
+                return E_SHMAT_ERROR;
             }
             shm = (SHMLogger*)addr;
         }
@@ -2362,19 +2395,19 @@ namespace FNLog
             printf("shm version error. key:<0x%llx>, old id:<%d>, new id:<%d>, old size:<%d> new size:<%d>. "
                 "can use 'ipcs -m', 'ipcrm -m' to view and clear.\n",
                 logger.shm_key_, shm->shm_id_, idx, shm->shm_size_, (int)sizeof(SHMLogger));
-            return -5;
+            return E_SHM_VERSION_WRONG;
         }
         for (int i = 0; i < shm->channel_size_; i++)
         {
             if (i >= SHMLogger::MAX_CHANNEL_SIZE)
             {
-                return -6;
+                return E_SHM_VERSION_WRONG;
             }
 
             if (shm->ring_buffers_[i].write_idx_ >= RingBuffer::BUFFER_LEN
                 || shm->ring_buffers_[i].write_idx_ < 0)
             {
-                return -7;
+                return E_SHM_VERSION_WRONG;
             }
 
             while (shm->ring_buffers_[i].write_idx_.load() != shm->ring_buffers_[i].hold_idx_.load())
@@ -2437,8 +2470,8 @@ namespace FNLog
         Logger::StateLockGuard state_guard(logger.state_lock);
         if (logger.logger_state_ != LOGGER_STATE_UNINIT)
         {
-            printf("init from ymal:<%s> text error\n", path.c_str());
-            return -1;
+            printf("InitFromYMAL:<%s> text error\n", path.c_str());
+            return E_LOGGER_STATE_NOT_UNINIT;
         }
 
         std::unique_ptr<LexState> ls(new LexState);
@@ -2446,7 +2479,7 @@ namespace FNLog
         if (ret != PEC_NONE)
         {
             std::stringstream os;
-            os << "load has error:<" << ret << "> in line:[" << ls->line_number_ << "], line type:" << ls->line_.line_type_;
+            os << "ParseLogger has error:<" << ret << "> in line:[" << ls->line_number_ << "], line type:" << ls->line_.line_type_;
             if (ls->current_ != nullptr)
             {
                 os << " before:";
@@ -2478,7 +2511,7 @@ namespace FNLog
             ret = LoadSharedMemory(logger);
             if (ret != 0)
             {
-                printf("LoadSharedMemory has error:%d,  yaml:%s\n", ret, text.c_str());
+                printf("InitFromYMAL has error:%d,  yaml:%s\n", ret, text.c_str());
                 return ret;
             }
         }
@@ -2498,8 +2531,8 @@ namespace FNLog
 
         if (logger.shm_->channel_size_ > Logger::MAX_CHANNEL_SIZE || logger.shm_->channel_size_ <= 0)
         {
-            printf("start error 2");
-            return -2;
+            printf("InitFromYMAL channel size:%d out channel max%d. \n", logger.shm_->channel_size_, Logger::MAX_CHANNEL_SIZE);
+            return E_CONFIG_OUT_CHANNEL_MAX;
         }
         return 0;
     }
@@ -2515,13 +2548,13 @@ namespace FNLog
         config.open(path.c_str(), "rb", file_stat);
         if (!config.is_open())
         {
-            printf("ymal:<%s> open file error\n", path.c_str());
-            return -1;
+            printf("InitFromYMALFile:<%s> open file error\n", path.c_str());
+            return E_NOT_FIND_CONFIG_FILE;
         }
         int ret = InitFromYMAL(logger, config.read_content(), path);
         if (ret != 0)
         {
-            printf("ymal:<%s> has parse/init error\n", path.c_str());
+            printf("InitFromYMALFile:<%s> has parse/init error\n", path.c_str());
             return ret;
         }
 
@@ -2536,15 +2569,15 @@ namespace FNLog
     {
         if (logger.shm_->channel_size_ <= channel_id)
         {
-            return -1;
+            return E_OUT_CHANNEL_SIZE;
         }
         if (!logger.hot_update_)
         {
-            return -2;
+            return E_CONFIG_DISABLE_HOTUPDATE;
         }
         if (logger.yaml_path_.empty())
         {
-            return -3;
+            return E_CONFIG_NOT_FROM_PATHFILE;
         }
 
         Channel& dst_chl = logger.shm_->channels_[channel_id];
@@ -2560,17 +2593,17 @@ namespace FNLog
         config.open(logger.yaml_path_.c_str(), "rb", file_stat);
         if (!config.is_open())
         {
-            return -5;
+            return E_NOT_FIND_CONFIG_FILE;
         }
         if (file_stat.st_mtime == dst_chl.yaml_mtime_)
         {
-            return -6;
+            return E_CONFIG_FILE_NOT_CHANGE;
         }
 
         Logger::StateLockGuard state_guard(logger.state_lock);
         if (logger.logger_state_ != LOGGER_STATE_RUNNING)
         {
-            return -7;
+            return E_LOGGER_STATE_NOT_RUNNING;
         }
 
         dst_chl.yaml_mtime_ = file_stat.st_mtime;
@@ -2587,7 +2620,7 @@ namespace FNLog
         }
         if (!logger.hot_update_)
         {
-            return -8;
+            return E_CONFIG_DISABLE_HOTUPDATE;
         }
         logger.hot_update_ = ls->hot_update_;
 
@@ -2598,7 +2631,7 @@ namespace FNLog
         Channel& src_chl = ls->channels_[channel_id];
         if (dst_chl.channel_id_ != src_chl.channel_id_ || src_chl.channel_id_ != channel_id)
         {
-            return -10;
+            return E_CONFIG_VERSION_MISMATCH;
         }
         for (int field_id = 0; field_id < CHANNEL_CFG_MAX_ID; field_id++)
         {
@@ -2612,21 +2645,21 @@ namespace FNLog
             Device& src_dvc = src_chl.devices_[device_id];
             if (src_dvc.device_id_ != device_id)
             {
-                return -11;
+                return E_CONFIG_VERSION_MISMATCH;
             }
             if (device_id < dst_chl.device_size_)
             {
                 Device& dst_dvc = dst_chl.devices_[device_id];
                 if (dst_dvc.device_id_ != device_id)
                 {
-                    return -12;
+                    return E_CONFIG_VERSION_MISMATCH;
                 }
                 memcpy(&dst_dvc.config_fields_, &src_dvc.config_fields_, sizeof(dst_dvc.config_fields_));
                 continue;
             }
             if (dst_chl.device_size_ != device_id)
             {
-                return -13;
+                return E_CONFIG_VERSION_MISMATCH;
             }
             memcpy(&dst_chl.devices_[dst_chl.device_size_++], &src_dvc, sizeof(src_dvc));
             
@@ -3632,7 +3665,7 @@ namespace FNLog
             }
             state++;
 
-            for (int i = 0; i < FN_MAX(RingBuffer::BUFFER_LEN, 10); i++)
+            for (int i = 0; i < RingBuffer::BUFFER_LEN; i++)
             {
                 if (channel.channel_state_ != CHANNEL_STATE_RUNNING)
                 {
@@ -3664,17 +3697,17 @@ namespace FNLog
     {
         if (channel_id >= logger.shm_->channel_size_ || channel_id < 0)
         {
-            return -1;
+            return E_OUT_CHANNEL_SIZE;
         }
         if (hold_idx >= RingBuffer::BUFFER_LEN || hold_idx < 0)
         {
-            return -2;
+            return E_OUT_RINGBUFFER;
         }
         Channel& channel = logger.shm_->channels_[channel_id];
         RingBuffer& ring_buffer = logger.shm_->ring_buffers_[channel_id];
         if (channel.channel_state_ != CHANNEL_STATE_RUNNING)
         {
-            return -1;
+            return E_LOGGER_STATE_NOT_RUNNING;
         }
 
         LogData& log = ring_buffer.buffer_[hold_idx];
@@ -3715,12 +3748,16 @@ namespace FNLog
     {
         if (log.channel_id_ == channel_id)
         {
-            return -1;
+            return E_ILL_PARAMS;
         }
         int hold_idx = FNLog::HoldChannel(logger, channel_id, log.priority_, log.category_, log.identify_);
         if (hold_idx < 0)
         {
-            return -2;
+            if (hold_idx == -1)
+            {
+                return 0;
+            }
+            return E_INNER_ERROR;
         }
         LogData& trans_log = logger.shm_->ring_buffers_[channel_id].buffer_[hold_idx];
         trans_log.channel_id_ = channel_id;
@@ -3853,8 +3890,8 @@ namespace FNLog
                 thd = std::thread(EnterProcChannel, std::ref(logger), channel_id);
                 if (!thd.joinable())
                 {
-                    printf("%s", "start async log thread has error.\n");
-                    return -1;
+                    printf("StartChannels %s", "start async log thread has error.\n");
+                    return E_NEW_THREAD_ERROR;
                 }
                 int state = 0;
                 while (channel.channel_state_ == CHANNEL_STATE_NULL && state < 100)
@@ -3864,19 +3901,19 @@ namespace FNLog
                 }
                 if (channel.channel_state_ == CHANNEL_STATE_NULL)
                 {
-                    printf("%s", "start async log thread timeout.\n");
-                    return -2;
+                    printf("StartChannels %s", "start async log thread timeout.\n");
+                    return E_NEW_THREAD_LOSS;
                 }
                 if (channel.channel_state_ != CHANNEL_STATE_RUNNING)
                 {
-                    printf("%s", "start async log thread has inner error.\n");
-                    return -3;
+                    printf("StartChannels %s", "start async log thread has inner error.\n");
+                    return E_UNKNOWN_ERROR;
                 }
             }
             break;
             default:
                 printf("%s", "unknown channel type");
-                return -10;
+                return E_UNKNOWN_CHANNEL_SYNC;
             }
         }
         return 0;
@@ -3908,8 +3945,8 @@ namespace FNLog
             }
             break;
             default:
-                printf("%s", "unknown channel type");
-                return -10;
+                printf("StopChannels %s", "unknown channel type");
+                return E_UNKNOWN_CHANNEL_SYNC;
             }
         }
         return 0;
@@ -3919,31 +3956,33 @@ namespace FNLog
     {
         if (logger.logger_state_ != LOGGER_STATE_UNINIT)
         {
-            printf("start error. state:<%u> not uninit:<%u>.\n", logger.logger_state_, LOGGER_STATE_UNINIT);
-            return -1;
+            printf("StartLogger error. state:<%u> not uninit:<%u>.\n", logger.logger_state_, LOGGER_STATE_UNINIT);
+            return E_LOGGER_STATE_NOT_UNINIT;
         }
         if (logger.shm_ == NULL || logger.shm_->channel_size_ > Logger::MAX_CHANNEL_SIZE || logger.shm_->channel_size_ <= 0)
         {
-            printf("start error. channel size:<%d> invalid.\n", logger.shm_->channel_size_);
-            return -2;
+            printf("StartLogger error. channel size:<%d> invalid.\n", logger.shm_->channel_size_);
+            return E_CONFIG_OUT_CHANNEL_MAX;
         }
         Logger::StateLockGuard state_guard(logger.state_lock);
         if (logger.logger_state_ != LOGGER_STATE_UNINIT)
         {
-            printf("start error. state:<%u> not uninit:<%u>.\n", logger.logger_state_, LOGGER_STATE_UNINIT);
-            return -3;
+            printf("StartLogger error. state:<%u> not uninit:<%u>.\n", logger.logger_state_, LOGGER_STATE_UNINIT);
+            return E_LOGGER_STATE_NOT_UNINIT;
         }
         if (logger.shm_->channel_size_ > Logger::MAX_CHANNEL_SIZE || logger.shm_->channel_size_ <= 0)
         {
-            printf("start error. channel size:<%d> invalid.\n", logger.shm_->channel_size_);
-            return -4;
+            printf("StartLogger error. channel size:<%d> invalid.\n", logger.shm_->channel_size_);
+            return E_CONFIG_OUT_CHANNEL_MAX;
         }
         logger.logger_state_ = LOGGER_STATE_INITING;
-        if (StartChannels(logger) != 0)
+        int ret = StartChannels(logger);
+        if (ret != 0)
         {
             StopChannels(logger);
             logger.logger_state_ = LOGGER_STATE_UNINIT;
-            return -5;
+            printf("StartLogger error. StartChannels failed. channel size:<%d>. \n", logger.shm_->channel_size_);
+            return ret;
         }
         logger.logger_state_ = LOGGER_STATE_RUNNING;
         return 0;
@@ -3973,20 +4012,20 @@ namespace FNLog
     {
         if (logger.shm_->channel_size_ > Logger::MAX_CHANNEL_SIZE || logger.shm_->channel_size_ <= 0)
         {
-            printf("try stop error. channel size:<%d> invalid.\n", logger.shm_->channel_size_);
-            return -1;
+            printf("StopLogger error. channel size:<%d> invalid.\n", logger.shm_->channel_size_);
+            return E_INNER_ERROR;
         }
         if (logger.logger_state_ != LOGGER_STATE_RUNNING)
         {
-            printf("try stop logger error. state:<%u> not running:<%u>.\n", logger.logger_state_, LOGGER_STATE_RUNNING);
-            return -2;
+            printf("StopLogger logger error. state:<%u> not running:<%u>.\n", logger.logger_state_, LOGGER_STATE_RUNNING);
+            return E_LOGGER_STATE_NOT_RUNNING;
         }
         Logger::StateLockGuard state_guard(logger.state_lock);
         
         if (logger.logger_state_ != LOGGER_STATE_RUNNING)
         {
-            printf("try stop logger error. state:<%u> not running:<%u>.\n", logger.logger_state_, LOGGER_STATE_RUNNING);
-            return -3;
+            printf("StopLogger logger error. state:<%u> not running:<%u>.\n", logger.logger_state_, LOGGER_STATE_RUNNING);
+            return E_LOGGER_STATE_NOT_RUNNING;
         }
         logger.logger_state_ = LOGGER_STATE_CLOSING;
         StopChannels(logger);
@@ -4015,25 +4054,25 @@ namespace FNLog
     {
         if (logger.logger_state_ != LOGGER_STATE_UNINIT)
         {
-            printf("parse and start error. state:<%u> not uninit:<%u> by fast try.\n", logger.logger_state_, LOGGER_STATE_UNINIT);
-            return -1;
+            printf("ParseAndStartLogger error. state:<%u> not uninit:<%u> by fast try.\n", logger.logger_state_, LOGGER_STATE_UNINIT);
+            return E_LOGGER_STATE_NOT_UNINIT;
         }
         Logger::StateLockGuard state_guard(logger.state_lock);
         if (logger.logger_state_ != LOGGER_STATE_UNINIT)
         {
-            printf("parse and start error. state:<%u> not uninit:<%u> in locked check.\n", logger.logger_state_, LOGGER_STATE_UNINIT);
-            return -2;
+            printf("ParseAndStartLogger error. state:<%u> not uninit:<%u> in locked check.\n", logger.logger_state_, LOGGER_STATE_UNINIT);
+            return E_LOGGER_STATE_NOT_UNINIT;
         }
         int ret = InitFromYMAL(logger, config_content, "");
         if (ret != 0)
         {
-            printf("init and load default logger error. ret:<%d>.\n", ret);
+            printf("ParseAndStartLogger error. ret:<%d>.\n", ret);
             return ret;
         }
         ret = StartLogger(logger);
         if (ret != 0)
         {
-            printf("start default logger error. ret:<%d>.\n", ret);
+            printf("ParseAndStartLogger error. ret:<%d>.\n", ret);
             return ret;
         }
         return 0;
@@ -4043,20 +4082,20 @@ namespace FNLog
     {
         if (logger.logger_state_ != LOGGER_STATE_UNINIT)
         {
-            printf("load and start error. state:<%u> not uninit:<%u>.\n", logger.logger_state_, LOGGER_STATE_UNINIT);
-            return -1;
+            printf("LoadAndStartLogger error. state:<%u> not uninit:<%u>.\n", logger.logger_state_, LOGGER_STATE_UNINIT);
+            return E_LOGGER_STATE_NOT_UNINIT;
         }
         Logger::StateLockGuard state_guard(logger.state_lock);
         int ret = InitFromYMALFile(logger, confg_path);
         if (ret != 0)
         {
-            printf("init and load default logger error. ret:<%d>.\n", ret);
+            printf("LoadAndStartLogger error. ret:<%d>.\n", ret);
             return ret;
         }
         ret = StartLogger(logger);
         if (ret != 0)
         {
-            printf("start default logger error. ret:<%d>.\n", ret);
+            printf("LoadAndStartLogger error. ret:<%d>.\n", ret);
             return ret;
         }
         return 0;
