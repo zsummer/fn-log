@@ -242,6 +242,7 @@ namespace FNLog
     {
     public:
         static const int BUFFER_LEN = FN_LOG_MAX_LOG_QUEUE_SIZE;
+        static_assert(BUFFER_LEN > 10, "ring queue size too little");
     public:
         char chunk_1_[CHUNK_SIZE];
         std::atomic_int write_idx_;
@@ -420,6 +421,38 @@ namespace FNLog
     {
         m.log_fields_[eid].store(v, std::memory_order_relaxed);
     }
+
+
+    enum ErrNo
+    {
+        E_SUCCESS = 0,
+        E_INNER_ERROR,
+        E_UNKNOWN_ERROR,
+        E_UNKNOWN_CHANNEL_SYNC,
+        E_ILL_PARAMS,
+        E_LOGGER_STATE_NOT_UNINIT,
+        E_LOGGER_STATE_NOT_INIT,
+        E_LOGGER_STATE_NOT_RUNNING,
+        E_CONFIG_OUT_CHANNEL_MAX,
+        E_CONFIG_DISABLE_HOTUPDATE,
+        E_CONFIG_NOT_FROM_PATHFILE,
+        E_NOT_FIND_CONFIG_FILE,
+        E_CONFIG_FILE_NOT_CHANGE,
+        E_OUT_CHANNEL_SIZE,
+        E_OUT_RINGBUFFER,
+        E_NEW_THREAD_ERROR,
+        E_NEW_THREAD_LOSS,
+        E_SHMGET_PROBE_ERROR,
+        E_SHMGET_CREATE_ERROR,
+        E_SHMAT_ERROR,
+        E_SHM_VERSION_WRONG,
+
+        E_CONFIG_VERSION_MISMATCH,
+
+        E_BASE_ERRNO_MAX
+
+    };
+
 
 }
 

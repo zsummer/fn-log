@@ -68,7 +68,7 @@ namespace FNLog
         {
             printf("shmget error. key:<0x%llx>, errno:<%d>. can use 'ipcs -m', 'ipcrm -m' to view and clear.\n",
                 logger.shm_key_, errno);
-            return -1;
+            return E_SHMGET_ERROR;
         }
 
         if (idx < 0)
@@ -77,13 +77,13 @@ namespace FNLog
             if (idx < 0)
             {
                 printf("new shm. shmget error. key:<0x%llx>, errno:<%d>.\n", logger.shm_key_, errno);
-                return -2;
+                return E_SHMGET_CREATE_ERROR;
             }
             void* addr = shmat(idx, nullptr, 0);
             if (addr == nullptr || addr == (void*)-1)
             {
                 printf("new shm. shmat error. key:<0x%llx>, idx:<%d>, errno:<%d>.\n", logger.shm_key_, idx, errno);
-                return -3;
+                return E_SHMAT_ERROR;
             }
             memset(addr, 0, sizeof(SHMLogger));
             shm = (SHMLogger*)addr;
@@ -96,7 +96,7 @@ namespace FNLog
             if (addr == nullptr || addr == (void*)-1)
             {
                 printf("shmat error. key:<%llx>, idx:<%d>, errno:<%d>.\n", logger.shm_key_, idx, errno);
-                return -4;
+                return E_SHMAT_ERROR;
             }
             shm = (SHMLogger*)addr;
         }
@@ -106,19 +106,19 @@ namespace FNLog
             printf("shm version error. key:<0x%llx>, old id:<%d>, new id:<%d>, old size:<%d> new size:<%d>. "
                 "can use 'ipcs -m', 'ipcrm -m' to view and clear.\n",
                 logger.shm_key_, shm->shm_id_, idx, shm->shm_size_, (int)sizeof(SHMLogger));
-            return -5;
+            return E_SHM_VERSION_WRONG;
         }
         for (int i = 0; i < shm->channel_size_; i++)
         {
             if (i >= SHMLogger::MAX_CHANNEL_SIZE)
             {
-                return -6;
+                return E_SHM_VERSION_WRONG;
             }
 
             if (shm->ring_buffers_[i].write_idx_ >= RingBuffer::BUFFER_LEN
                 || shm->ring_buffers_[i].write_idx_ < 0)
             {
-                return -7;
+                return E_SHM_VERSION_WRONG;
             }
 
             while (shm->ring_buffers_[i].write_idx_.load() != shm->ring_buffers_[i].hold_idx_.load())
@@ -181,8 +181,8 @@ namespace FNLog
         Logger::StateLockGuard state_guard(logger.state_lock);
         if (logger.logger_state_ != LOGGER_STATE_UNINIT)
         {
-            printf("init from ymal:<%s> text error\n", path.c_str());
-            return -1;
+            printf("InitFromYMAL:<%s> text error\n", path.c_str());
+            return E_LOGGER_STATE_NOT_UNINIT;
         }
 
         std::unique_ptr<LexState> ls(new LexState);
@@ -190,7 +190,7 @@ namespace FNLog
         if (ret != PEC_NONE)
         {
             std::stringstream os;
-            os << "load has error:<" << ret << "> in line:[" << ls->line_number_ << "], line type:" << ls->line_.line_type_;
+            os << "ParseLogger has error:<" << ret << "> in line:[" << ls->line_number_ << "], line type:" << ls->line_.line_type_;
             if (ls->current_ != nullptr)
             {
                 os << " before:";
@@ -222,7 +222,7 @@ namespace FNLog
             ret = LoadSharedMemory(logger);
             if (ret != 0)
             {
-                printf("LoadSharedMemory has error:%d,  yaml:%s\n", ret, text.c_str());
+                printf("InitFromYMAL has error:%d,  yaml:%s\n", ret, text.c_str());
                 return ret;
             }
         }
@@ -242,8 +242,8 @@ namespace FNLog
 
         if (logger.shm_->channel_size_ > Logger::MAX_CHANNEL_SIZE || logger.shm_->channel_size_ <= 0)
         {
-            printf("start error 2");
-            return -2;
+            printf("InitFromYMAL channel size:%d out channel max%d. \n", logger.shm_->channel_size_, Logger::MAX_CHANNEL_SIZE);
+            return E_CONFIG_OUT_CHANNEL_MAX;
         }
         return 0;
     }
@@ -259,13 +259,13 @@ namespace FNLog
         config.open(path.c_str(), "rb", file_stat);
         if (!config.is_open())
         {
-            printf("ymal:<%s> open file error\n", path.c_str());
-            return -1;
+            printf("InitFromYMALFile:<%s> open file error\n", path.c_str());
+            return E_NOT_FIND_CONFIG_FILE;
         }
         int ret = InitFromYMAL(logger, config.read_content(), path);
         if (ret != 0)
         {
-            printf("ymal:<%s> has parse/init error\n", path.c_str());
+            printf("InitFromYMALFile:<%s> has parse/init error\n", path.c_str());
             return ret;
         }
 
@@ -280,15 +280,15 @@ namespace FNLog
     {
         if (logger.shm_->channel_size_ <= channel_id)
         {
-            return -1;
+            return E_OUT_CHANNEL_SIZE;
         }
         if (!logger.hot_update_)
         {
-            return -2;
+            return E_CONFIG_DISABLE_HOTUPDATE;
         }
         if (logger.yaml_path_.empty())
         {
-            return -3;
+            return E_CONFIG_NOT_FROM_PATHFILE;
         }
 
         Channel& dst_chl = logger.shm_->channels_[channel_id];
@@ -304,17 +304,17 @@ namespace FNLog
         config.open(logger.yaml_path_.c_str(), "rb", file_stat);
         if (!config.is_open())
         {
-            return -5;
+            return E_NOT_FIND_CONFIG_FILE;
         }
         if (file_stat.st_mtime == dst_chl.yaml_mtime_)
         {
-            return -6;
+            return E_CONFIG_FILE_NOT_CHANGE;
         }
 
         Logger::StateLockGuard state_guard(logger.state_lock);
         if (logger.logger_state_ != LOGGER_STATE_RUNNING)
         {
-            return -7;
+            return E_LOGGER_STATE_NOT_RUNNING;
         }
 
         dst_chl.yaml_mtime_ = file_stat.st_mtime;
@@ -331,7 +331,7 @@ namespace FNLog
         }
         if (!logger.hot_update_)
         {
-            return -8;
+            return E_CONFIG_DISABLE_HOTUPDATE;
         }
         logger.hot_update_ = ls->hot_update_;
 
@@ -342,7 +342,7 @@ namespace FNLog
         Channel& src_chl = ls->channels_[channel_id];
         if (dst_chl.channel_id_ != src_chl.channel_id_ || src_chl.channel_id_ != channel_id)
         {
-            return -10;
+            return E_CONFIG_VERSION_MISMATCH;
         }
         for (int field_id = 0; field_id < CHANNEL_CFG_MAX_ID; field_id++)
         {
@@ -356,21 +356,21 @@ namespace FNLog
             Device& src_dvc = src_chl.devices_[device_id];
             if (src_dvc.device_id_ != device_id)
             {
-                return -11;
+                return E_CONFIG_VERSION_MISMATCH;
             }
             if (device_id < dst_chl.device_size_)
             {
                 Device& dst_dvc = dst_chl.devices_[device_id];
                 if (dst_dvc.device_id_ != device_id)
                 {
-                    return -12;
+                    return E_CONFIG_VERSION_MISMATCH;
                 }
                 memcpy(&dst_dvc.config_fields_, &src_dvc.config_fields_, sizeof(dst_dvc.config_fields_));
                 continue;
             }
             if (dst_chl.device_size_ != device_id)
             {
-                return -13;
+                return E_CONFIG_VERSION_MISMATCH;
             }
             memcpy(&dst_chl.devices_[dst_chl.device_size_++], &src_dvc, sizeof(src_dvc));
             

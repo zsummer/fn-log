@@ -49,8 +49,8 @@ namespace FNLog
 {
     enum ParseErrorCode
     {
-        PEC_NONE, 
-        PEC_ERROR,
+        PEC_NONE = E_SUCCESS,
+        PEC_ERROR = E_BASE_ERRNO_MAX,
         PEC_ILLEGAL_CHARACTER,
         PEC_ILLEGAL_KEY,
         PEC_NOT_CLOSURE,

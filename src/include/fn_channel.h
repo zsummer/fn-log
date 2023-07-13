@@ -379,7 +379,7 @@ namespace FNLog
             }
             state++;
 
-            for (int i = 0; i < FN_MAX(RingBuffer::BUFFER_LEN, 10); i++)
+            for (int i = 0; i < RingBuffer::BUFFER_LEN; i++)
             {
                 if (channel.channel_state_ != CHANNEL_STATE_RUNNING)
                 {
@@ -411,17 +411,17 @@ namespace FNLog
     {
         if (channel_id >= logger.shm_->channel_size_ || channel_id < 0)
         {
-            return -1;
+            return E_OUT_CHANNEL_SIZE;
         }
         if (hold_idx >= RingBuffer::BUFFER_LEN || hold_idx < 0)
         {
-            return -2;
+            return E_OUT_RINGBUFFER;
         }
         Channel& channel = logger.shm_->channels_[channel_id];
         RingBuffer& ring_buffer = logger.shm_->ring_buffers_[channel_id];
         if (channel.channel_state_ != CHANNEL_STATE_RUNNING)
         {
-            return -1;
+            return E_LOGGER_STATE_NOT_RUNNING;
         }
 
         LogData& log = ring_buffer.buffer_[hold_idx];
@@ -462,12 +462,16 @@ namespace FNLog
     {
         if (log.channel_id_ == channel_id)
         {
-            return -1;
+            return E_ILL_PARAMS;
         }
         int hold_idx = FNLog::HoldChannel(logger, channel_id, log.priority_, log.category_, log.identify_);
         if (hold_idx < 0)
         {
-            return -2;
+            if (hold_idx == -1)
+            {
+                return 0;
+            }
+            return E_INNER_ERROR;
         }
         LogData& trans_log = logger.shm_->ring_buffers_[channel_id].buffer_[hold_idx];
         trans_log.channel_id_ = channel_id;

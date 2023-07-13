@@ -184,9 +184,17 @@ int main(int argc, char* argv[])
     FNLOG_ASSERT(ChannelWrite(0) - last_channel_write == 42, "all style test ");
     FNLOG_ASSERT(DeviceWrite(0, 0) - last_device_write == 42, "all style test ");
 
+
+
+
+
     LogInfoStream(1, 0, 0) << "log filter test success";
 
     LogInfoStream(1, 0, 0).write_binary("fn-log", sizeof("fn-log") - 1);
+
+
+
+
 
 
     return 0;
