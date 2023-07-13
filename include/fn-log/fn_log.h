@@ -2733,10 +2733,6 @@ namespace FNLog
     //[$PNAME $PID $YEAR $MON $DAY $HOUR $MIN $SEC]
     inline std::string MakePathName(const std::string& fmt_name, int channel_id, int device_id, const struct tm& t)
     {
-        if (fmt_name.empty())
-        {
-            return "./log/";
-        }
         return FmtName(fmt_name, channel_id, device_id, t);
     }
 
