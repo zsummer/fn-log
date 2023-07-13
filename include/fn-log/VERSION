@@ -1,6 +1,6 @@
 version:
-last_sha1(./src)=507374b17f6cb9dd91b9bf57aa661ed1c9ffe261
-last_date(./src)=2023-07-13 12:22:14 +0800
+last_sha1(./src)=28b7cbf6f28cda6d1ab446dea0f3a4c6d38ad0af
+last_date(./src)=2023-07-13 12:31:28 +0800
 
 git log -1 --stat ./src:
-commit 507374b17f6cb9dd91b9bf57aa661ed1c9ffe261 Author: zsummer <yawei.zhang@foxmail.com> Date: Thu Jul 13 12:19:33 2023 +0800 clean FNLog::ERRNO src/include/fn_channel.h | 16 +++++++---- src/include/fn_core.h | 72 +++++++++++++++++++++++++----------------------- src/include/fn_data.h | 33 ++++++++++++++++++++++ src/include/fn_load.h | 54 ++++++++++++++++++------------------ src/include/fn_parse.h | 4 +-- 5 files changed, 109 insertions(+), 70 deletions(-)
+commit 28b7cbf6f28cda6d1ab446dea0f3a4c6d38ad0af Author: zsummer <yawei.zhang@foxmail.com> Date: Thu Jul 13 12:31:28 2023 +0800 clean license code src/include/fn_channel.h | 40 ++++----------------------------- src/include/fn_core.h | 42 +++++------------------------------ src/include/fn_file.h | 42 +++++------------------------------ src/include/fn_fmt.h | 42 +++++------------------------------ src/include/fn_load.h | 44 +++++-------------------------------- src/include/fn_log.h | 42 +++++------------------------------ src/include/fn_macro.h | 42 +++++------------------------------ src/include/fn_out_file_device.h | 41 +++++----------------------------- src/include/fn_out_screen_device.h | 42 +++++------------------------------ src/include/fn_out_udp_device.h | 42 +++++------------------------------ src/include/fn_out_virtual_device.h | 42 +++++------------------------------ src/include/fn_parse.h | 42 +++++------------------------------ src/include/fn_stream.h | 42 +++++------------------------------ 13 files changed, 65 insertions(+), 480 deletions(-)
