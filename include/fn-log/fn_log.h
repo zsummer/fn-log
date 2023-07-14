@@ -3459,7 +3459,7 @@ namespace FNLog
         {
             return E_ILL_PARAMS;
         }
-        int hold_idx = FNLog::HoldChannel(logger, channel_id, log.priority_, log.category_, log.identify_);
+        int hold_idx = FNLog::HoldChannel(logger, channel_id, log.priority_, category, identify);
         if (hold_idx < 0)
         {
             if (hold_idx == -1)
