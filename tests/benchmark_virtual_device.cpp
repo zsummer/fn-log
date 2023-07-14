@@ -131,7 +131,7 @@ std::string ChannelDesc(int channel_type)
 long long g_virtual_device_write_count = 0;
 void VirtualDevice(const FNLog::LogData& log)
 {
-    FNLog::TransmitChannel(FNLog::GetDefaultLogger(), 0, log);
+    FNLog::TransmitChannel(FNLog::GetDefaultLogger(), 0, log.category_, log.identify_, log);
 }
 
 int main(int argc, char *argv[])

@@ -48,7 +48,7 @@ R"----(
 long long g_virtual_device_write_count = 0;
 void VirtualDevice(const FNLog::LogData& log)
 {
-    FNLog::TransmitChannel(FNLog::GetDefaultLogger(), 2, log);
+    FNLog::TransmitChannel(FNLog::GetDefaultLogger(), 2, log.category_, log.identify_, log);
 }
 
 
