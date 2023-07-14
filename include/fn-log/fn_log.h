@@ -3453,7 +3453,7 @@ namespace FNLog
     }
 
     //combine virtual device  can transmit log to other channel 
-    inline int TransmitChannel(Logger& logger, int channel_id, const LogData& log)
+    inline int TransmitChannel(Logger& logger, int channel_id, int category, long long identify, const LogData& log)
     {
         if (log.channel_id_ == channel_id)
         {
@@ -3471,8 +3471,8 @@ namespace FNLog
         LogData& trans_log = logger.shm_->ring_buffers_[channel_id].buffer_[hold_idx];
         trans_log.channel_id_ = channel_id;
         trans_log.priority_ = log.priority_;
-        trans_log.category_ = log.category_;
-        trans_log.identify_ = log.identify_;
+        trans_log.category_ = category;
+        trans_log.identify_ = identify;
         trans_log.code_line_ = log.code_line_;
         trans_log.code_func_len_ = log.code_func_len_;
         trans_log.code_file_len_ = log.code_file_len_;

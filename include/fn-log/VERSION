@@ -1,6 +1,6 @@
 version:
-last_sha1(./src)=4a44a50d4693f6c6ae63bc24a569e31d8931f1c7
-last_date(./src)=2023-07-13 16:00:16 +0800
+last_sha1(./src)=348ec4f3a2d73be7da52b92d5906fa6efda03d63
+last_date(./src)=2023-07-14 10:32:15 +0800
 
 git log -1 --stat ./src:
-commit 4a44a50d4693f6c6ae63bc24a569e31d8931f1c7 Author: zsummer <yawei.zhang@foxmail.com> Date: Thu Jul 13 16:00:16 2023 +0800 typo fixed (concurrent count) src/include/fn_channel.h | 2 +- 1 file changed, 1 insertion(+), 1 deletion(-)
+commit 348ec4f3a2d73be7da52b92d5906fa6efda03d63 Author: zsummer <yawei.zhang@foxmail.com> Date: Fri Jul 14 10:32:15 2023 +0800 转写日志时可以同时调整过滤选项 src/include/fn_channel.h | 6 +++--- 1 file changed, 3 insertions(+), 3 deletions(-)
