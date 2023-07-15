@@ -183,6 +183,10 @@ int main(int argc, char *argv[])
         FNLog::Channel& channel = logger.shm_->channels_[channel_id];
         for (int field = 0; field < FNLog::CHANNEL_LOG_MAX_ID; field++)
         {
+            if (channel.log_fields_[field] <= 0)
+            {
+                continue;
+            }
             LogInfoStream(0, 1, 0) << "channel[" << channel_id << "] log field[" << field << "]:" << channel.log_fields_[field];
         }
     }
