@@ -718,6 +718,7 @@ namespace FNLog
         CHANNEL_LOG_PROCESSED,
         CHANNEL_LOG_PROCESSED_BYTES,
         CHANNEL_LOG_MAX_PROC_QUE_SIZE,
+        CHANNEL_LOG_MAX_DELAY_TIME_S, //second 
 
         CHANNEL_LOG_MAX_ID
     };
@@ -3159,11 +3160,21 @@ namespace FNLog
                 {
                     proc_que_size = write_id + RingBuffer::BUFFER_LEN - old_idx;
                 }
+
                 if (proc_que_size > channel.log_fields_.at(CHANNEL_LOG_MAX_PROC_QUE_SIZE))
                 {
-                    channel.log_fields_.at(CHANNEL_LOG_MAX_PROC_QUE_SIZE) = proc_que_size;
+                    AtomicStoreL(channel, CHANNEL_LOG_MAX_PROC_QUE_SIZE, proc_que_size);
                 }
 
+                if (cur_log.timestamp_ > 0)
+                {
+                    long long now = (long long)time(NULL);
+                    long long diff = now - cur_log.timestamp_;
+                    if (diff > channel.log_fields_.at(CHANNEL_LOG_MAX_DELAY_TIME_S))
+                    {
+                        AtomicStoreL(channel, CHANNEL_LOG_MAX_DELAY_TIME_S, diff);
+                    }
+                }
                 do
                 {
                     //set read index to proc index  
