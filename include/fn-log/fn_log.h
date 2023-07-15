@@ -716,7 +716,9 @@ namespace FNLog
         CHANNEL_LOG_BOUND = CHANNEL_LOG_PRIORITY_MAX + 8, //ull*8 
 
         CHANNEL_LOG_PROCESSED,
+        CHANNEL_LOG_PROCESSED_BYTES,
         CHANNEL_LOG_MAX_PROC_QUE_SIZE,
+
         CHANNEL_LOG_MAX_ID
     };
 
@@ -3144,6 +3146,7 @@ namespace FNLog
                 DispatchLog(logger, channel, cur_log);
                 cur_log.data_mark_ = 0;
                 AtomicAddL(channel, CHANNEL_LOG_PROCESSED);
+                AtomicAddLV(channel, CHANNEL_LOG_PROCESSED_BYTES, cur_log.content_len_);
                 local_write_count ++;
 
                 int write_id = ring_buffer.write_idx_.load(std::memory_order_acquire);
