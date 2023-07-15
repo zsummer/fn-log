@@ -1,6 +1,6 @@
 version:
-last_sha1(./src)=66393fb84bb63e9d9b9d0120bac86a4b6c50b59b
-last_date(./src)=2023-07-14 10:35:25 +0800
+last_sha1(./src)=945469d370170c4d0dec5402b4b7e2eab6fea75a
+last_date(./src)=2023-07-15 15:13:30 +0800
 
 git log -1 --stat ./src:
-commit 66393fb84bb63e9d9b9d0120bac86a4b6c50b59b Author: zsummer <yawei.zhang@foxmail.com> Date: Fri Jul 14 10:35:25 2023 +0800 转写日志时可以同时调整过滤选项 src/include/fn_channel.h | 2 +- 1 file changed, 1 insertion(+), 1 deletion(-)
+commit 945469d370170c4d0dec5402b4b7e2eab6fea75a Author: zsummer <yawei.zhang@foxmail.com> Date: Sat Jul 15 15:13:30 2023 +0800 proc que size src/include/fn_channel.h | 14 ++++++++++++++ src/include/fn_data.h | 6 +++++- 2 files changed, 19 insertions(+), 1 deletion(-)
