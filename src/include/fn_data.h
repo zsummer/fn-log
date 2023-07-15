@@ -222,6 +222,7 @@ namespace FNLog
 
     enum ChannelLogEnum
     {
+        CHANNEL_LOG_WAIT_COUNT,
         CHANNEL_LOG_HOLD,
         CHANNEL_LOG_PUSH,
         CHANNEL_LOG_PRIORITY, //== PRIORITY_TRACE

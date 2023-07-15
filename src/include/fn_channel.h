@@ -368,6 +368,7 @@ namespace FNLog
         {
             if (state > 0)
             {
+                AtomicAddL(channel, CHANNEL_LOG_WAIT_COUNT);
                 std::this_thread::sleep_for(std::chrono::milliseconds(10));
             }
             state++;
