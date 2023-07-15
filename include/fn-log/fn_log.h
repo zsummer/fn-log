@@ -712,7 +712,11 @@ namespace FNLog
         CHANNEL_LOG_PUSH,
         CHANNEL_LOG_PRIORITY, //== PRIORITY_TRACE
         CHANNEL_LOG_PRIORITY_MAX = CHANNEL_LOG_PRIORITY + PRIORITY_MAX,
-        CHANNEL_LOG_PROCESSED = CHANNEL_LOG_PUSH + 8,
+
+        CHANNEL_LOG_BOUND = CHANNEL_LOG_PRIORITY_MAX + 8, //ull*8 
+
+        CHANNEL_LOG_PROCESSED,
+        CHANNEL_LOG_MAX_PROC_QUE_SIZE,
         CHANNEL_LOG_MAX_ID
     };
 
@@ -3142,6 +3146,20 @@ namespace FNLog
                 AtomicAddL(channel, CHANNEL_LOG_PROCESSED);
                 local_write_count ++;
 
+                int write_id = ring_buffer.write_idx_.load(std::memory_order_acquire);
+                int proc_que_size = 0;
+                if (old_idx <= write_id)
+                {
+                    proc_que_size = write_id - old_idx;
+                }
+                else
+                {
+                    proc_que_size = write_id + RingBuffer::BUFFER_LEN - old_idx;
+                }
+                if (proc_que_size > channel.log_fields_.at(CHANNEL_LOG_MAX_PROC_QUE_SIZE))
+                {
+                    channel.log_fields_.at(CHANNEL_LOG_MAX_PROC_QUE_SIZE) = proc_que_size;
+                }
 
                 do
                 {
