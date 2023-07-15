@@ -3170,7 +3170,7 @@ namespace FNLog
                 if (cur_log.timestamp_ > 0)
                 {
                     long long now = (long long)time(NULL);
-                    long long diff = now - cur_log.timestamp_;
+                    long long diff = now - 1 - cur_log.timestamp_;
                     if (diff > channel.log_fields_.at(CHANNEL_LOG_MAX_DELAY_TIME_S))
                     {
                         AtomicStoreL(channel, CHANNEL_LOG_MAX_DELAY_TIME_S, diff);
