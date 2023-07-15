@@ -35,57 +35,57 @@ R"----(
     -device:2
         disable: false
         out_type: screen
-        category: 1
+        category: 2
         category_extend: 1
     -device:3
         disable: false
         out_type: screen
-        category: 1
+        category: 2
         category_extend: 1
     -device:4
         disable: false
         out_type: screen
-        category: 1
+        category: 2
         category_extend: 1
     -device:5
         disable: false
         out_type: screen
-        category: 1
+        category: 2
         category_extend: 1
     -device:6
         disable: false
         out_type: screen
-        category: 1
+        category: 2
         category_extend: 1
     -device:7
         disable: false
         out_type: screen
-        category: 1
+        category: 2
         category_extend: 1
     -device:8
         disable: false
         out_type: screen
-        category: 1
+        category: 2
         category_extend: 1
     -device:9
         disable: false
         out_type: screen
-        category: 1
+        category: 2
         category_extend: 1
     -device:10
         disable: false
         out_type: screen
-        category: 1
+        category: 2
         category_extend: 1
     -device:11
         disable: false
         out_type: screen
-        category: 1
+        category: 2
         category_extend: 1
     -device:12
         disable: false
         out_type: screen
-        category: 1
+        category: 2
         category_extend: 1
 
  # 1 异步空 
@@ -151,12 +151,13 @@ int main(int argc, char *argv[])
     FNLog::Logger& logger = FNLog::GetDefaultLogger();
 
     unsigned int total_count = 0;
-    for (int i = 0; i < logger.shm_->channel_size_; i++)
+    for (int channel_id = 0; channel_id < logger.shm_->channel_size_; channel_id++)
     {
         total_count = 0;
+        FNLog::Channel& channel = logger.shm_->channels_[channel_id];
         do
         {
-            LOG_STREAM_DEFAULT_LOGGER(i, FNLog::PRIORITY_DEBUG, 0, 0, FNLog::LOG_PREFIX_NULL)
+            LOG_STREAM_DEFAULT_LOGGER(channel_id, FNLog::PRIORITY_DEBUG, 0, 0, FNLog::LOG_PREFIX_NULL)
                 .write_buffer("rrrrrrrrrrrrrrrrrrrradfads33333333333333rrd",
                     sizeof("rrrrrrrrrrrrrrrrrrrradfads33333333333333rrd") - 1);
 
@@ -166,9 +167,9 @@ int main(int argc, char *argv[])
                 long long now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
                 if (total_count > 0)
                 {
-                    LogInfoStream(0, 1, 0) << "channel:<" << (long long)i << "> "
-                        << ChannelDesc(logger.shm_->channels_[i].channel_type_) << " has write file:<"
-                        << logger.shm_->channels_[i].device_size_ << "> test " << 1000000*1000 / (now - last) << " line/sec. ";
+                    LogInfoStream(0, 1, 0) << "channel:<" << (long long)channel_id << "> "
+                        << ChannelDesc(channel.channel_type_) << " has write file:<"
+                        << channel.device_size_ << "> test " << 1000000*1000 / (now - last) << " line/sec. ";
                     last = now;
                     break;
                 }
@@ -176,6 +177,15 @@ int main(int argc, char *argv[])
         } while (++total_count);
     }
 
+
+    for (int channel_id = 0; channel_id < logger.shm_->channel_size_; channel_id++)
+    {
+        FNLog::Channel& channel = logger.shm_->channels_[channel_id];
+        for (int field = 0; field < FNLog::CHANNEL_LOG_MAX_ID; field++)
+        {
+            LogInfoStream(0, 1, 0) << "channel[" << channel_id << "] log field[" << field << "]:" << channel.log_fields_[field];
+        }
+    }
     LogAlarmStream(0, 1, 0) << "finish";
     return 0;
 }
