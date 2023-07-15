@@ -232,6 +232,7 @@ namespace FNLog
         CHANNEL_LOG_PROCESSED,
         CHANNEL_LOG_PROCESSED_BYTES,
         CHANNEL_LOG_MAX_PROC_QUE_SIZE,
+        CHANNEL_LOG_MAX_DELAY_TIME_S, //second 
 
         CHANNEL_LOG_MAX_ID
     };
