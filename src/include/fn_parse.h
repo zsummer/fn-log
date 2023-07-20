@@ -63,6 +63,7 @@ namespace FNLog
         RK_NULL,
         RK_SHM_KEY,
         RK_CHANNEL,
+        RK_DEFINE,
         RK_DEVICE,
         RK_SYNC,
         RK_DISABLE,
@@ -117,7 +118,15 @@ namespace FNLog
             }
             break;
         case 'd':
-            if (*(begin+1) == 'e')
+            if (end - begin < 3)
+            {
+                return RK_NULL;
+            }
+            if (*(begin + 2) == 'f')
+            {
+                return RK_DEFINE;
+            }
+            else if (*(begin+1) == 'e')
             {
                 return RK_DEVICE;
             }
@@ -746,6 +755,10 @@ namespace FNLog
         } while (ls.line_.line_type_ != LINE_EOF);
         return 0;
     }
+    inline int Preparse(std::string& text)
+    {
+        return PEC_NONE;
+    }
     inline int ParseLogger(LexState& ls, const std::string& text)
     {
         //UTF8 BOM 
@@ -790,6 +803,9 @@ namespace FNLog
             {
             case RK_HOT_UPDATE:
                 ls.hot_update_ = ParseBool(ls.line_.val_begin_, ls.line_.val_end_);//"disable"
+                break;
+            case RK_DEFINE:
+                //do nothing  
                 break;
             case RK_LOGGER_NAME:
                 ParseString(ls.line_.val_begin_, ls.line_.val_end_, ls.name_, Logger::MAX_LOGGER_NAME_LEN, ls.name_len_);

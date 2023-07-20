@@ -144,7 +144,7 @@ namespace FNLog
     }
 
 
-    inline int InitFromYMAL(Logger& logger, const std::string& text, const std::string& path)
+    inline int InitFromYMAL(Logger& logger, std::string text, const std::string& path)
     {
         Logger::StateLockGuard state_guard(logger.state_lock);
         if (logger.logger_state_ != LOGGER_STATE_UNINIT)
@@ -154,7 +154,13 @@ namespace FNLog
         }
 
         std::unique_ptr<LexState> ls(new LexState);
-        int ret = ParseLogger(*ls, text);
+        int ret = Preparse(text);
+        if (ret != PEC_NONE)
+        {
+            printf("InitFromYMAL has error:%d,  yaml:%s\n", ret, text.c_str());
+            return ret;
+        }
+        ret = ParseLogger(*ls, text);
         if (ret != PEC_NONE)
         {
             std::stringstream os;
@@ -292,7 +298,12 @@ namespace FNLog
         //static_assert(std::is_trivial<decltype(logger.shm_->channels_)>::value, "");
 
         std::string text = config.read_content();
-        int ret = ParseLogger(*ls, text);
+        int ret = Preparse(text);
+        if (ret != PEC_NONE)
+        {
+            return ret;
+        }
+        ret = ParseLogger(*ls, text);
         if (ret != PEC_NONE)
         {
             return ret;
