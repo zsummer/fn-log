@@ -1016,6 +1016,7 @@ namespace FNLog
         RK_NULL,
         RK_SHM_KEY,
         RK_CHANNEL,
+        RK_DEFINE,
         RK_DEVICE,
         RK_SYNC,
         RK_DISABLE,
@@ -1070,7 +1071,15 @@ namespace FNLog
             }
             break;
         case 'd':
-            if (*(begin+1) == 'e')
+            if (end - begin < 3)
+            {
+                return RK_NULL;
+            }
+            if (*(begin + 2) == 'f')
+            {
+                return RK_DEFINE;
+            }
+            else if (*(begin+1) == 'e')
             {
                 return RK_DEVICE;
             }
@@ -1699,6 +1708,10 @@ namespace FNLog
         } while (ls.line_.line_type_ != LINE_EOF);
         return 0;
     }
+    inline int Preparse(std::string& text)
+    {
+        return PEC_NONE;
+    }
     inline int ParseLogger(LexState& ls, const std::string& text)
     {
         //UTF8 BOM 
@@ -1743,6 +1756,9 @@ namespace FNLog
             {
             case RK_HOT_UPDATE:
                 ls.hot_update_ = ParseBool(ls.line_.val_begin_, ls.line_.val_end_);//"disable"
+                break;
+            case RK_DEFINE:
+                //do nothing  
                 break;
             case RK_LOGGER_NAME:
                 ParseString(ls.line_.val_begin_, ls.line_.val_end_, ls.name_, Logger::MAX_LOGGER_NAME_LEN, ls.name_len_);
@@ -2345,7 +2361,7 @@ namespace FNLog
     }
 
 
-    inline int InitFromYMAL(Logger& logger, const std::string& text, const std::string& path)
+    inline int InitFromYMAL(Logger& logger, std::string text, const std::string& path)
     {
         Logger::StateLockGuard state_guard(logger.state_lock);
         if (logger.logger_state_ != LOGGER_STATE_UNINIT)
@@ -2355,7 +2371,13 @@ namespace FNLog
         }
 
         std::unique_ptr<LexState> ls(new LexState);
-        int ret = ParseLogger(*ls, text);
+        int ret = Preparse(text);
+        if (ret != PEC_NONE)
+        {
+            printf("InitFromYMAL has error:%d,  yaml:%s\n", ret, text.c_str());
+            return ret;
+        }
+        ret = ParseLogger(*ls, text);
         if (ret != PEC_NONE)
         {
             std::stringstream os;
@@ -2493,7 +2515,12 @@ namespace FNLog
         //static_assert(std::is_trivial<decltype(logger.shm_->channels_)>::value, "");
 
         std::string text = config.read_content();
-        int ret = ParseLogger(*ls, text);
+        int ret = Preparse(text);
+        if (ret != PEC_NONE)
+        {
+            return ret;
+        }
+        ret = ParseLogger(*ls, text);
         if (ret != PEC_NONE)
         {
             return ret;
