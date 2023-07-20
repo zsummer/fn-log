@@ -4085,7 +4085,6 @@ namespace FNLog
             if (prefix & LOG_PREFIX_FILE)
             {
                 write_char_unsafe('[');
-                write_char_unsafe('(');
                 if (file_name && file_name_len > 0)
                 {
                     int jump_bytes = short_path(file_name, file_name_len);
@@ -4095,7 +4094,6 @@ namespace FNLog
                 {
                     write_buffer_unsafe("nofile", 6);
                 }
-                write_char_unsafe(')');
                 write_char_unsafe(':');
                 *this << (unsigned long long)line;
                 write_char_unsafe(']');
