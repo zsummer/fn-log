@@ -146,7 +146,6 @@ namespace FNLog
 
     inline int InitFromYMAL(Logger& logger, std::string text, const std::string& path)
     {
-        Logger::StateLockGuard state_guard(logger.state_lock);
         if (logger.logger_state_ != LOGGER_STATE_UNINIT)
         {
             printf("InitFromYMAL:<%s> text error\n", path.c_str());
@@ -154,13 +153,7 @@ namespace FNLog
         }
 
         std::unique_ptr<LexState> ls(new LexState);
-        int ret = Preparse(text);
-        if (ret != PEC_NONE)
-        {
-            printf("InitFromYMAL has error:%d,  yaml:%s\n", ret, text.c_str());
-            return ret;
-        }
-        ret = ParseLogger(*ls, text);
+        int ret = ParseLogger(*ls, text);
         if (ret != PEC_NONE)
         {
             std::stringstream os;
@@ -178,6 +171,15 @@ namespace FNLog
             printf("%s\n", os.str().c_str());
             return ret;
         }
+
+        Logger::StateLockGuard state_guard(logger.state_lock_);
+        if (logger.logger_state_ != LOGGER_STATE_UNINIT)
+        {
+            printf("InitFromYMAL:<%s> text error\n", path.c_str());
+            return E_LOGGER_STATE_NOT_UNINIT;
+        }
+
+
         if (ls->name_len_ > 0)
         {
             memcpy(logger.name_, ls->name_, ls->name_len_+1);
@@ -236,7 +238,9 @@ namespace FNLog
             printf("InitFromYMALFile:<%s> open file error\n", path.c_str());
             return E_NOT_FIND_CONFIG_FILE;
         }
-        int ret = InitFromYMAL(logger, config.read_content(), path);
+        std::string text = config.read_content();
+        config.close();
+        int ret = InitFromYMAL(logger, text, path);
         if (ret != 0)
         {
             printf("InitFromYMALFile:<%s> has parse/init error\n", path.c_str());
@@ -284,35 +288,35 @@ namespace FNLog
         {
             return E_CONFIG_FILE_NOT_CHANGE;
         }
-
-        Logger::StateLockGuard state_guard(logger.state_lock);
         if (logger.logger_state_ != LOGGER_STATE_RUNNING)
         {
             return E_LOGGER_STATE_NOT_RUNNING;
         }
 
-        dst_chl.yaml_mtime_ = file_stat.st_mtime;
-
-        std::unique_ptr<LexState> ls(new LexState);
-        static_assert(std::is_same<decltype(logger.shm_->channels_), decltype(ls->channels_)>::value, "");
-        //static_assert(std::is_trivial<decltype(logger.shm_->channels_)>::value, "");
-
         std::string text = config.read_content();
-        int ret = Preparse(text);
+        config.close();
+        std::unique_ptr<LexState> ls(new LexState);
+        int ret = ParseLogger(*ls, text);
         if (ret != PEC_NONE)
         {
             return ret;
         }
-        ret = ParseLogger(*ls, text);
-        if (ret != PEC_NONE)
+
+
+        Logger::StateLockGuard state_guard(logger.state_lock_);
+        if (logger.logger_state_ != LOGGER_STATE_RUNNING)
         {
-            return ret;
+            return E_LOGGER_STATE_NOT_RUNNING;
         }
         if (!logger.hot_update_)
         {
             return E_CONFIG_DISABLE_HOTUPDATE;
         }
+        dst_chl.yaml_mtime_ = file_stat.st_mtime;
         logger.hot_update_ = ls->hot_update_;
+        
+        static_assert(std::is_same<decltype(logger.shm_->channels_), decltype(ls->channels_)>::value, "");
+        //static_assert(std::is_trivial<decltype(logger.shm_->channels_)>::value, "");
 
         static_assert(std::is_same<decltype(logger.shm_->channels_[channel_id].config_fields_), decltype(ls->channels_[channel_id].config_fields_)>::value, "");
         

@@ -370,7 +370,7 @@ namespace FNLog
         bool hot_update_;
         std::string yaml_path_;
         unsigned int logger_state_;
-        StateLock state_lock;
+        StateLock state_lock_;
         char desc_[MAX_LOGGER_DESC_LEN];
         int desc_len_;
         char name_[MAX_LOGGER_NAME_LEN];

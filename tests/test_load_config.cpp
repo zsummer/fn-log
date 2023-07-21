@@ -4,11 +4,8 @@
 #include "fn_log.h"
 #include <regex>
 
-#ifdef WIN32 //VS
-#define LOG_CONFIG_FILE "../log.yaml"
-#else
+
 #define LOG_CONFIG_FILE "./log.yaml"
-#endif // VS
 
 
 int main(int argc, char* argv[])

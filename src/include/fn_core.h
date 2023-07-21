@@ -150,7 +150,7 @@ namespace FNLog
             printf("StartLogger error. channel size:<%d> invalid.\n", logger.shm_->channel_size_);
             return E_CONFIG_OUT_CHANNEL_MAX;
         }
-        Logger::StateLockGuard state_guard(logger.state_lock);
+        Logger::StateLockGuard state_guard(logger.state_lock_);
         if (logger.logger_state_ != LOGGER_STATE_UNINIT)
         {
             printf("StartLogger error. state:<%u> not uninit:<%u>.\n", logger.logger_state_, LOGGER_STATE_UNINIT);
@@ -206,7 +206,7 @@ namespace FNLog
             printf("StopLogger logger error. state:<%u> not running:<%u>.\n", logger.logger_state_, LOGGER_STATE_RUNNING);
             return E_LOGGER_STATE_NOT_RUNNING;
         }
-        Logger::StateLockGuard state_guard(logger.state_lock);
+        Logger::StateLockGuard state_guard(logger.state_lock_);
         
         if (logger.logger_state_ != LOGGER_STATE_RUNNING)
         {
@@ -243,7 +243,7 @@ namespace FNLog
             printf("ParseAndStartLogger error. state:<%u> not uninit:<%u> by fast try.\n", logger.logger_state_, LOGGER_STATE_UNINIT);
             return E_LOGGER_STATE_NOT_UNINIT;
         }
-        Logger::StateLockGuard state_guard(logger.state_lock);
+        Logger::StateLockGuard state_guard(logger.state_lock_);
         if (logger.logger_state_ != LOGGER_STATE_UNINIT)
         {
             printf("ParseAndStartLogger error. state:<%u> not uninit:<%u> in locked check.\n", logger.logger_state_, LOGGER_STATE_UNINIT);
@@ -271,7 +271,7 @@ namespace FNLog
             printf("LoadAndStartLogger error. state:<%u> not uninit:<%u>.\n", logger.logger_state_, LOGGER_STATE_UNINIT);
             return E_LOGGER_STATE_NOT_UNINIT;
         }
-        Logger::StateLockGuard state_guard(logger.state_lock);
+        Logger::StateLockGuard state_guard(logger.state_lock_);
         int ret = InitFromYMALFile(logger, confg_path);
         if (ret != 0)
         {

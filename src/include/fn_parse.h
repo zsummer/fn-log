@@ -24,6 +24,7 @@ namespace FNLog
         PEC_NOT_CLOSURE,
         PEC_ILLEGAL_ADDR_IP,
         PEC_ILLEGAL_ADDR_PORT,
+        PEC_DEFINED_TARGET_TOO_LONG,
 
         PEC_UNDEFINED_DEVICE_KEY,
         PEC_UNDEFINED_DEVICE_TYPE,
@@ -63,7 +64,7 @@ namespace FNLog
         RK_NULL,
         RK_SHM_KEY,
         RK_CHANNEL,
-        RK_DEFINE,
+        RK_DEFINE, //the symbol name len must great the target name;   like tag0: 100;  it's inplace 
         RK_DEVICE,
         RK_SYNC,
         RK_DISABLE,
@@ -91,6 +92,34 @@ namespace FNLog
 #pragma GCC diagnostic ignored "-Wclass-memaccess"
 #endif
 
+    struct Line
+    {
+        int blank_;
+        int line_type_;
+        int block_type_;
+        int key_;
+        const char* key_begin_;
+        const char* key_end_;
+        const char* val_begin_;
+        const char* val_end_;
+    };
+
+    struct LexState
+    {
+        int line_number_;
+        const char* first_;
+        const char* current_;
+        const char* end_;
+        Line line_;
+        SHMLogger::Channels channels_;
+        int channel_size_;
+        long long shm_key_;
+        bool hot_update_;
+        char desc_[Logger::MAX_LOGGER_DESC_LEN];
+        int desc_len_;
+        char name_[Logger::MAX_LOGGER_NAME_LEN];
+        int name_len_;
+    };
 
     inline ReseveKey ParseReserve(const char* begin, const char* end)
     {
@@ -384,34 +413,82 @@ namespace FNLog
         }
         return bitmap;
     }
-    struct Line
-    {
-        int blank_;
-        int line_type_;
-        int block_type_;
-        int key_;
-        const char* key_begin_;
-        const char* key_end_;
-        const char* val_begin_;
-        const char* val_end_;
-    };
 
-    struct LexState
+    inline int PredefinedMacro(LexState& ls, std::string& text)
     {
-        int line_number_;
-        const char* first_;
-        const char* current_;
-        const char* end_;
-        Line line_;
-        SHMLogger::Channels channels_;
-        int channel_size_;
-        long long shm_key_;
-        bool hot_update_;
-        char desc_[Logger::MAX_LOGGER_DESC_LEN];
-        int desc_len_;
-        char name_[Logger::MAX_LOGGER_NAME_LEN];
-        int name_len_;
-    };
+        if (true)
+        {
+            std::string line(ls.line_.val_begin_, ls.line_.val_end_ - ls.line_.val_begin_);
+            std::string::size_type offset = 0;
+            std::string key;
+            std::string val;
+            while (offset < line.length())
+            {
+                if (line.at(offset) == ' ' || line.at(offset) == '\t')
+                {
+                    offset++;
+                    continue;
+                }
+
+                std::string::size_type dot = line.find(',', offset);
+                if (dot == std::string::npos)
+                {
+                    dot = line.length();
+                }
+
+                std::string::size_type sep = line.find(':', offset);
+                if (sep >= dot)
+                {
+                    offset = dot + 1;
+                    continue; //not kv or end, ignore;   
+                }
+                key = line.substr(offset, sep - offset);
+                while (!key.empty() && (key.back() == ' ' || key.back() == '\t'))
+                {
+                    key.pop_back();
+                }
+                sep++;
+                while (sep < dot && (line.at(offset) == ' ' || line.at(offset) == '\t'))
+                {
+                    sep++;
+                }
+                val = line.substr(sep, dot - sep);
+                while (!val.empty() && (val.back() == ' ' || val.back() == '\t'))
+                {
+                    val.pop_back();
+                }
+                if (key.empty() || val.length() > key.length())
+                {
+                    //has dot but wrong
+                    offset = dot + 1;
+                    //continue;
+                    return PEC_DEFINED_TARGET_TOO_LONG;
+                }
+                //fixed len
+                while (val.length() < key.length())
+                {
+                    val.push_back(' ');
+                }
+
+                //replace 
+                std::string::size_type text_offset = ls.line_.val_end_ - text.c_str();
+                while (true)
+                {
+                    text_offset = text.find(key, text_offset);
+                    if (text_offset == std::string::npos)
+                    {
+                        //finish 
+                        break;
+                    }
+                    memcpy(&text[text_offset], val.c_str(), val.length());
+                };
+                offset = dot + 1;
+            }
+        }
+
+        return PEC_NONE;
+    }
+
 
     inline void InitState(LexState& state)
     {
@@ -755,11 +832,8 @@ namespace FNLog
         } while (ls.line_.line_type_ != LINE_EOF);
         return 0;
     }
-    inline int Preparse(std::string& text)
-    {
-        return PEC_NONE;
-    }
-    inline int ParseLogger(LexState& ls, const std::string& text)
+
+    inline int ParseLogger(LexState& ls, std::string& text)
     {
         //UTF8 BOM 
         const char* first = &text[0];
@@ -806,6 +880,11 @@ namespace FNLog
                 break;
             case RK_DEFINE:
                 //do nothing  
+                ret = PredefinedMacro(ls, text);
+                if (ret != PEC_NONE)
+                {
+                    return ret;
+                }
                 break;
             case RK_LOGGER_NAME:
                 ParseString(ls.line_.val_begin_, ls.line_.val_end_, ls.name_, Logger::MAX_LOGGER_NAME_LEN, ls.name_len_);
