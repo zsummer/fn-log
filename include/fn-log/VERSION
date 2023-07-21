@@ -1,6 +1,6 @@
 version:
-last_sha1(./src)=84f923e17e78800edd6cd0fe6d0db415b1ccbee7
-last_date(./src)=2023-07-20 23:46:36 +0800
+last_sha1(./src)=dbf4e4f8d02c1c72d2dd740e160f2e389d0ef663
+last_date(./src)=2023-07-21 20:06:30 +0800
 
 git log -1 --stat ./src:
-commit 84f923e17e78800edd6cd0fe6d0db415b1ccbee7 Author: zsummer <yawei.zhang@foxmail.com> Date: Thu Jul 20 23:46:36 2023 +0800 support define macro src/include/fn_load.h | 17 ++++++++++++++--- src/include/fn_parse.h | 18 +++++++++++++++++- 2 files changed, 31 insertions(+), 4 deletions(-)
+commit dbf4e4f8d02c1c72d2dd740e160f2e389d0ef663 Author: zsummer <yawei.zhang@foxmail.com> Date: Fri Jul 21 19:47:42 2023 +0800 support defined macro src/include/fn_core.h | 8 +-- src/include/fn_data.h | 2 +- src/include/fn_load.h | 46 ++++++++-------- src/include/fn_parse.h | 143 ++++++++++++++++++++++++++++++++++++++----------- 4 files changed, 141 insertions(+), 58 deletions(-)

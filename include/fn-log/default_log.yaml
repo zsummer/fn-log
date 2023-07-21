@@ -7,7 +7,7 @@
    # write info log to pname_info.log
    # view  info log to screen 
 - define: "tag0:0, tag2:0, tag3:0, tag4:0"
-- define: "tag9:0, tag10:0"
+- define: "tag9:0"
 
  - channel: 0
     sync: async
