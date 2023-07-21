@@ -12,7 +12,7 @@ if [ ! -d "./$bcc" ]; then
   mkdir $bcc
 fi
 cd $bcc
-cmake -DENABLE_GCOV=TRUE .. 
+cmake -DENABLE_GCOV=TRUE -DCMAKE_BUILD_TYPE=Debug .. 
 make -j4
 cd ..
 
