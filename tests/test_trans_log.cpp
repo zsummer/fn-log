@@ -28,7 +28,7 @@ R"----(
         disable: false 
         out_type: file
         file: "$PNAME_$YEAR"
-        path: ../log/
+        path: ./log/
 )----";
 
 #define FNLOG_ASSERT(expr, prefix) \
