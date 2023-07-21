@@ -6,6 +6,7 @@ else
   exit 2 
 fi
 
+cd ..
 bcc=build-check-coverage
 if [ ! -d "./$bcc" ]; then
   mkdir $bcc
@@ -16,7 +17,7 @@ make -j4
 cd ..
 
 cd bin
-ts=`find ./ -maxdepth 1 -type f |egrep -v "log" | grep "test_"`
+ts=`find ./ -maxdepth 1 -type f |egrep -v "log" | grep "test_"| egrep -v "\."`
 for t in $ts ;
 do
   echo begin test $t 

@@ -60,6 +60,7 @@ jobs:
           ./stress_multi-thread-env_main_reboot
           ./benchmark_multi-thread
           ./benchmark_multi-thread_nofile
+          ./benchmark_multi-thread_hotupdate
           ./benchmark_multi-thread_sync
           ./benchmark_multi-thread_sync_nofile
           ./benchmark_serialize_integer
