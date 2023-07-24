@@ -30,6 +30,41 @@ namespace FNLog
         float v_;
     };
 
+    struct LogTimestamp
+    {
+        LogTimestamp()
+        {
+#ifdef WIN32
+            FILETIME ft;
+            GetSystemTimeAsFileTime(&ft);
+            unsigned long long now = ft.dwHighDateTime;
+            now <<= 32;
+            now |= ft.dwLowDateTime;
+            now /= 10;
+            now -= 11644473600000000ULL;
+            now /= 1000;
+            ts_ = now / 1000;
+            precise_ = (unsigned int)(now % 1000);
+#else
+            struct timeval tm;
+            gettimeofday(&tm, nullptr);
+            ts_ = tm.tv_sec;
+            precise_ = tm.tv_usec / 1000;
+#endif
+        }
+        LogTimestamp(long long ts, int precise)
+        {
+            ts_ = ts;
+            precise_ = precise;
+        }
+        LogTimestamp(long long ts_ms)
+        {
+            ts_ = ts_ms/1000;
+            precise_ = ts_ms%1000;
+        }
+        long long ts_;
+        int precise_;
+    };
 
     class LogStream
     {
@@ -411,6 +446,15 @@ namespace FNLog
             return *this;
         }
 
+        LogStream & operator <<(const LogTimestamp& date)
+        {
+            if (log_data_ && log_data_->content_len_ + 40 < LogData::LOG_SIZE)
+            {
+                int write_bytes = write_date_unsafe(log_data_->content_ + log_data_->content_len_, date.ts_, date.precise_);
+                log_data_->content_len_ += write_bytes;
+            }
+            return *this;
+        }
         
 
 
