@@ -1021,7 +1021,8 @@ namespace FNLog
         RK_NULL,
         RK_SHM_KEY,
         RK_CHANNEL,
-        RK_DEFINE, //the symbol name len must great the target name;   like tag0: 100;  it's inplace 
+        RK_DEFINE, //the symbol name len must equal or great than new name;   like tag0:10, tag1:100;  will error by "tag0:100000" 
+        RK_VARIABLE,
         RK_DEVICE,
         RK_SYNC,
         RK_DISABLE,
@@ -1234,6 +1235,8 @@ namespace FNLog
             return RK_SHM_KEY;
         case 'u':
             return RK_UDP_ADDR;
+        case 'v':
+            return RK_VARIABLE;
         default:
             break;
         }
@@ -1427,7 +1430,7 @@ namespace FNLog
         return bitmap;
     }
 
-    inline int PredefinedMacro(LexState& ls, std::string& text)
+    inline int PredefinedMacro(LexState& ls, std::string& text, bool is_var)
     {
         if (true)
         {
@@ -1470,7 +1473,19 @@ namespace FNLog
                 {
                     val.pop_back();
                 }
-                if (key.empty() || val.length() > key.length())
+
+                if (key.empty())
+                {
+                    //has dot but wrong
+                    offset = dot + 1;
+                    //continue;
+                    return PEC_DEFINED_TARGET_TOO_LONG;
+                }
+                if (is_var)
+                {
+                    key = std::string("${") + key + "}";
+                }
+                if (val.length() > key.length())
                 {
                     //has dot but wrong
                     offset = dot + 1;
@@ -1535,7 +1550,7 @@ namespace FNLog
             {
                 switch (ch)
                 {
-                case '\0': case'\n':case '\r': case '#': case '\"':
+                case '\0': case'\n':case '\r': case '#': case '\"': case '}':
                     ls.line_.block_type_ = BLOCK_CLEAN;
                     ls.line_.val_end_ = ls.current_ - 1;
                     break;
@@ -1561,7 +1576,7 @@ namespace FNLog
             //process
             switch (ch)
             {
-            case ' ': case '\f': case '\t': case '\v': case '\"':
+            case ' ': case '\f': case '\t': case '\v': case '\"': case '{':
                 if (ls.line_.block_type_ == BLOCK_BLANK)
                 {
                     ls.line_.blank_++;
@@ -1931,7 +1946,15 @@ namespace FNLog
                 break;
             case RK_DEFINE:
                 //do nothing  
-                ret = PredefinedMacro(ls, text);
+                ret = PredefinedMacro(ls, text, false);
+                if (ret != PEC_NONE)
+                {
+                    return ret;
+                }
+                break;
+            case RK_VARIABLE:
+                //do nothing  
+                ret = PredefinedMacro(ls, text, true);
                 if (ret != PEC_NONE)
                 {
                     return ret;
