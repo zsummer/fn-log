@@ -1,6 +1,6 @@
 version:
-last_sha1(./src)=023bd2f24a786c41cbc2a4397fd10103b079582a
-last_date(./src)=2023-07-25 21:47:40 +0800
+last_sha1(./src)=f646af15f2295c38dd351680f789d2736048dc82
+last_date(./src)=2023-07-26 01:30:36 +0800
 
 git log -1 --stat ./src:
-commit 023bd2f24a786c41cbc2a4397fd10103b079582a Author: zsummer <yawei.zhang@foxmail.com> Date: Tue Jul 25 21:47:40 2023 +0800 clean filter code ; support white list; black list src/include/fn_channel.h | 24 ++++---- src/include/fn_data.h | 8 +-- src/include/fn_out_virtual_device.h | 8 +-- src/include/fn_parse.h | 117 +++++++++++++++++++++++++++--------- 4 files changed, 110 insertions(+), 47 deletions(-)
+commit f646af15f2295c38dd351680f789d2736048dc82 Author: zsummer <yawei.zhang@foxmail.com> Date: Wed Jul 26 01:30:36 2023 +0800 support variable; support {} src/include/fn_parse.h | 35 +++++++++++++++++++++++++++++------ 1 file changed, 29 insertions(+), 6 deletions(-)
