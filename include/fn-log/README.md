@@ -45,6 +45,7 @@ fn-log是一款开源的轻量级高性能的跨平台日志库, 从log4z迭代�
   
 - [x] **常规日志功能支持** 
   > 支持日志文件回滚  
+  > 支持日期文件夹滚动  
   > 支持屏显日志染色输出  
   > 支持LOG4Z风格的流式输入  
   > 支持C++ stream风格的流式输入  
@@ -218,6 +219,11 @@ cd ../bin
   > default:  
   > desc: logger desc   
 
+- [x] define  
+  > option: list format like "key:val, key:val, key:val"
+  > default:
+  > desc: like c/c++ #define;  to replace the follow config content. warn: val length need equal or less than key length(maybe change impl).  
+
 ### Channel Option: (channel.)   
 - [x] sync
   > option: async sync 
@@ -234,8 +240,43 @@ cd ../bin
 - [x] category_extend
   > option:  
   > default: 0, invalid value.  
-  > desc: log will reserve when category in set [category, category+category_extend], and other not.   
+  > desc: log will reserve when category in set [category, category+category_extend), and other not.   
   > desc: mark content category to filter or write diff device
+
+- [x] category_wmask
+  > option: number  
+  > defualt: 
+  > desc: white list for category, a bitmap by u64.  
+- [x] category_bmask
+  > option: number  
+  > defualt: 
+  > desc: sugar for 'category_mask'  black list; 
+
+- [x] category_wlist
+  > option:   list format "1,23,44,1"   
+  > defualt: 
+  > desc: sugar for 'category_mask'  white list;        
+- [x] category_blist
+  > option:   
+  > defualt: 
+  > desc: sugar for 'category_mask'  black list;      
+   
+- [x] identify_wmask
+  > option: number  
+  > defualt: 
+  > desc: white list for identify, a bitmap by u64.  
+- [x] identify_bmask
+  > option: number  
+  > defualt: 
+  > desc: sugar for 'identify_mask'  black list; 
+- [x] identify_wlist
+  > option:   list format "1,23,44,1"   
+  > defualt: 
+  > desc: sugar for 'identify_mask'  white list;        
+- [x] identify_blist
+  > option:   
+  > defualt: 
+  > desc: sugar for 'identify_mask'  black list;        
 
 ### Device Option: (channel.device.)  
 - [x] disable  
@@ -257,7 +298,48 @@ cd ../bin
 - [x] category_extend
   > option:  
   > default: 0, invalid value.  
-  > desc: log will process when category in set [category, category+category_extend], and other not.   
+  > desc: log will process when category in set [category, category+category_extend), and other not.   
+
+- [x] category_wmask
+  > option: number  
+  > defualt: 
+  > desc: white list for category, a bitmap by u64.  
+- [x] category_bmask
+  > option: number  
+  > defualt: 
+  > desc: sugar for 'category_mask'  black list; 
+- [x] category_wlist
+  > option:   list format "1,23,44,1"   
+  > defualt: 
+  > desc: sugar for 'category_mask'  white list;        
+- [x] category_blist
+  > option:   
+  > defualt: 
+  > desc: sugar for 'category_mask'  black list;        
+
+- [x] identify
+- [x] identify_extend
+  > option:  
+  > default: 0, invalid value.  
+  > desc: log will process when identify in set [identify, identify+identify_extend), and other not.   
+
+- [x] identify_wmask
+  > option: number  
+  > defualt: 
+  > desc: white list for identify, a bitmap by u64.  
+- [x] identify_bmask
+  > option: number  
+  > defualt: 
+  > desc: sugar for 'identify_mask'  black list; 
+- [x] identify_wlist
+  > option:   list format "1,23,44,1"   
+  > defualt: 
+  > desc: sugar for 'identify_mask'  white list;        
+- [x] identify_blist
+  > option:   
+  > defualt: 
+  > desc: sugar for 'identify_mask'  black list;        
+
 
 - [x] udp_addr  
   > option:  
