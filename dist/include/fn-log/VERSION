@@ -1,6 +1,6 @@
 version:
-last_sha1(./src)=7f71647d465c2e38d3ac902f3e7a3604cadcdac6
-last_date(./src)=2023-07-25 15:42:26 +0800
+last_sha1(./src)=a49f71d9d13dd0133c1bdeb9787eddcf8beae6df
+last_date(./src)=2023-07-25 18:43:09 +0800
 
 git log -1 --stat ./src:
-commit 7f71647d465c2e38d3ac902f3e7a3604cadcdac6 Author: zsummer <yawei.zhang@foxmail.com> Date: Tue Jul 25 15:42:26 2023 +0800 support diy device max count; src/include/fn_data.h | 6 +++++- 1 file changed, 5 insertions(+), 1 deletion(-)
+commit a49f71d9d13dd0133c1bdeb9787eddcf8beae6df Author: zsummer <yawei.zhang@foxmail.com> Date: Tue Jul 25 18:43:09 2023 +0800 filter & mask src/include/fn_parse.h | 39 +++++++++++++++++++++++++++++++++++---- 1 file changed, 35 insertions(+), 4 deletions(-)
