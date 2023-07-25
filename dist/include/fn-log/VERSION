@@ -1,6 +1,6 @@
 version:
-last_sha1(./src)=4379acf5bf97c77b7c971c79b3cc32ce2bc7fb42
-last_date(./src)=2023-07-24 16:57:17 +0800
+last_sha1(./src)=7f71647d465c2e38d3ac902f3e7a3604cadcdac6
+last_date(./src)=2023-07-25 15:42:26 +0800
 
 git log -1 --stat ./src:
-commit 4379acf5bf97c77b7c971c79b3cc32ce2bc7fb42 Author: zsummer <yawei.zhang@foxmail.com> Date: Mon Jul 24 16:57:17 2023 +0800 LogTimestamp src/include/fn_stream.h | 44 ++++++++++++++++++++++++++++++++++++++++++++ 1 file changed, 44 insertions(+)
+commit 7f71647d465c2e38d3ac902f3e7a3604cadcdac6 Author: zsummer <yawei.zhang@foxmail.com> Date: Tue Jul 25 15:42:26 2023 +0800 support diy device max count; src/include/fn_data.h | 6 +++++- 1 file changed, 5 insertions(+), 1 deletion(-)
