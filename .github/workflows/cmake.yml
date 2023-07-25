@@ -45,8 +45,11 @@ jobs:
         cd ${{github.workspace}}/bin
           ./test_buffer
           ./test_filter
+          ./test_filter_advance
+          ./test_filter_mask
           ./test_load_config
           ./test_udp >/dev/null 2>&1
+          ./test_buffer
           ./test_buffer_correct
           ./test_fast_debug
           ./test_fast_default
@@ -54,6 +57,9 @@ jobs:
           ./test_channel_normal
           ./test_rollback
           ./test_rollback_path
+          ./test_serialize_object
+          ./test_trans_log
+          ./stress_block_in
           ./stress_multi-thread-env_main_reboot
           ./stress_multi-thread-env_concurrent_reboot 50000 >/dev/null 2>&1
           ./stress_multi-thread-env_concurrent_reboot >/dev/null 2>&1

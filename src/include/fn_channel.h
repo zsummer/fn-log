@@ -60,10 +60,10 @@ namespace FNLog
             }
             long long begin_category = AtomicLoadC(device, DEVICE_CFG_CATEGORY);
             long long category_count = AtomicLoadC(device, DEVICE_CFG_CATEGORY_EXTEND);
-            unsigned long long category_filter = (unsigned long long)AtomicLoadC(device, DEVICE_CFG_CATEGORY_FILTER);
+            unsigned long long category_mask = (unsigned long long)AtomicLoadC(device, DEVICE_CFG_CATEGORY_MASK);
             long long begin_identify = AtomicLoadC(device, DEVICE_CFG_IDENTIFY);
             long long identify_count =AtomicLoadC(device, DEVICE_CFG_IDENTIFY_EXTEND);
-            unsigned long long identify_filter = (unsigned long long)AtomicLoadC(device, DEVICE_CFG_IDENTIFY_FILTER);
+            unsigned long long identify_mask = (unsigned long long)AtomicLoadC(device, DEVICE_CFG_IDENTIFY_MASK);
 
             if (category_count > 0 && (log.category_ < begin_category || log.category_ >= begin_category + category_count))
             {
@@ -73,11 +73,11 @@ namespace FNLog
             {
                 continue;
             }
-            if (category_filter && (category_filter & ((1ULL) << (unsigned int)log.category_)) == 0)
+            if (category_mask && (category_mask & ((1ULL) << (unsigned int)log.category_)) == 0)
             {
                 continue;
             }
-            if (identify_filter && (identify_filter & ((1ULL) << (unsigned int)log.identify_)) == 0)
+            if (identify_mask && (identify_mask & ((1ULL) << (unsigned int)log.identify_)) == 0)
             {
                 continue;
             }
@@ -286,10 +286,10 @@ namespace FNLog
 
         long long begin_category = AtomicLoadC(channel, CHANNEL_CFG_CATEGORY);
         long long category_count = AtomicLoadC(channel, CHANNEL_CFG_CATEGORY_EXTEND);
-        unsigned long long category_filter = (unsigned long long)AtomicLoadC(channel, CHANNEL_CFG_CATEGORY_FILTER);
+        unsigned long long category_mask = (unsigned long long)AtomicLoadC(channel, CHANNEL_CFG_CATEGORY_MASK);
         long long begin_identify = AtomicLoadC(channel, CHANNEL_CFG_IDENTIFY);
         long long identify_count = AtomicLoadC(channel, CHANNEL_CFG_IDENTIFY_EXTEND);
-        unsigned long long identify_filter = (unsigned long long)AtomicLoadC(channel, CHANNEL_CFG_IDENTIFY_FILTER);
+        unsigned long long identify_mask = (unsigned long long)AtomicLoadC(channel, CHANNEL_CFG_IDENTIFY_MASK);
 
         if (category_count > 0 && (category < begin_category || category >= begin_category + category_count))
         {
@@ -299,11 +299,11 @@ namespace FNLog
         {
             return true;
         }
-        if (category_filter && (category_filter & ((1ULL) << (unsigned int)category)) == 0)
+        if (category_mask && (category_mask & ((1ULL) << (unsigned int)category)) == 0)
         {
             return true;
         }
-        if (identify_filter && (identify_filter & ((1ULL) << (unsigned int)identify)) == 0)
+        if (identify_mask && (identify_mask & ((1ULL) << (unsigned int)identify)) == 0)
         {
             return true;
         }
@@ -317,10 +317,10 @@ namespace FNLog
             long long field_priority = fields[FNLog::DEVICE_CFG_PRIORITY];
             long long field_begin_category = fields[FNLog::DEVICE_CFG_CATEGORY];
             long long field_category_count = fields[FNLog::DEVICE_CFG_CATEGORY_EXTEND];
-            unsigned long long field_category_filter = (unsigned long long)fields[FNLog::DEVICE_CFG_CATEGORY_FILTER];
+            unsigned long long field_category_mask = (unsigned long long)fields[FNLog::DEVICE_CFG_CATEGORY_MASK];
             long long field_begin_identify = fields[FNLog::DEVICE_CFG_IDENTIFY];
             long long field_identify_count = fields[FNLog::DEVICE_CFG_IDENTIFY_EXTEND];
-            unsigned long long field_identify_filter = (unsigned long long)fields[FNLog::DEVICE_CFG_IDENTIFY_FILTER];
+            unsigned long long field_identify_mask = (unsigned long long)fields[FNLog::DEVICE_CFG_IDENTIFY_MASK];
 
             if (field_able && priority >= field_priority)
             {
@@ -332,11 +332,11 @@ namespace FNLog
                 {
                     continue;
                 }
-                if (field_category_filter &&  (field_category_filter & ((1ULL) << (unsigned int)category)) == 0)
+                if (field_category_mask &&  (field_category_mask & ((1ULL) << (unsigned int)category)) == 0)
                 {
                     continue;
                 }
-                if (field_identify_filter &&  (field_identify_filter & ((1ULL) << (unsigned int)identify)) == 0)
+                if (field_identify_mask &&  (field_identify_mask & ((1ULL) << (unsigned int)identify)) == 0)
                 {
                     continue;
                 }

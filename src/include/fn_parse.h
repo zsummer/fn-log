@@ -74,12 +74,16 @@ namespace FNLog
         RK_PRIORITY,
         RK_CATEGORY,
         RK_CATEGORY_EXTEND,
-        RK_CATEGORY_FILTER, //bitset list 
-        RK_CATEGORY_MASK, //value 
+        RK_CATEGORY_WLIST, //bitset list 
+        RK_CATEGORY_BLIST,
+        RK_CATEGORY_WMASK, 
+        RK_CATEGORY_BMASK, 
         RK_IDENTIFY,
         RK_IDENTIFY_EXTEND,
-        RK_IDENTIFY_FILTER, //bitset list 
-        RK_IDENTIFY_MASK, //value   
+        RK_IDENTIFY_WLIST, //bitset list 
+        RK_IDENTIFY_BLIST,
+        RK_IDENTIFY_WMASK,
+        RK_IDENTIFY_BMASK, 
         RK_OUT_TYPE,
         RK_FILE,
         RK_PATH,
@@ -138,19 +142,33 @@ namespace FNLog
             }
             else if (*(begin + 1) == 'a')
             {
-                if (end - begin > (int)sizeof("category_e") - 1)
+                if (end - begin > (int)sizeof("category_ex") - 1)
                 {
-                    if (*(begin + 9) == 'e')
+                    if (*(begin + 9) == 'e')  //category_extend
                     {
                         return RK_CATEGORY_EXTEND;
                     }
-                    else if (*(begin + 9) == 'f')
+                    else if (*(begin + 9) == 'w')
                     {
-                        return RK_CATEGORY_FILTER;
+                        if (*(begin + 10) == 'l')  //category_wlist  
+                        {
+                            return RK_CATEGORY_WLIST;
+                        }
+                        else if (*(begin + 10) == 'm')
+                        {
+                            return RK_CATEGORY_WMASK;
+                        }
                     }
-                    else if (*(begin + 9) == 'm')
+                    else if (*(begin + 9) == 'b')
                     {
-                        return RK_CATEGORY_MASK;
+                        if (*(begin + 10) == 'l')  //category_blist; black list   
+                        {
+                            return RK_CATEGORY_BLIST;
+                        }
+                        else if (*(begin + 10) == 'm')
+                        {
+                            return RK_CATEGORY_BMASK;
+                        }
                     }
                 }
                 else
@@ -182,19 +200,33 @@ namespace FNLog
         case 'h':
             return RK_HOT_UPDATE;
         case 'i':
-            if (end - begin > (int)sizeof("identify_e") - 1)
+            if (end - begin > (int)sizeof("identify_ex") - 1)
             {
                 if (*(begin + 9) == 'e')
                 {
                     return RK_IDENTIFY_EXTEND;
                 }
-                else if (*(begin + 9) == 'f')
+                else if (*(begin + 9) == 'w')
                 {
-                    return RK_IDENTIFY_FILTER;
+                    if (*(begin + 10) == 'l')  //identify_wlist  
+                    {
+                        return RK_IDENTIFY_WLIST;
+                    }
+                    else if (*(begin + 10) == 'm')
+                    {
+                        return RK_IDENTIFY_WMASK;
+                    }
                 }
-                else if (*(begin + 9) == 'm')
+                else if (*(begin + 9) == 'b')
                 {
-                    return RK_IDENTIFY_MASK;
+                    if (*(begin + 10) == 'l')  //identify_blist;  black list  
+                    {
+                        return RK_IDENTIFY_BLIST;
+                    }
+                    else if (*(begin + 10) == 'm')
+                    {
+                        return RK_IDENTIFY_BMASK;
+                    }
                 }
             }
             else
@@ -703,11 +735,17 @@ namespace FNLog
             case RK_CATEGORY_EXTEND:
                 device.config_fields_[DEVICE_CFG_CATEGORY_EXTEND] = atoll(ls.line_.val_begin_);
                 break;
-            case RK_CATEGORY_FILTER:
-                device.config_fields_[DEVICE_CFG_CATEGORY_FILTER] = ParseBitArray(ls.line_.val_begin_, ls.line_.val_end_);
+            case RK_CATEGORY_WLIST:
+                device.config_fields_[DEVICE_CFG_CATEGORY_MASK] = ParseBitArray(ls.line_.val_begin_, ls.line_.val_end_);
                 break;
-            case RK_CATEGORY_MASK:
-                device.config_fields_[DEVICE_CFG_CATEGORY_FILTER] = atoll(ls.line_.val_begin_);
+            case RK_CATEGORY_BLIST:
+                device.config_fields_[DEVICE_CFG_CATEGORY_MASK] = ~ParseBitArray(ls.line_.val_begin_, ls.line_.val_end_);
+                break;
+            case RK_CATEGORY_WMASK:
+                device.config_fields_[DEVICE_CFG_CATEGORY_MASK] = atoll(ls.line_.val_begin_);
+                break;
+            case RK_CATEGORY_BMASK:
+                device.config_fields_[DEVICE_CFG_CATEGORY_MASK] = ~atoll(ls.line_.val_begin_);
                 break;
             case RK_IDENTIFY:
                 device.config_fields_[DEVICE_CFG_IDENTIFY] = atoll(ls.line_.val_begin_);
@@ -715,11 +753,17 @@ namespace FNLog
             case RK_IDENTIFY_EXTEND:
                 device.config_fields_[DEVICE_CFG_IDENTIFY_EXTEND] = atoll(ls.line_.val_begin_);
                 break;
-            case RK_IDENTIFY_FILTER:
-                device.config_fields_[DEVICE_CFG_IDENTIFY_FILTER] = ParseBitArray(ls.line_.val_begin_, ls.line_.val_end_);
+            case RK_IDENTIFY_WLIST:
+                device.config_fields_[DEVICE_CFG_IDENTIFY_MASK] = ParseBitArray(ls.line_.val_begin_, ls.line_.val_end_);
                 break;
-            case RK_IDENTIFY_MASK:
-                device.config_fields_[DEVICE_CFG_IDENTIFY_FILTER] = atoll(ls.line_.val_begin_);
+            case RK_IDENTIFY_BLIST:
+                device.config_fields_[DEVICE_CFG_IDENTIFY_MASK] = ~ParseBitArray(ls.line_.val_begin_, ls.line_.val_end_);
+                break;
+            case RK_IDENTIFY_WMASK:
+                device.config_fields_[DEVICE_CFG_IDENTIFY_MASK] = atoll(ls.line_.val_begin_);
+                break;
+            case RK_IDENTIFY_BMASK:
+                device.config_fields_[DEVICE_CFG_IDENTIFY_MASK] = ~atoll(ls.line_.val_begin_);
                 break;
             case RK_LIMIT_SIZE:
                 device.config_fields_[DEVICE_CFG_FILE_LIMIT_SIZE] = atoll(ls.line_.val_begin_) * 1000*1000;
@@ -814,8 +858,17 @@ namespace FNLog
             case RK_CATEGORY_EXTEND:
                 channel.config_fields_[CHANNEL_CFG_CATEGORY_EXTEND] = atoi(ls.line_.val_begin_);
                 break;
-            case RK_CATEGORY_FILTER:
-                channel.config_fields_[CHANNEL_CFG_CATEGORY_FILTER] = ParseBitArray(ls.line_.val_begin_, ls.line_.val_end_);
+            case RK_CATEGORY_WLIST:
+                channel.config_fields_[CHANNEL_CFG_CATEGORY_MASK] = ParseBitArray(ls.line_.val_begin_, ls.line_.val_end_);
+                break;
+            case RK_CATEGORY_BLIST:
+                channel.config_fields_[CHANNEL_CFG_CATEGORY_MASK] = ~ParseBitArray(ls.line_.val_begin_, ls.line_.val_end_);
+                break;
+            case RK_CATEGORY_WMASK:
+                channel.config_fields_[CHANNEL_CFG_CATEGORY_MASK] = atoll(ls.line_.val_begin_);
+                break;
+            case RK_CATEGORY_BMASK:
+                channel.config_fields_[CHANNEL_CFG_CATEGORY_MASK] = ~atoll(ls.line_.val_begin_);
                 break;
             case RK_IDENTIFY:
                 channel.config_fields_[CHANNEL_CFG_IDENTIFY] = atoi(ls.line_.val_begin_);
@@ -823,9 +876,19 @@ namespace FNLog
             case RK_IDENTIFY_EXTEND:
                 channel.config_fields_[CHANNEL_CFG_IDENTIFY_EXTEND] = atoi(ls.line_.val_begin_);
                 break;
-            case RK_IDENTIFY_FILTER:
-                channel.config_fields_[CHANNEL_CFG_IDENTIFY_FILTER] = ParseBitArray(ls.line_.val_begin_, ls.line_.val_end_);
+            case RK_IDENTIFY_WLIST:
+                channel.config_fields_[CHANNEL_CFG_IDENTIFY_MASK] = ParseBitArray(ls.line_.val_begin_, ls.line_.val_end_);
                 break;
+            case RK_IDENTIFY_BLIST:
+                channel.config_fields_[CHANNEL_CFG_IDENTIFY_MASK] = ~ParseBitArray(ls.line_.val_begin_, ls.line_.val_end_);
+                break;
+            case RK_IDENTIFY_WMASK:
+                channel.config_fields_[CHANNEL_CFG_IDENTIFY_MASK] = atoll(ls.line_.val_begin_);
+                break;
+            case RK_IDENTIFY_BMASK:
+                channel.config_fields_[CHANNEL_CFG_IDENTIFY_MASK] = ~atoll(ls.line_.val_begin_);
+                break;
+
             case RK_DEVICE:
                 if (ls.line_.line_type_ != LINE_ARRAY)
                 {

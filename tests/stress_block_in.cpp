@@ -61,7 +61,7 @@ R"----(
         disable: false
         out_type: file
         priority: trace
-        category_filter: 0, 4,5
+        category_wlist: 0, 4,5
         path: "./log/"
         file: "$PNAME_04"
         rollback: 4
@@ -70,8 +70,8 @@ R"----(
         disable: false
         out_type: file
         priority: trace
-        category_filter: 4,5
-        identify_filter: 0,1,4,7,16,36,46
+        category_wlist: 4,5
+        identify_mask: 0,1,4,7,16,36,46
         path: "./log/"
         file: "$PNAME_05"
         rollback: 4
@@ -80,8 +80,8 @@ R"----(
         disable: false
         out_type: file
         priority: trace
-        category_filter: 4,8
-        identify_filter: 0,1,4,7,16,36,46
+        category_wlist: 4,8
+        category_wlist: 0,1,4,7,16,36,46
         path: "./log/"
         file: "$PNAME_06"
         rollback: 4
