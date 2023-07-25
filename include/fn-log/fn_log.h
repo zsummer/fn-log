@@ -530,6 +530,10 @@ public:
 #define _FN_LOG_DATA_H_
 
 
+#ifndef FN_LOG_MAX_DEVICE_SIZE
+#define FN_LOG_MAX_DEVICE_SIZE 20
+#endif
+
 #ifndef FN_LOG_MAX_CHANNEL_SIZE
 #define FN_LOG_MAX_CHANNEL_SIZE 2
 #endif
@@ -760,7 +764,7 @@ namespace FNLog
 #endif // FN_LOG_USING_ATOM_CFG
 
         using LogFields = std::array<std::atomic_llong, CHANNEL_LOG_MAX_ID>;
-        static const int MAX_DEVICE_SIZE = 20;
+        static const int MAX_DEVICE_SIZE = FN_LOG_MAX_DEVICE_SIZE;
 
 
     public:
