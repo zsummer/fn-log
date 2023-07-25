@@ -71,7 +71,7 @@ R"----(
         out_type: file
         priority: trace
         category_wlist: 4,5
-        identify_mask: 0,1,4,7,16,36,46
+        identify_wlist: 0,1,4,7,16,36,46
         path: "./log/"
         file: "$PNAME_05"
         rollback: 4
