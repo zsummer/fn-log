@@ -26,20 +26,55 @@
 # 宏,变量 通常为符号名+字面量 用来定义在随后重复使用的数字类编号 category, indentify, mask等  
 
 
-- define: "tag0:0, tag2:1, tag3:1, tag4:1"
+- define: {tag0:0, tag2:1, tag3:1, tag4:1}
 - define: "tag9:0"
 
 - var: "tag:324234"  #only replace ${tag}  
 
-
+# - shm_key: 33321231
+# - hot_update:[true][false]
+# - logger_name: string  # log content prefix "LOG_PREFIX_NAME" 
+# - logger_desc: string  # log content prefix "LOG_PREFIX_DESC" 
  - channel: 0
-    sync: async
+    sync: async  
+    #sync: [async][sync][ASYNC][SYNC]
+    #priority:[trace][debug][info][warn][error][alarm][fatal]
+    #category: id
+    #category_extend: count
+    #category_wmask: 255 (white mask)
+    #category_wlist: {2,3,43} (white list)
+    #category_bmask: 255 (black mask)
+    #category_blist: {1,23,4} (black list)
+    #identify: id
+    #identify_extend: count
+    #identify_wmask: 255 (white mask)
+    #identify_wlist: {2,3,43} (white list)
+    #identify_bmask: 255 (black mask)
+    #identify_blist: {1,23,4} (black list)
     - device: 0
         disable: false
+        #disable: [false][true][FALSE][TRUE]
+        #priority:[trace][debug][info][warn][error][alarm][fatal]
+        #category: id
+        #category_extend: count
+        #category_wmask: 255 (white mask)
+        #category_wlist: {2,3,43} (white list)
+        #category_bmask: 255 (black mask)
+        #category_blist: {1,23,4} (black list)
+        #identify: id
+        #identify_extend: count
+        #identify_wmask: 255 (white mask)
+        #identify_wlist: {2,3,43} (white list)
+        #identify_bmask: 255 (black mask)
+        #identify_blist: {1,23,4} (black list)
         out_type: file
-        file: "$PNAME"
-        rollback: 4
-        limit_size: 100 m #only support M byte
+        #out_type:[file][null][udp][screen][virtual]
+        file: "$PNAME"  #in file type it's log file name
+        path: ./ #in file type it's log file path  
+        rollback: 4 #in file type it's this device log file rollback count.   
+        limit_size: 100 m #in file type it's one log file limit size  
+        #stuff_up: [true][false]  #in file type it's 'false' will rollback old file when reopen logger.  the 'true' will append exist log file still reach 'limit_size'  
+        #udp_addr: [ip:port]  # in udp type     
     - device: 1
         disable: false
         out_type: file
