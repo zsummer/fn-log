@@ -90,6 +90,8 @@ namespace FNLog
         RK_PATH,
         RK_LIMIT_SIZE,
         RK_ROLLBACK,
+        RK_ROLLDAILY,
+        RK_ROLLHOURLY,
         RK_FILE_STUFF_UP,
         RK_UDP_ADDR,
     };
@@ -263,7 +265,22 @@ namespace FNLog
             }
             break;
         case 'r':
-            return RK_ROLLBACK;
+            if (end - begin > (int)sizeof("rollb"))
+            {
+                if (*(begin + 4) == 'b')
+                {
+                    return RK_ROLLBACK;
+                }
+                else if (*(begin + 4) == 'd')
+                {
+                    return RK_ROLLDAILY;
+                }
+                else if (*(begin + 4) == 'h')
+                {
+                    return RK_ROLLHOURLY;
+                }
+            }
+            break;
         case 'o':
             return RK_OUT_TYPE;
         case 's':
@@ -319,7 +336,7 @@ namespace FNLog
         {
             return false;
         }
-        if (*begin == '0' || *begin == 'f')
+        if (*begin == '0' || *begin == 'f' || *begin == 'F')
         {
             return false;
         }
@@ -808,6 +825,12 @@ namespace FNLog
                 break;
             case RK_ROLLBACK:
                 device.config_fields_[DEVICE_CFG_FILE_ROLLBACK] = atoll(ls.line_.val_begin_);
+                break;
+            case RK_ROLLDAILY:
+                device.config_fields_[DEVICE_CFG_FILE_ROLLDAILY] = ParseBool(ls.line_.val_begin_, ls.line_.val_end_);
+                break;
+            case RK_ROLLHOURLY:
+                device.config_fields_[DEVICE_CFG_FILE_ROLLHOURLY] = ParseBool(ls.line_.val_begin_, ls.line_.val_end_);
                 break;
             case RK_FILE_STUFF_UP:
                 device.config_fields_[DEVICE_CFG_FILE_STUFF_UP] = ParseBool(ls.line_.val_begin_, ls.line_.val_end_);  

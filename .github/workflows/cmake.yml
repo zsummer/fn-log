@@ -57,6 +57,7 @@ jobs:
           ./test_channel_normal
           ./test_rollback
           ./test_rollback_path
+          ./test_rolling
           ./test_serialize_object
           ./test_trans_log
           ./stress_block_in
