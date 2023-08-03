@@ -1,6 +1,6 @@
 version:
-last_sha1(./src)=b9be47931a3f8038f07d8442317104eb3a689ccc
-last_date(./src)=2023-08-03 16:12:13 +0800
+last_sha1(./src)=76a47ebf039303afb29131335e416346fd50bd7d
+last_date(./src)=2023-08-04 00:43:23 +0800
 
 git log -1 --stat ./src:
-commit b9be47931a3f8038f07d8442317104eb3a689ccc Author: zsummer <yawei.zhang@foxmail.com> Date: Thu Aug 3 16:12:13 2023 +0800 var support ${var} and $var style src/include/fn_parse.h | 71 +++++++++++++++++++++++++++++++++----------------- 1 file changed, 47 insertions(+), 24 deletions(-)
+commit 76a47ebf039303afb29131335e416346fd50bd7d Author: zsummer <yawei.zhang@foxmail.com> Date: Fri Aug 4 00:43:23 2023 +0800 rolling configure src/include/fn_data.h | 5 ++- src/include/fn_out_file_device.h | 67 +++++++++++++++++++++++++++++++--------- src/include/fn_parse.h | 27 ++++++++++++++-- 3 files changed, 81 insertions(+), 18 deletions(-)

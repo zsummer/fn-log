@@ -642,6 +642,8 @@ namespace FNLog
         DEVICE_CFG_IDENTIFY_MASK,
         DEVICE_CFG_FILE_LIMIT_SIZE, 
         DEVICE_CFG_FILE_ROLLBACK,
+        DEVICE_CFG_FILE_ROLLDAILY,
+        DEVICE_CFG_FILE_ROLLHOURLY,
         DEVICE_CFG_FILE_STUFF_UP,
         DEVICE_CFG_UDP_IP,
         DEVICE_CFG_UDP_PORT,
@@ -652,7 +654,8 @@ namespace FNLog
     {
         DEVICE_LOG_CUR_FILE_SIZE, 
         DEVICE_LOG_CUR_FILE_CREATE_TIMESTAMP,  
-        DEVICE_LOG_CUR_FILE_CREATE_DAY, 
+        DEVICE_LOG_CUR_FILE_CREATE_DAY,
+        DEVICE_LOG_CUR_FILE_CREATE_HOUR,
         DEVICE_LOG_LAST_TRY_CREATE_TIMESTAMP,
         DEVICE_LOG_LAST_TRY_CREATE_ERROR,
         DEVICE_LOG_TOTAL_WRITE_LINE,
@@ -1047,6 +1050,8 @@ namespace FNLog
         RK_PATH,
         RK_LIMIT_SIZE,
         RK_ROLLBACK,
+        RK_ROLLDAILY,
+        RK_ROLLHOURLY,
         RK_FILE_STUFF_UP,
         RK_UDP_ADDR,
     };
@@ -1220,7 +1225,22 @@ namespace FNLog
             }
             break;
         case 'r':
-            return RK_ROLLBACK;
+            if (end - begin > (int)sizeof("rollb"))
+            {
+                if (*(begin + 4) == 'b')
+                {
+                    return RK_ROLLBACK;
+                }
+                else if (*(begin + 4) == 'd')
+                {
+                    return RK_ROLLDAILY;
+                }
+                else if (*(begin + 4) == 'h')
+                {
+                    return RK_ROLLHOURLY;
+                }
+            }
+            break;
         case 'o':
             return RK_OUT_TYPE;
         case 's':
@@ -1276,7 +1296,7 @@ namespace FNLog
         {
             return false;
         }
-        if (*begin == '0' || *begin == 'f')
+        if (*begin == '0' || *begin == 'f' || *begin == 'F')
         {
             return false;
         }
@@ -1765,6 +1785,12 @@ namespace FNLog
                 break;
             case RK_ROLLBACK:
                 device.config_fields_[DEVICE_CFG_FILE_ROLLBACK] = atoll(ls.line_.val_begin_);
+                break;
+            case RK_ROLLDAILY:
+                device.config_fields_[DEVICE_CFG_FILE_ROLLDAILY] = ParseBool(ls.line_.val_begin_, ls.line_.val_end_);
+                break;
+            case RK_ROLLHOURLY:
+                device.config_fields_[DEVICE_CFG_FILE_ROLLHOURLY] = ParseBool(ls.line_.val_begin_, ls.line_.val_end_);
                 break;
             case RK_FILE_STUFF_UP:
                 device.config_fields_[DEVICE_CFG_FILE_STUFF_UP] = ParseBool(ls.line_.val_begin_, ls.line_.val_end_);  
@@ -3016,23 +3042,56 @@ namespace FNLog
     inline void OpenFileDevice(Logger & logger, Channel & channel, Device & device, FileHandler & writer, LogData & log)
     {
         (void)logger;
-        bool sameday = true;
-        if (log.timestamp_ < AtomicLoadL(device, DEVICE_LOG_CUR_FILE_CREATE_DAY)
-            || log.timestamp_ >= AtomicLoadL(device, DEVICE_LOG_CUR_FILE_CREATE_DAY) + 24 * 3600)
+
+        bool close_file = false;
+        bool limit_out = false;
+
+        //stuff up when rollback , or configure set   (such as only 1 rollback, start logger as is clean all old log.)     
+        bool stuff_up = AtomicLoadC(device, DEVICE_CFG_FILE_ROLLBACK) > 0 ? true : (bool)AtomicLoadC(device, DEVICE_CFG_FILE_STUFF_UP);  
+
+        do
         {
-            sameday = false;
-        }
+            //rollback only limit size && rollback > 0 
+            if (AtomicLoadC(device, DEVICE_CFG_FILE_LIMIT_SIZE) > 0 && AtomicLoadC(device, DEVICE_CFG_FILE_ROLLBACK) > 0
+                && AtomicLoadL(device, DEVICE_LOG_CUR_FILE_SIZE) + log.content_len_ > AtomicLoadC(device, DEVICE_CFG_FILE_LIMIT_SIZE))
+            {
+                close_file = true;
+                limit_out = true;
+                break;
+            }
 
-        bool file_over = false;
-        if (AtomicLoadC(device, DEVICE_CFG_FILE_LIMIT_SIZE) > 0 && AtomicLoadC(device, DEVICE_CFG_FILE_ROLLBACK) > 0
-            && AtomicLoadL(device, DEVICE_LOG_CUR_FILE_SIZE) + log.content_len_ > AtomicLoadC(device, DEVICE_CFG_FILE_LIMIT_SIZE))
-        {
-            file_over = true;
-        }
 
-        bool stuff_up = (bool)AtomicLoadC(device, DEVICE_CFG_FILE_STUFF_UP);
+            if (!stuff_up)
+            {
+                //daily rolling
+                if (AtomicLoadC(device, DEVICE_CFG_FILE_ROLLDAILY))
+                {
+                    if (log.timestamp_ < AtomicLoadL(device, DEVICE_LOG_CUR_FILE_CREATE_DAY)
+                        || log.timestamp_ >= AtomicLoadL(device, DEVICE_LOG_CUR_FILE_CREATE_DAY) + 24 * 3600)
+                    {
+                        close_file = true;
+                    }
+                    break;
+                }
 
-        if (file_over  || (!sameday && !stuff_up))
+                //hourly rolling 
+                if (AtomicLoadC(device, DEVICE_CFG_FILE_ROLLHOURLY))
+                {
+                    if (log.timestamp_ < AtomicLoadL(device, DEVICE_LOG_CUR_FILE_CREATE_HOUR)
+                        || log.timestamp_ >= AtomicLoadL(device, DEVICE_LOG_CUR_FILE_CREATE_HOUR) + 3600)
+                    {
+                        close_file = true;
+                    }
+                    break;
+                }
+
+            }
+
+
+        } while (false);
+
+
+        if (close_file)
         {
             AtomicStoreL(device, DEVICE_LOG_CUR_FILE_SIZE, 0);
             if (writer.is_open())
@@ -3047,13 +3106,15 @@ namespace FNLog
         }
 
         long long create_day = 0;
+        long long create_hour = 0;
         tm t = FileHandler::time_to_tm(log.timestamp_);
         if (true) //process day time   
         {
             tm day = t;
-            day.tm_hour = 0;
             day.tm_min = 0;
             day.tm_sec = 0;
+            create_hour = mktime(&day);
+            day.tm_hour = 0;
             create_day = mktime(&day);
         }
 
@@ -3081,7 +3142,7 @@ namespace FNLog
 
         if (AtomicLoadC(device, DEVICE_CFG_FILE_ROLLBACK) > 0 || AtomicLoadC(device, DEVICE_CFG_FILE_LIMIT_SIZE) > 0)
         {
-            if (!stuff_up || file_over)
+            if (!stuff_up || limit_out)
             {
                 //when no rollback but has limit size. need try rollback once.
                 long long limit_roll = device.config_fields_[DEVICE_CFG_FILE_ROLLBACK];
@@ -3098,10 +3159,12 @@ namespace FNLog
             AtomicStoreL(device, DEVICE_LOG_LAST_TRY_CREATE_TIMESTAMP, log.timestamp_);
             return;
         }
+        
         AtomicStoreL(device, DEVICE_LOG_LAST_TRY_CREATE_ERROR, 0);
         AtomicStoreL(device, DEVICE_LOG_LAST_TRY_CREATE_TIMESTAMP, 0);
         AtomicStoreL(device, DEVICE_LOG_CUR_FILE_CREATE_TIMESTAMP, log.timestamp_);
         AtomicStoreL(device, DEVICE_LOG_CUR_FILE_CREATE_DAY, create_day);
+        AtomicStoreL(device, DEVICE_LOG_CUR_FILE_CREATE_HOUR, create_hour);
         AtomicStoreL(device, DEVICE_LOG_CUR_FILE_SIZE, writed_byte);
     }
 
