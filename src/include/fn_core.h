@@ -47,7 +47,8 @@ namespace FNLog
     {
         (void)logger;
         Device* device = nullptr;
-        if (channel.device_size_ < Channel::MAX_DEVICE_SIZE) {
+        if (channel.device_size_ < Channel::MAX_DEVICE_SIZE) 
+        {
             int device_id = channel.device_size_;
             channel.device_size_++;
             device = &channel.devices_[device_id];
