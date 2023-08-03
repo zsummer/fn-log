@@ -19,21 +19,21 @@ R"----(
  - define: "disable_all_device:false"
  - define: {disable_device_0:disable_all_device}
 
- - var: {output1:screen, priority1:trace}
+ - var: {output:screen, priority:trace}
 
  - channel: 0
     sync: sync
     - device:0
         disable: disable_device_0
-        out_type: ${output1}
-        priority: ${priority1}
+        out_type: ${output}
+        priority: ${priority}
     - device:1
         disable: disable_all_device
-        out_type: ${output1}
-        priority: ${priority1}
+        out_type: ${output}
+        priority: ${priority}
 
  - var: {output2:screen, priority2:trace}
- - var:{ai:0, ai_debug:1, move:2, move_debug:3, spell:4}
+
  - channel: 1
     sync: sync
     - device:0

@@ -489,7 +489,7 @@ namespace FNLog
         }
         return bitmap;
     }
-    inline int PredefinedInplace(std::string& text, std::string::size_type text_offset, std::string key, std::string val)
+    inline int PredefinedInplace(std::string& text, std::string::size_type text_offset, std::string key, std::string val, bool suffix_bound)
     {
         if (val.length() > key.length())
         {
@@ -511,7 +511,45 @@ namespace FNLog
                 //finish 
                 break;
             }
-            memcpy(&text[text_offset], val.c_str(), val.length());
+            bool bound_ok = true;
+            while (suffix_bound)
+            {
+                if (text_offset + val.length() == text.length())
+                {
+                    break;
+                }
+                char ch = text[text_offset + val.length()];
+                if (ch >= 'a' && ch <= 'z')
+                {
+                    bound_ok = false;
+                    text_offset++;
+                    break;
+                }
+                if (ch >= 'A' && ch <= 'Z')
+                {
+                    bound_ok = false;
+                    text_offset++;
+                    break;
+                }
+                if (ch >= '0' && ch <= '9')
+                {
+                    bound_ok = false;
+                    text_offset++;
+                    break;
+                }
+                if (ch == '_')
+                {
+                    bound_ok = false;
+                    text_offset++;
+                    break;
+                }
+                break;
+            }
+
+            if (bound_ok)
+            {
+                memcpy(&text[text_offset], val.c_str(), val.length());
+            }
         };
         return 0;
     }
@@ -571,13 +609,13 @@ namespace FNLog
                 std::string::size_type text_offset = ls.line_.val_end_ - text.c_str();
                 if (is_var)
                 {
-                    int ret = PredefinedInplace(text, text_offset, std::string("${") + key + "}", val);
+                    int ret = PredefinedInplace(text, text_offset, std::string("${") + key + "}", val, false);
                     if (ret != 0)
                     {
                         offset = dot + 1;
                         return ret;
                     }
-                    ret = PredefinedInplace(text, text_offset, std::string("$") + key, val);
+                    ret = PredefinedInplace(text, text_offset, std::string("$") + key, val, true);
                     if (ret != 0)
                     {
                         offset = dot + 1;
@@ -586,7 +624,7 @@ namespace FNLog
                 }
                 else
                 {
-                    int ret = PredefinedInplace(text, text_offset, key, val);
+                    int ret = PredefinedInplace(text, text_offset, key, val, false);
                     if (ret != 0)
                     {
                         offset = dot + 1;
