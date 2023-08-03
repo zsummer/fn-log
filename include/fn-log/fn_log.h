@@ -2437,6 +2437,20 @@ namespace FNLog
 #pragma GCC diagnostic ignored "-Wclass-memaccess"
 #endif
     
+    inline void ResetSHMLogger(SHMLogger& shm)
+    {
+        shm.shm_id_ = 0;
+        shm.shm_size_ = 0;
+        shm.channel_size_ = 0;
+        memset(&shm.channels_, 0, sizeof(SHMLogger::Channels));
+        for (int i = 0; i < SHMLogger::MAX_CHANNEL_SIZE; i++)
+        {
+            shm.ring_buffers_[i].write_idx_ = 0;
+            shm.ring_buffers_[i].hold_idx_ = 0;
+            shm.ring_buffers_[i].read_idx_ = 0;
+            shm.ring_buffers_[i].proc_idx_ = 0;
+        }
+    }
 
     inline int LoadSharedMemory(Logger& logger)
     {
@@ -2444,7 +2458,7 @@ namespace FNLog
         if (logger.shm_key_ <= 0)
         {
             logger.shm_ = new SHMLogger();
-            memset(logger.shm_, 0, sizeof(SHMLogger));
+            ResetSHMLogger(*logger.shm_);
             return 0;
         }
         SHMLogger* shm = nullptr;
@@ -2470,8 +2484,8 @@ namespace FNLog
                 printf("new shm. shmat error. key:<0x%llx>, idx:<%d>, errno:<%d>.\n", logger.shm_key_, idx, errno);
                 return E_SHMAT_ERROR;
             }
-            memset(addr, 0, sizeof(SHMLogger));
             shm = (SHMLogger*)addr;
+            ResetSHMLogger(*shm);
             shm->shm_size_ = sizeof(SHMLogger);
             shm->shm_id_ = idx;
         }
@@ -2538,7 +2552,7 @@ namespace FNLog
         logger.shm_ = shm;
 #else
         logger.shm_ = new SHMLogger();
-        memset(logger.shm_, 0, sizeof(SHMLogger));
+        ResetSHMLogger(*logger.shm_);
 #endif
         return 0;
     }
@@ -3803,7 +3817,8 @@ namespace FNLog
     {
         (void)logger;
         Device* device = nullptr;
-        if (channel.device_size_ < Channel::MAX_DEVICE_SIZE) {
+        if (channel.device_size_ < Channel::MAX_DEVICE_SIZE) 
+        {
             int device_id = channel.device_size_;
             channel.device_size_++;
             device = &channel.devices_[device_id];
