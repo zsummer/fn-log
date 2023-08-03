@@ -1429,14 +1429,40 @@ namespace FNLog
         }
         return bitmap;
     }
+    inline int PredefinedInplace(std::string& text, std::string::size_type text_offset, std::string key, std::string val)
+    {
+        if (val.length() > key.length())
+        {
+            return PEC_DEFINED_TARGET_TOO_LONG;
+        }
 
+        //fixed len
+        while (val.length() < key.length())
+        {
+            val.push_back(' ');
+        }
+
+        //replace 
+        while (true)
+        {
+            text_offset = text.find(key, text_offset);
+            if (text_offset == std::string::npos)
+            {
+                //finish 
+                break;
+            }
+            memcpy(&text[text_offset], val.c_str(), val.length());
+        };
+        return 0;
+    }
     inline int PredefinedMacro(LexState& ls, std::string& text, bool is_var)
     {
         if (true)
         {
             std::string line(ls.line_.val_begin_, ls.line_.val_end_ - ls.line_.val_begin_);
             std::string::size_type offset = 0;
-            std::string key;
+            std::string key; 
+            std::string key2; //more escape style  
             std::string val;
             while (offset < line.length())
             {
@@ -1481,35 +1507,32 @@ namespace FNLog
                     //continue;
                     return PEC_DEFINED_TARGET_TOO_LONG;
                 }
+
+                std::string::size_type text_offset = ls.line_.val_end_ - text.c_str();
                 if (is_var)
                 {
-                    key = std::string("${") + key + "}";
-                }
-                if (val.length() > key.length())
-                {
-                    //has dot but wrong
-                    offset = dot + 1;
-                    //continue;
-                    return PEC_DEFINED_TARGET_TOO_LONG;
-                }
-                //fixed len
-                while (val.length() < key.length())
-                {
-                    val.push_back(' ');
-                }
-
-                //replace 
-                std::string::size_type text_offset = ls.line_.val_end_ - text.c_str();
-                while (true)
-                {
-                    text_offset = text.find(key, text_offset);
-                    if (text_offset == std::string::npos)
+                    int ret = PredefinedInplace(text, text_offset, std::string("${") + key + "}", val);
+                    if (ret != 0)
                     {
-                        //finish 
-                        break;
+                        offset = dot + 1;
+                        return ret;
                     }
-                    memcpy(&text[text_offset], val.c_str(), val.length());
-                };
+                    ret = PredefinedInplace(text, text_offset, std::string("$") + key, val);
+                    if (ret != 0)
+                    {
+                        offset = dot + 1;
+                        return ret;
+                    }
+                }
+                else
+                {
+                    int ret = PredefinedInplace(text, text_offset, key, val);
+                    if (ret != 0)
+                    {
+                        offset = dot + 1;
+                        return ret;
+                    }
+                }
                 offset = dot + 1;
             }
         }

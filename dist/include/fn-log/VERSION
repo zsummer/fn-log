@@ -1,6 +1,6 @@
 version:
-last_sha1(./src)=3946bc9bb937c1fd55ea587c531074e01a0dfb76
-last_date(./src)=2023-08-03 14:55:04 +0800
+last_sha1(./src)=b9be47931a3f8038f07d8442317104eb3a689ccc
+last_date(./src)=2023-08-03 16:12:13 +0800
 
 git log -1 --stat ./src:
-commit 3946bc9bb937c1fd55ea587c531074e01a0dfb76 Author: zsummer <yawei.zhang@foxmail.com> Date: Thu Aug 3 14:55:04 2023 +0800 untouch the nonuse channel memory; src/include/fn_load.h | 20 +++++++++++++++++--- 1 file changed, 17 insertions(+), 3 deletions(-)
+commit b9be47931a3f8038f07d8442317104eb3a689ccc Author: zsummer <yawei.zhang@foxmail.com> Date: Thu Aug 3 16:12:13 2023 +0800 var support ${var} and $var style src/include/fn_parse.h | 71 +++++++++++++++++++++++++++++++++----------------- 1 file changed, 47 insertions(+), 24 deletions(-)
