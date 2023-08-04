@@ -148,6 +148,29 @@ R"----(
         limit_size: 2 m #only support M byte
 )----";
 
+static const std::string daily_dir =
+R"----(
+ - channel: 0
+    sync: sync
+    -device: 0
+        disable: false
+        out_type: screen
+
+ - channel: 1
+    sync: sync
+    -device: 0
+        disable: false
+        out_type: file
+        priority: trace
+        path: "./$PNAME_$YEAR-$MON-$DAY"
+        file: "$PNAME$DAY$HOUR$MIN"
+        rolldaily: true
+        stuff: false
+        limit_size: 2 m #only support M byte
+)----";
+
+
+
 
 
 void StufFileData()
@@ -337,6 +360,32 @@ int main(int argc, char* argv[])
         FNLOG_ASSERT(now_writed <= writed, "");
 
     }
+
+
+    FNLog::StopLogger(FNLog::GetDefaultLogger());
+    //
+    if (true)
+    {
+        std::string daily_file;
+        ret = FNLog::FastStartDefaultLogger(daily_dir);
+        FNLOG_ASSERT(ret == 0, "");
+        LOG_STREAM_DEFAULT_LOGGER(1, FNLog::PRIORITY_DEBUG, 0, 0, 0) << "any";
+
+        FNLog::FileHandler& writer = FNLog::GetDefaultLogger().file_handles_[1 * FNLog::Channel::MAX_DEVICE_SIZE + 0];
+        FNLOG_ASSERT(writer.is_open(), "");
+        long long writed = FNLog::GetDefaultLogger().shm_->channels_[1].devices_[0].log_fields_[FNLog::DEVICE_LOG_CUR_FILE_SIZE];
+        if (true)
+        {
+            FNLog::LogStream ls = std::move(LOG_STREAM_DEFAULT_LOGGER(1, FNLog::PRIORITY_DEBUG, 0, 0, 0) << "any");
+            ls.log_data_->timestamp_ += 24*3600;
+        }
+        FNLOG_ASSERT(writer.is_open(), "");
+        long long now_writed = FNLog::GetDefaultLogger().shm_->channels_[1].devices_[0].log_fields_[FNLog::DEVICE_LOG_CUR_FILE_SIZE];
+
+        FNLOG_ASSERT(now_writed <= writed, "");
+
+    }
+
 
     return 0;
 }

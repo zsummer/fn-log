@@ -16,35 +16,32 @@ static const std::string test_text =
 R"----(
  # info log print screen and all write file
 
- - define: "disable_all_device:false"
- - define: {disable_device_0:disable_all_device}
+ - define: "define1:$ai"
+ - define: {define2:define1, define3__:$ai_trace, }
 
- - var: {output:screen, priority:trace}
+ - var: {spell:1}
 
  - channel: 0
     sync: sync
     - device:0
-        disable: disable_device_0
-        out_type: ${output}
-        priority: ${priority}
+        disable: false
+        out_type: screen
+        priority: debug
     - device:1
-        disable: disable_all_device
-        out_type: ${output}
-        priority: ${priority}
+        disable: true
+        out_type: file
+        priority: debug
+        category: ${spell}
 
- - var: {output2:screen, priority2:trace}
+ - var: {ai:3, ai_trace:4}
 
  - channel: 1
     sync: sync
     - device:0
-        disable: disable_device_0
-        out_type: $output2
-        priority: $priority2  #$ai $ai_debug
-    - device:1
-        disable: disable_all_device
-        out_type: $output2
-        priority: $priority2
-
+        disable: true
+        out_type: file
+        priority: debug
+        category_wlist: define2, define3__  # define2->define1->$ai->3,  define3__->${ai_trace}->4
 
 )----";
 
@@ -59,13 +56,13 @@ int main(int argc, char* argv[])
 
     LogInfo() << "channel[0] now:" << LogTimestamp();
 
-    FNLOG_ASSERT(FNLog::GetDefaultLogger().shm_->channels_[0].devices_[0].log_fields_[FNLog::DEVICE_LOG_TOTAL_WRITE_LINE] == 1, "");
-    FNLOG_ASSERT(FNLog::GetDefaultLogger().shm_->channels_[0].devices_[1].log_fields_[FNLog::DEVICE_LOG_TOTAL_WRITE_LINE] == 2, "");
+    long long cat01 = FNLog::GetDefaultLogger().shm_->channels_[0].devices_[1].config_fields_[FNLog::DEVICE_CFG_CATEGORY];
+    FNLOG_ASSERT(cat01 == 1, "");
+
+    long long cat10 = FNLog::GetDefaultLogger().shm_->channels_[1].devices_[0].config_fields_[FNLog::DEVICE_CFG_CATEGORY_MASK];
+    FNLOG_ASSERT(cat10 == ((1 << 3) | (1 <<4)), "");
 
 
-    LogInfoStream(1, 0, 0) << "channel[1] now:" << LogTimestamp();
-    FNLOG_ASSERT(FNLog::GetDefaultLogger().shm_->channels_[1].devices_[0].log_fields_[FNLog::DEVICE_LOG_TOTAL_WRITE_LINE] == 1, "");
-    FNLOG_ASSERT(FNLog::GetDefaultLogger().shm_->channels_[1].devices_[1].log_fields_[FNLog::DEVICE_LOG_TOTAL_WRITE_LINE] == 1, "");
     LogAlarm() << "finish";
 
     return 0;
