@@ -1,7 +1,7 @@
 
 
 
-#define FN_LOG_MAX_CHANNEL_SIZE 4
+#define FN_LOG_MAX_CHANNEL_SIZE 6
 #define FN_LOG_MAX_LOG_SIZE 1000
 #define FN_LOG_MAX_LOG_QUEUE_SIZE 100000
 
@@ -30,8 +30,7 @@ R"----(
     -device:1
         disable: false
         out_type: screen
-        category: 1
-        category_extend: 1
+        priority: info
     -device:2
         disable: false
         out_type: screen
@@ -88,12 +87,20 @@ R"----(
         category: 2
         category_extend: 1
 
- # 1 异步空 
- - channel: 1
 
- # 2通道为同步写文件 
+ - channel: 1
+    sync: async  
+    -device: 0
+        disable: false
+        out_type: empty
+        priority: trace
+
  - channel: 2
-    sync: sync #only support single thread
+
+
+
+ - channel: 3
+    sync: sync  
     -device: 0
         disable: false
         out_type: file
@@ -101,9 +108,14 @@ R"----(
         rollback: 4
         limit_size: 100 m #only support M byte
 
- # 3通道为同步空 
- - channel: 3
-    sync: sync #only support single thread
+ - channel: 4
+    sync: sync  
+    -device: 0
+        disable: false
+        out_type: empty
+
+ - channel: 5
+    sync: sync 
 
 )----";
 
@@ -130,23 +142,6 @@ int main(int argc, char *argv[])
     }
 
     double now = Now();
-    for (size_t i = 0; i < 500000; i++)
-    {
-        LogTraceStream(3, 0, 0) << "asdf" << i << ", " << 2.3 << "asdfasdf";
-    }
-    LogAlarmStream(0, 1, 0) << "use " << Now() - now << " secend";
-    now = Now();
-    for (size_t i = 0; i < 500000; i++)
-    {
-        LOG_TRACE(3, 0, 0, "asdf" << i << ", " << 2.3 << "asdfasdf");
-    }
-    LogAlarmStream(0, 1, 0) << "use " << Now() - now << " secend";
-    now = Now();
-    for (size_t i = 0; i < 500000; i++)
-    {
-        LogTracePack(3, 0, 0, "asdf" , i , ", " , 2.3 , "asdfasdf");
-    }
-    LogAlarmStream(0, 1, 0) << "use " << Now() - now << " secend";
 
     FNLog::Logger& logger = FNLog::GetDefaultLogger();
 
@@ -167,8 +162,8 @@ int main(int argc, char *argv[])
                 long long now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
                 if (total_count > 0)
                 {
-                    LogInfoStream(0, 1, 0) << "channel:<" << (long long)channel_id << "> "
-                        << ChannelDesc(channel.channel_type_) << " has write file:<"
+                    LogInfo() << "channel:<" << (long long)channel_id << "> "
+                        << ChannelDesc(channel.channel_type_) << " has write :<"
                         << channel.device_size_ << "> test " << 1000000*1000 / (now - last) << " line/sec. ";
                     last = now;
                     break;

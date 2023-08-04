@@ -15,6 +15,7 @@
 #include "fn_out_screen_device.h"
 #include "fn_out_udp_device.h"
 #include "fn_out_virtual_device.h"
+#include "fn_out_empty_device.h"
 #include "fn_fmt.h"
 
 namespace FNLog
@@ -27,11 +28,11 @@ namespace FNLog
         Logger::ReadGuard rg(logger.read_locks_[channel_id], channel.channel_type_ == CHANNEL_ASYNC);
         switch (device.out_type_)
         {
-        case DEVICE_OUT_FILE:
-            EnterProcOutFileDevice(logger, channel_id, device_id, log);
-            break;
         case DEVICE_OUT_SCREEN:
             EnterProcOutScreenDevice(logger, channel_id, device_id, log);
+            break;
+        case DEVICE_OUT_FILE:
+            EnterProcOutFileDevice(logger, channel_id, device_id, log);
             break;
         case DEVICE_OUT_UDP:
             EnterProcOutUDPDevice(logger, channel_id, device_id, log);
@@ -39,6 +40,10 @@ namespace FNLog
         case DEVICE_OUT_VIRTUAL:
             //EnterProcOutVirtualDevice(logger, channel_id, device_id, log);
             break;        
+        case DEVICE_OUT_EMPTY:
+            EnterProcOutEmptyDevice(logger, channel_id, device_id, log);
+            break;
+            break;
         default:
             break;
         }
@@ -424,7 +429,7 @@ namespace FNLog
         log.content_[log.content_len_] = '\0';
 
         log.data_mark_ = 2;
-        AtomicAddL(channel, CHANNEL_LOG_PRIORITY + log.priority_);
+        AtomicAddLV(channel, CHANNEL_LOG_PRIORITY + log.priority_, log.content_len_);
 
         do
         {

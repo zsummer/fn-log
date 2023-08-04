@@ -33,6 +33,7 @@ namespace FNLog
         udp.write((unsigned long)ip, (unsigned short)port, log.content_, log.content_len_);
         AtomicAddL(device, DEVICE_LOG_TOTAL_WRITE_LINE);
         AtomicAddLV(device, DEVICE_LOG_TOTAL_WRITE_BYTE, log.content_len_);
+        AtomicAddLV(device, DEVICE_LOG_PRIORITY + log.priority_, log.content_len_);
     }
 }
 

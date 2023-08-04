@@ -394,6 +394,8 @@ namespace FNLog
         }
         switch (*begin)
         {
+        case 'e': case 'E':
+            return DEVICE_OUT_EMPTY;
         case 'f': case 'F':
             return DEVICE_OUT_FILE;
         case 'n': case 'N':
