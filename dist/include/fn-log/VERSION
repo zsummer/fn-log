@@ -1,6 +1,6 @@
 version:
-last_sha1(./src)=5d86e165626fa2b3e45c32615429211583644179
-last_date(./src)=2023-08-04 01:24:19 +0800
+last_sha1(./src)=201454409d81bde34c52c4c5f5ff2d168c25d916
+last_date(./src)=2023-08-04 17:15:52 +0800
 
 git log -1 --stat ./src:
-commit 5d86e165626fa2b3e45c32615429211583644179 Author: zsummer <yawei.zhang@foxmail.com> Date: Fri Aug 4 01:24:19 2023 +0800 var bound support src/include/fn_parse.h | 48 +++++++++++++++++++++++++++++++++++++++++++----- 1 file changed, 43 insertions(+), 5 deletions(-)
+commit 201454409d81bde34c52c4c5f5ff2d168c25d916 Author: zsummer <yawei.zhang@foxmail.com> Date: Fri Aug 4 17:15:32 2023 +0800 add empty output. add device priority status src/include/fn_channel.h | 13 +++++++++---- src/include/fn_data.h | 3 +++ src/include/fn_out_empty_device.h | 30 ++++++++++++++++++++++++++++++ src/include/fn_out_file_device.h | 1 + src/include/fn_out_screen_device.h | 2 ++ src/include/fn_out_udp_device.h | 1 + src/include/fn_out_virtual_device.h | 1 + src/include/fn_parse.h | 2 ++ 8 files changed, 49 insertions(+), 4 deletions(-)

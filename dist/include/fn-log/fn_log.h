@@ -627,6 +627,7 @@ namespace FNLog
         DEVICE_OUT_FILE,
         DEVICE_OUT_UDP,
         DEVICE_OUT_VIRTUAL,
+        DEVICE_OUT_EMPTY,
     };
 
 
@@ -658,6 +659,8 @@ namespace FNLog
         DEVICE_LOG_CUR_FILE_CREATE_HOUR,
         DEVICE_LOG_LAST_TRY_CREATE_TIMESTAMP,
         DEVICE_LOG_LAST_TRY_CREATE_ERROR,
+        DEVICE_LOG_PRIORITY, //== PRIORITY_TRACE
+        DEVICE_LOG_PRIORITY_MAX = DEVICE_LOG_PRIORITY + PRIORITY_MAX,
         DEVICE_LOG_TOTAL_WRITE_LINE,
         DEVICE_LOG_TOTAL_WRITE_BYTE,  
         DEVICE_LOG_MAX_ID
@@ -1354,6 +1357,8 @@ namespace FNLog
         }
         switch (*begin)
         {
+        case 'e': case 'E':
+            return DEVICE_OUT_EMPTY;
         case 'f': case 'F':
             return DEVICE_OUT_FILE;
         case 'n': case 'N':
@@ -2894,6 +2899,34 @@ namespace FNLog
 * This file is part of the fn-log, used MIT License.
 */
 
+
+#pragma once
+#ifndef _FN_LOG_OUT_EMPTY_DEVICE_H_
+#define _FN_LOG_OUT_EMPTY_DEVICE_H_
+
+
+namespace FNLog
+{
+
+    inline void EnterProcOutEmptyDevice(Logger& logger, int channel_id, int device_id, LogData& log)
+    {
+        (void)logger;
+        (void)channel_id;
+        (void)device_id;
+        (void)log;
+    }
+
+}
+
+
+#endif
+
+/*
+* Copyright (C) 2019 YaweiZhang <yawei.zhang@foxmail.com>.
+* All rights reserved
+* This file is part of the fn-log, used MIT License.
+*/
+
 #pragma once
 #ifndef _FN_LOG_OUT_FILE_DEVICE_H_
 #define _FN_LOG_OUT_FILE_DEVICE_H_
@@ -3227,6 +3260,7 @@ namespace FNLog
         AtomicAddL(device, DEVICE_LOG_TOTAL_WRITE_LINE);
         AtomicAddLV(device, DEVICE_LOG_TOTAL_WRITE_BYTE, log.content_len_);
         AtomicAddLV(device, DEVICE_LOG_CUR_FILE_SIZE, log.content_len_);
+        AtomicAddLV(device, DEVICE_LOG_PRIORITY + log.priority_, log.content_len_);
     }
 
 
@@ -3267,6 +3301,7 @@ namespace FNLog
         udp.write((unsigned long)ip, (unsigned short)port, log.content_, log.content_len_);
         AtomicAddL(device, DEVICE_LOG_TOTAL_WRITE_LINE);
         AtomicAddLV(device, DEVICE_LOG_TOTAL_WRITE_BYTE, log.content_len_);
+        AtomicAddLV(device, DEVICE_LOG_PRIORITY + log.priority_, log.content_len_);
     }
 }
 
@@ -3294,6 +3329,8 @@ namespace FNLog
         Device& device = logger.shm_->channels_[channel_id].devices_[device_id];
         AtomicAddL(device, DEVICE_LOG_TOTAL_WRITE_LINE);
         AtomicAddLV(device, DEVICE_LOG_TOTAL_WRITE_BYTE, log.content_len_);
+        AtomicAddLV(device, DEVICE_LOG_PRIORITY + log.priority_, log.content_len_);
+
         int priority = log.priority_;
         if (log.priority_ < PRIORITY_INFO)
         {
@@ -3401,6 +3438,7 @@ namespace FNLog
             Device& device = logger.shm_->channels_[channel_id].devices_[device_id];
             AtomicAddL(device, DEVICE_LOG_TOTAL_WRITE_LINE);
             AtomicAddLV(device, DEVICE_LOG_TOTAL_WRITE_BYTE, log.content_len_);
+            AtomicAddLV(device, DEVICE_LOG_PRIORITY + log.priority_, log.content_len_);
             (*RefVirtualDevice())(log);
         }
     }
@@ -3431,11 +3469,11 @@ namespace FNLog
         Logger::ReadGuard rg(logger.read_locks_[channel_id], channel.channel_type_ == CHANNEL_ASYNC);
         switch (device.out_type_)
         {
-        case DEVICE_OUT_FILE:
-            EnterProcOutFileDevice(logger, channel_id, device_id, log);
-            break;
         case DEVICE_OUT_SCREEN:
             EnterProcOutScreenDevice(logger, channel_id, device_id, log);
+            break;
+        case DEVICE_OUT_FILE:
+            EnterProcOutFileDevice(logger, channel_id, device_id, log);
             break;
         case DEVICE_OUT_UDP:
             EnterProcOutUDPDevice(logger, channel_id, device_id, log);
@@ -3443,6 +3481,10 @@ namespace FNLog
         case DEVICE_OUT_VIRTUAL:
             //EnterProcOutVirtualDevice(logger, channel_id, device_id, log);
             break;        
+        case DEVICE_OUT_EMPTY:
+            EnterProcOutEmptyDevice(logger, channel_id, device_id, log);
+            break;
+            break;
         default:
             break;
         }
@@ -3828,7 +3870,7 @@ namespace FNLog
         log.content_[log.content_len_] = '\0';
 
         log.data_mark_ = 2;
-        AtomicAddL(channel, CHANNEL_LOG_PRIORITY + log.priority_);
+        AtomicAddLV(channel, CHANNEL_LOG_PRIORITY + log.priority_, log.content_len_);
 
         do
         {
