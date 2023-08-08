@@ -19,6 +19,7 @@ namespace FNLog
     {
         PEC_NONE = E_SUCCESS,
         PEC_ERROR = E_BASE_ERRNO_MAX,
+        PEC_NONSUPPORT_SYNTAX,
         PEC_ILLEGAL_CHARACTER,
         PEC_ILLEGAL_KEY,
         PEC_NOT_CLOSURE,
@@ -31,34 +32,26 @@ namespace FNLog
         PEC_UNDEFINED_CHANNEL_KEY,
         PEC_UNDEFINED_GLOBAL_KEY,
 
-        PEC_DEVICE_NOT_ARRAY,
         PEC_DEVICE_INDEX_OUT_MAX,
         PEC_DEVICE_INDEX_NOT_SEQUENCE,
  
 
-        PEC_CHANNEL_NOT_ARRAY,
         PEC_CHANNEL_INDEX_OUT_MAX,
         PEC_CHANNEL_INDEX_NOT_SEQUENCE,
         PEC_NO_ANY_CHANNEL,
     };
 
-    enum LineType
-    {
-        LINE_NULL,
-        LINE_ARRAY,
-        LINE_BLANK,
-        LINE_EOF,
-    };
+
     enum BlockType
     {
-        BLOCK_BLANK,
-        BLOCK_PRE_KEY,
+        BLOCK_NONE,
         BLOCK_KEY,
         BLOCK_PRE_SEP,
         BLOCK_PRE_VAL,
         BLOCK_VAL,
         BLOCK_CLEAN,
     };
+
     enum ReseveKey
     {
         RK_NULL,
@@ -104,8 +97,9 @@ namespace FNLog
     struct Line
     {
         int blank_;
-        int line_type_;
+        int chars_;
         int block_type_;
+        char block_stack_;
         int key_;
         const char* key_begin_;
         const char* key_end_;
@@ -115,7 +109,7 @@ namespace FNLog
 
     struct LexState
     {
-        int line_number_;
+        int line_no_;
         const char* first_;
         const char* current_;
         const char* end_;
@@ -129,6 +123,8 @@ namespace FNLog
         char name_[Logger::MAX_LOGGER_NAME_LEN];
         int name_len_;
     };
+
+
 
     inline ReseveKey ParseReserve(const char* begin, const char* end)
     {
@@ -650,17 +646,132 @@ namespace FNLog
     inline int Lex(LexState& ls)
     {
         memset(&ls.line_, 0, sizeof(ls.line_));
+        if (ls.current_ >= ls.end_)
+        {
+            if (ls.line_no_ == 0)
+            {
+                ls.line_no_ = 1;
+            }
+            return PEC_NONE;
+        }
         while (true)
         {
             char ch = *ls.current_++;
+            ls.line_.chars_++;
+
+            bool is_blank = false;
+            bool is_end_char = false;
+            if (ch == ' ' || ch == '\t' || ch == '\f' || ch == '\v')
+            {
+                is_blank = true;
+            }
+
+            if (ch == '\0' || ch == '\n' || ch == '\r' || ch == '#')
+            {
+                is_end_char = true;
+            }
+
+
             if (ls.line_.block_type_ == BLOCK_CLEAN && ch != '\0' && ch != '\r' && ch != '\n')
             {
                 continue;
             }
 
-            //preprocess
-            if (ls.line_.block_type_ == BLOCK_KEY && (ch < 'a' || ch > 'z') && ch != '_')
+            if (is_end_char)
             {
+                if (ls.line_.block_type_ == BLOCK_VAL)
+                {
+                    if (ls.line_.block_stack_ != '\0')
+                    {
+                        return PEC_NOT_CLOSURE;
+                    }
+
+                    ls.line_.block_type_ = BLOCK_CLEAN;
+                    ls.line_.val_end_ = ls.current_ - 1;
+                }
+
+                //no value 
+                if (ls.line_.block_type_ == BLOCK_PRE_VAL)
+                {
+                    ls.line_.block_type_ = BLOCK_CLEAN;
+                    ls.line_.val_begin_ = ls.current_ - 1;
+                    ls.line_.val_end_ = ls.current_ - 1;
+                }
+
+                if (ls.line_.block_type_ != BLOCK_NONE && ls.line_.block_type_ != BLOCK_CLEAN)
+                {
+                    return PEC_NOT_CLOSURE;
+                }
+
+                while (ls.line_.val_end_ > ls.line_.val_begin_)
+                {
+                    char suffix = *(ls.line_.val_end_ - 1);
+                    if (suffix == ' ' || suffix == '\t' || suffix == '\v' || suffix == '\f')
+                    {
+                        ls.line_.val_end_--;
+                        continue;
+                    }
+                    break;
+                }
+
+
+                if (ch == '\r' || ch == '\n')
+                {
+                    if ((*ls.current_ == '\r' || *ls.current_ == '\n') && *ls.current_ != ch)
+                    {
+                        ls.current_++;//jump win rt  
+                    }
+                    ls.line_no_++;
+                    return PEC_NONE;
+                }
+
+                if (ch == '\0')
+                {
+                    ls.current_--; //safe; set current referer to '\0'   
+                    ls.line_no_++; //last line compensate that the line no aways ref valid lex line no.  
+                    return PEC_NONE;
+                }
+
+                if (ch == '#')
+                {
+                    ls.line_.block_type_ = BLOCK_CLEAN;
+                    continue;
+                }
+            }
+
+
+            if (ls.line_.block_type_ == BLOCK_NONE)
+            {
+                if (is_blank)
+                {
+                    if (ls.line_.blank_ == ls.line_.chars_ - 1)
+                    {
+                        ls.line_.blank_++;
+                    }
+                    continue;
+                }
+                //ignore array char 
+                if (ch == '-')
+                {
+                    continue;
+                }
+
+                //first char 
+                if (ch < 'a' || ch > 'z')
+                {
+                    return PEC_ILLEGAL_KEY;
+                }
+                ls.line_.block_type_ = BLOCK_KEY;
+                ls.line_.key_begin_ = ls.current_ - 1;
+            }
+
+            //key must in [a-z_0-9]
+            if (ls.line_.block_type_ == BLOCK_KEY)
+            {
+                if ((ch >= 'a' && ch <= 'z') || ch == '_' || (ch >= '0' && ch <= '9'))
+                {
+                    continue;
+                }
                 ls.line_.block_type_ = BLOCK_PRE_SEP;
                 ls.line_.key_end_ = ls.current_ - 1;
                 ls.line_.key_ = ParseReserve(ls.line_.key_begin_, ls.line_.key_end_);
@@ -668,114 +779,82 @@ namespace FNLog
                 {
                     return PEC_ILLEGAL_KEY;
                 }
-            }
-            if (ls.line_.block_type_ == BLOCK_VAL)
-            {
-                switch (ch)
-                {
-                case '\0': case'\n':case '\r': case '#': case '\"': case '}':
-                    ls.line_.block_type_ = BLOCK_CLEAN;
-                    ls.line_.val_end_ = ls.current_ - 1;
-                    break;
-                }
+
             }
 
-            //end of line check
-            switch (ch)
+            
+            if (ls.line_.block_type_ == BLOCK_PRE_SEP)
             {
-            case '\0': case '\n':case '\r': case '#':
-                if (ls.line_.block_type_ == BLOCK_BLANK)
-                {
-                    ls.line_.block_type_ = BLOCK_CLEAN;
-                    ls.line_.line_type_ = LINE_BLANK;
-                }
-                if (ls.line_.block_type_ != BLOCK_CLEAN)
-                {
-                    return PEC_NOT_CLOSURE;
-                }
-                break;
-            }
-
-            //process
-            switch (ch)
-            {
-            case ' ': case '\f': case '\t': case '\v': case '\"': case '{':
-                if (ls.line_.block_type_ == BLOCK_BLANK)
-                {
-                    ls.line_.blank_++;
-                    break;
-                }
-                break;
-            case '\n':case '\r':
-                ls.line_number_++;
-                if ((*ls.current_ == '\r' || *ls.current_ == '\n') && *ls.current_ != ch)
-                {
-                    ls.current_++; //skip '\n\r' or '\r\n'
-                }
-                return PEC_NONE;
-            case '\0':
-                if (ls.line_.line_type_ != LINE_BLANK)
-                {
-                    ls.current_--;
-                    return PEC_NONE;
-                }
-                else
-                {
-                    ls.line_.line_type_ = LINE_EOF;
-                    return PEC_NONE;
-                }
-                
-            case '-':
-                if (ls.line_.block_type_ == BLOCK_BLANK)
-                {
-                    ls.line_.block_type_ = BLOCK_PRE_KEY;
-                    ls.line_.line_type_ = LINE_ARRAY;
-                    break;
-                }
-                else if (ls.line_.block_type_ != BLOCK_VAL)
-                {
-                    return PEC_ILLEGAL_CHARACTER;
-                }
-                break;
-            case ':':
-                if (ls.line_.block_type_ == BLOCK_PRE_SEP)
+                if (ch == ':')
                 {
                     ls.line_.block_type_ = BLOCK_PRE_VAL;
-                    break;
+                    continue;
                 }
-                else if (ls.line_.block_type_ != BLOCK_VAL)
+                //not support yaml '-' array 
+                if (ch != ' ' && ch != '\t')
                 {
-                    return PEC_ILLEGAL_CHARACTER;
+                    return PEC_NONSUPPORT_SYNTAX;
                 }
-                break;
-            default:
-                if ((ch >= 'a' && ch <= 'z')
-                    || (ch >= 'A' && ch <= 'Z')
-                    || (ch >= '0' && ch <= '9')
-                    || ch == '_' || ch == '-' || ch == ':' || ch == '/' || ch == '.' || ch == ',' || ch == '$' || ch == '~' || ch =='%')
-                {
-                    switch (ls.line_.block_type_)
-                    {
-                    case BLOCK_CLEAN: case BLOCK_KEY: case BLOCK_VAL:
-                        break;
-                    case BLOCK_BLANK: case BLOCK_PRE_KEY:
-                        ls.line_.block_type_ = BLOCK_KEY;
-                        ls.line_.key_begin_ = ls.current_ - 1;
-                        break;
-                    case BLOCK_PRE_VAL:
-                        ls.line_.block_type_ = BLOCK_VAL;
-                        ls.line_.val_begin_ = ls.current_ - 1;
-                        break;
-                    default:
-                        return PEC_ILLEGAL_CHARACTER;
-                    }
-                    break;
-                }
-                else if (ls.line_.block_type_ != BLOCK_CLEAN)
-                {
-                    return PEC_ILLEGAL_CHARACTER;
-                }
+                continue;
             }
+
+            if (ls.line_.block_type_ == BLOCK_PRE_VAL)
+            {
+                if (ch == ' ' || ch == '\t' || ch == '\f' || ch == '\v')
+                {
+                    continue;
+                }
+                if (ch == '\"')
+                {
+                    ls.line_.block_stack_ = '\"';
+                    ls.line_.block_type_ = BLOCK_VAL;
+                    ls.line_.val_begin_ = ls.current_;
+                    continue;
+                }
+                if (ch == '[')
+                {
+                    ls.line_.block_stack_ = ']';
+                    ls.line_.block_type_ = BLOCK_VAL;
+                    ls.line_.val_begin_ = ls.current_;
+                    continue;
+                }
+                if (ch == '{')
+                {
+                    ls.line_.block_stack_ = '}';
+                    ls.line_.block_type_ = BLOCK_VAL;
+                    ls.line_.val_begin_ = ls.current_;
+                    continue;
+                }
+                ls.line_.block_stack_ = '\0';
+                ls.line_.block_type_ = BLOCK_VAL;
+                ls.line_.val_begin_ = ls.current_ - 1;
+            }
+
+
+            if (ls.line_.block_type_ == BLOCK_VAL)
+            {
+                if (ls.line_.val_begin_ == ls.current_ - 1)
+                {
+                    //trim blank begin "{[  
+                    if (is_blank)
+                    {
+                        ls.line_.val_begin_ = ls.current_;
+                        continue;
+                    }
+                }
+
+                if (ls.line_.block_stack_ != '\0' && ch == ls.line_.block_stack_)
+                {
+                    ls.line_.block_type_ = BLOCK_CLEAN;
+                    ls.line_.val_end_ = ls.current_ - 1;
+                    continue;
+                }
+
+
+
+                continue;
+            }
+
         }
         return PEC_ERROR;
     }
@@ -789,23 +868,23 @@ namespace FNLog
             if (ret != PEC_NONE)
             {
                 ls.current_ = current;
-                ls.line_number_--;
                 return ret;
             }
-            if (ls.line_.line_type_ == LINE_EOF)
+
+            if (ls.line_.key_end_ - ls.line_.key_begin_ == 0)
             {
-                return ret;
-            }
-            if (ls.line_.line_type_ == LINE_BLANK)
-            {
+                if (ls.current_ >= ls.end_)
+                {
+                    //eof 
+                    return ret;
+                }
+                //blank line 
                 continue;
             }
             
             if (ls.line_.blank_ <= indent)
             {
                 ls.current_ = current;
-                ls.line_number_--;
-                ls.line_.line_type_ = LINE_BLANK;
                 return 0;
             }
 
@@ -913,7 +992,7 @@ namespace FNLog
             default:
                 return PEC_UNDEFINED_DEVICE_KEY;
             }
-        } while (ls.line_.line_type_ != LINE_EOF);
+        } while (ls.current_ < ls.end_);
         return 0;
     }
     inline int ParseChannel(LexState& ls, Channel& channel, int indent)
@@ -925,23 +1004,20 @@ namespace FNLog
             if (ret != PEC_NONE)
             {
                 ls.current_ = current;
-                ls.line_number_--;
                 return ret;
             }
-            if (ls.line_.line_type_ == LINE_EOF)
+            if (ls.line_.key_end_ - ls.line_.key_begin_ == 0)
             {
-                return ret;
-            }
-            if (ls.line_.line_type_ == LINE_BLANK)
-            {
+                if (ls.current_ >= ls.end_)
+                {
+                    return ret;
+                }
                 continue;
             }
 
             if (ls.line_.blank_ <= indent)
             {
                 ls.current_ = current;
-                ls.line_number_--;
-                ls.line_.line_type_ = LINE_BLANK;
                 return 0;
             }
 
@@ -991,11 +1067,6 @@ namespace FNLog
                 break;
 
             case RK_DEVICE:
-                if (ls.line_.line_type_ != LINE_ARRAY)
-                {
-                    return PEC_DEVICE_NOT_ARRAY;
-                }
-                else
                 {
                     int device_id = atoi(ls.line_.val_begin_);
                     if (channel.device_size_ >= Channel::MAX_DEVICE_SIZE)
@@ -1014,7 +1085,7 @@ namespace FNLog
                     {
                         channel.virtual_device_id_ = device.device_id_;
                     }
-                    if (ret != PEC_NONE || ls.line_.line_type_ == LINE_EOF)
+                    if (ret != PEC_NONE)
                     {
                         return ret;
                     }
@@ -1024,7 +1095,7 @@ namespace FNLog
                 return PEC_UNDEFINED_CHANNEL_KEY;
             }
 
-        } while (ls.line_.line_type_ != LINE_EOF);
+        } while (ls.current_ < ls.end_);
         return 0;
     }
 
@@ -1045,8 +1116,7 @@ namespace FNLog
         ls.channel_size_ = 0;
         ls.hot_update_ = false;
         ls.current_ = ls.first_;
-        ls.line_.line_type_ = LINE_NULL;
-        ls.line_number_ = 1;
+        ls.line_no_ = 0;
         ls.desc_len_ = 0;
         ls.name_len_ = 0;
         do
@@ -1056,15 +1126,14 @@ namespace FNLog
             if (ret != PEC_NONE)
             {
                 ls.current_ = current;
-                ls.line_number_--;
                 return ret;
             }
-            if (ls.line_.line_type_ == LINE_EOF)
+            if (ls.line_.key_end_ - ls.line_.key_begin_ == 0)
             {
-                break;
-            }
-            if (ls.line_.line_type_ == LINE_BLANK)
-            {
+                if (ls.current_ >= ls.end_)
+                {
+                    return ret;
+                }
                 continue;
             }
 
@@ -1099,11 +1168,6 @@ namespace FNLog
                 ls.shm_key_ = ParseNumber(ls.line_.val_begin_, ls.line_.val_end_);
                 break;
             case RK_CHANNEL:
-                if (ls.line_.line_type_ != LINE_ARRAY)
-                {
-                    return PEC_CHANNEL_NOT_ARRAY;
-                }
-                else
                 {
                     int channel_id = atoi(ls.line_.val_begin_);
                     if (ls.channel_size_ >= Logger::MAX_CHANNEL_SIZE)
@@ -1127,7 +1191,7 @@ namespace FNLog
             default:
                 return PEC_UNDEFINED_GLOBAL_KEY;
             }
-        } while (ls.line_.line_type_ != LINE_EOF);
+        } while (ls.current_ < ls.end_);
         if (ls.channel_size_ == 0)
         {
             return PEC_NO_ANY_CHANNEL;

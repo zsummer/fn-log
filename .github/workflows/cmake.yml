@@ -43,6 +43,7 @@ jobs:
       # See https://cmake.org/cmake/help/latest/manual/ctest.1.html for more detail
       run: |
         cd ${{github.workspace}}/bin
+          ./test_lex
           ./test_buffer
           ./test_filter
           ./test_filter_advance

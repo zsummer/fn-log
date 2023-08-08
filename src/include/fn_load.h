@@ -171,7 +171,7 @@ namespace FNLog
         if (ret != PEC_NONE)
         {
             std::stringstream os;
-            os << "ParseLogger has error:<" << ret << "> in line:[" << ls->line_number_ << "], line type:" << ls->line_.line_type_;
+            os << "ParseLogger has error:<" << ret << "> in line:[" << ls->line_no_ << "] ";
             if (ls->current_ != nullptr)
             {
                 os << " before:";
