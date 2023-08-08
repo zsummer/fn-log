@@ -63,6 +63,36 @@ int main(int argc, char* argv[])
     FNLOG_ASSERT(cat10 == ((1 << 3) | (1 <<4)), "");
 
 
+
+    std::unique_ptr<FNLog::LexState> lsptr(new FNLog::LexState);
+    FNLog::LexState& ls = *lsptr;
+
+    //empty config 
+    if (true)
+    {
+        std::string content = R"----(
+                            - define: sdfdsf: 234  
+                            file:sdfdsf)----";
+        memset(&ls, 0, sizeof(FNLog::LexState));
+        ls.first_ = content.c_str();
+        ls.end_ = ls.first_ + content.length();
+        ls.current_ = ls.first_;
+        int ret = 0;
+        ret = FNLog::Lex(ls);
+        FNLOG_ASSERT(ret == FNLog::PEC_NONE, "");
+        ret = FNLog::Lex(ls);
+        FNLOG_ASSERT(ret == FNLog::PEC_NONE, "");
+
+        FNLOG_ASSERT(ls.line_.key_ == FNLog::RK_DEFINE, "");
+        FNLOG_ASSERT(FNLog::PredefinedMacro(ls, content, false) == FNLog::PEC_NONE, "");
+
+        std::string sub = content.substr(content.length() - 10);
+        FNLOG_ASSERT(sub.find("234") != std::string::npos, "");
+    }
+
+
+
+
     LogAlarm() << "finish";
 
     return 0;
