@@ -16,7 +16,7 @@ R"----(
     -device:1
         disable: false
         out_type: udp
-        udp_addr: 127.0.0.1_9909
+        udp_addr: 127.0.0.1:9909
 
 
 )----";

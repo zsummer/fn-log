@@ -13,7 +13,7 @@ R"----(
     -device: 0
         disable: false
         out_type: udp
-        udp_addr: 127.0.0.1_9909
+        udp_addr: 127.0.0.1:9909
         priority: trace
         category: 0
         category_extend: 0
@@ -35,7 +35,7 @@ R"----(
     -device: 0
         disable: false
         out_type: udp
-        udp_addr: 127.0.0.1_9909
+        udp_addr: 127.0.0.1:9909
         file: "$PNAME_$YEAR"
         rollback: 4
         limit_size: 100 m #only support M byte
