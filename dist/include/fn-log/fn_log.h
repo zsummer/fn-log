@@ -985,6 +985,8 @@ namespace FNLog
         PEC_NONSUPPORT_SYNTAX,
         PEC_ILLEGAL_CHARACTER,
         PEC_ILLEGAL_KEY,
+        PEC_ILLEGAL_VAR_NAME,
+        PEC_ILLEGAL_VAR_VALUE,
         PEC_NOT_CLOSURE,
         PEC_ILLEGAL_ADDR_IP,
         PEC_ILLEGAL_ADDR_PORT,
@@ -1020,7 +1022,7 @@ namespace FNLog
         RK_NULL,
         RK_SHM_KEY,
         RK_CHANNEL,
-        RK_DEFINE, //the symbol name len must equal or great than new name;   like tag0:10, tag1:100;  will error by "tag0:100000" 
+        RK_DEFINE, //the symbol name len must equal or great than new name;   like tag0 10, tag1 100;  will error by "tag0 100000" 
         RK_VARIABLE,
         RK_DEVICE,
         RK_SYNC,
@@ -1514,91 +1516,122 @@ namespace FNLog
         };
         return 0;
     }
-    inline int PredefinedMacro(LexState& ls, std::string& text, bool is_var)
+    inline int PredefinedMacro(LexState& ls, std::string& text)
     {
-        if (true)
+        std::string line(ls.line_.val_begin_, ls.line_.val_end_ - ls.line_.val_begin_);
+        std::string::size_type offset = 0;
+        std::string symbol;
+        std::string::size_type sep = line.find(' ');
+        if (sep == std::string::npos)
         {
-            std::string line(ls.line_.val_begin_, ls.line_.val_end_ - ls.line_.val_begin_);
-            std::string::size_type offset = 0;
-            std::string key; 
-            std::string key2; //more escape style  
-            std::string val;
-            while (offset < line.length())
-            {
-                if (line.at(offset) == ' ' || line.at(offset) == '\t')
-                {
-                    offset++;
-                    continue;
-                }
-
-                std::string::size_type dot = line.find(',', offset);
-                if (dot == std::string::npos)
-                {
-                    dot = line.length();
-                }
-
-                std::string::size_type sep = line.find(':', offset);
-                if (sep >= dot)
-                {
-                    offset = dot + 1;
-                    continue; //not kv or end, ignore;   
-                }
-                key = line.substr(offset, sep - offset);
-                while (!key.empty() && (key.back() == ' ' || key.back() == '\t'))
-                {
-                    key.pop_back();
-                }
-                sep++;
-                while (sep < dot && (line.at(offset) == ' ' || line.at(offset) == '\t'))
-                {
-                    sep++;
-                }
-                val = line.substr(sep, dot - sep);
-                while (!val.empty() && (val.back() == ' ' || val.back() == '\t'))
-                {
-                    val.pop_back();
-                }
-
-                if (key.empty())
-                {
-                    //has dot but wrong
-                    offset = dot + 1;
-                    //continue;
-                    return PEC_DEFINED_TARGET_TOO_LONG;
-                }
-
-                std::string::size_type text_offset = ls.line_.val_end_ - text.c_str();
-                if (is_var)
-                {
-                    int ret = PredefinedInplace(text, text_offset, std::string("${") + key + "}", val, false);
-                    if (ret != 0)
-                    {
-                        offset = dot + 1;
-                        return ret;
-                    }
-                    ret = PredefinedInplace(text, text_offset, std::string("$") + key, val, true);
-                    if (ret != 0)
-                    {
-                        offset = dot + 1;
-                        return ret;
-                    }
-                }
-                else
-                {
-                    int ret = PredefinedInplace(text, text_offset, key, val, false);
-                    if (ret != 0)
-                    {
-                        offset = dot + 1;
-                        return ret;
-                    }
-                }
-                offset = dot + 1;
-            }
+            return PEC_NOT_CLOSURE;
+        }
+        symbol = line.substr(0, sep);
+        if (symbol.empty())
+        {
+            return PEC_NOT_CLOSURE;
         }
 
+        while (sep < line.length())
+        {
+            if (line[sep] == ' ' || line[sep] == '\t' || line[sep] == '\v' || line[sep] == '\f')
+            {
+                sep++;
+                continue;
+            }
+            break;
+        }
+        std::string content = line.substr(sep);
+
+        int ret = PredefinedInplace(text, ls.line_.val_end_ - text.c_str(), symbol, content, true);
+        if (ret != PEC_NONE)
+        {
+            return ret;
+        }
         return PEC_NONE;
     }
 
+    inline int PredefinedVar(LexState& ls, std::string& text)
+    {
+        std::string line(ls.line_.val_begin_, ls.line_.val_end_ - ls.line_.val_begin_);
+        std::string::size_type offset = 0;
+        std::string var; 
+        std::string val;
+        while (offset < line.length())
+        {
+            if (line.at(offset) == ' ' || line.at(offset) == '\t')
+            {
+                offset++;
+                continue;
+            }
+
+            std::string::size_type dot = line.find(',', offset);
+            if (dot == std::string::npos)
+            {
+                dot = line.length();
+            }
+
+            std::string::size_type sep = line.find('=', offset);
+            if (sep >= dot)
+            {
+                offset = dot + 1;
+                return PEC_ILLEGAL_VAR_VALUE;
+            }
+            var = line.substr(offset, sep - offset);
+            while (!var.empty() && (var.back() == ' ' || var.back() == '\t'))
+            {
+                var.pop_back();
+            }
+
+            if (var.empty())
+            {
+                //has dot but wrong
+                offset = dot + 1;
+                //continue;
+                return PEC_DEFINED_TARGET_TOO_LONG;
+            }
+            //not valid var name 
+            if (!(var[0] >= 'a' && var[0] <= 'z')  && !(var[0] >= 'A' && var[0] <= 'Z') &&  var[0] != '_')
+            {
+                //has dot but wrong
+                offset = dot + 1;
+                //continue;
+                return PEC_ILLEGAL_VAR_NAME;
+            }
+
+            sep++;
+            while (sep < dot && (line.at(offset) == ' ' || line.at(offset) == '\t'))
+            {
+                sep++;
+            }
+            val = line.substr(sep, dot - sep);
+            while (!val.empty() && (val.back() == ' ' || val.back() == '\t'))
+            {
+                val.pop_back();
+            }
+
+
+
+            std::string::size_type text_offset = ls.line_.val_end_ - text.c_str();
+
+            int ret = PredefinedInplace(text, text_offset, std::string("${") + var + "}", val, false);
+            if (ret != 0)
+            {
+                offset = dot + 1;
+                return ret;
+            }
+            ret = PredefinedInplace(text, text_offset, std::string("$") + var, val, true);
+            if (ret != 0)
+            {
+                offset = dot + 1;
+                return ret;
+            }
+
+            offset = dot + 1;
+        }
+  
+        return PEC_NONE;
+    }
 
     inline void InitState(LexState& state)
     {
@@ -2107,7 +2140,7 @@ namespace FNLog
                 break;
             case RK_DEFINE:
                 //do nothing  
-                ret = PredefinedMacro(ls, text, false);
+                ret = PredefinedMacro(ls, text);
                 if (ret != PEC_NONE)
                 {
                     return ret;
@@ -2115,7 +2148,7 @@ namespace FNLog
                 break;
             case RK_VARIABLE:
                 //do nothing  
-                ret = PredefinedMacro(ls, text, true);
+                ret = PredefinedVar(ls, text);
                 if (ret != PEC_NONE)
                 {
                     return ret;
