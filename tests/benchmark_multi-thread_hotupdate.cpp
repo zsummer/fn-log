@@ -17,9 +17,10 @@ R"----(
    # write full log to pname.log
    # write info log to pname_info.log
    # view  info log to screen 
- - define: "BASE_CHANNEL:0, SECOND_CHANNEL:1"
- - define: "DEFAULT_ROLL:4"
- - define: "DEFAULT_LIMIT:100 m"
+ - define: BASE_CHANNEL 0
+ - define: SECOND_CHANNEL 1
+ - define: "DEFAULT_ROLL 4"
+ - define: "DEFAULT_LIMIT 100 m"
  hotupdate: true
  - channel: BASE_CHANNEL
     sync: async

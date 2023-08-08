@@ -15,7 +15,8 @@
 static const std::string test_text =
 R"----(
  # info log print screen and all write file
- - define: "tag0:0, tag2:2"
+ - define: "tag0 0"
+ - define: "tag2 2"
  - channel: 0
     sync: null
     - device:0
