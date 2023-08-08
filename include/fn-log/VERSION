@@ -1,6 +1,6 @@
 version:
-last_sha1(./src)=1ee5c1998f8d5f66ac77f81dbbb644fb020ba50f
-last_date(./src)=2023-08-08 21:28:54 +0800
+last_sha1(./src)=59cc55b24054f38ef93c66c2d786a4c5a2176e6c
+last_date(./src)=2023-08-09 01:09:34 +0800
 
 git log -1 --stat ./src:
-commit 1ee5c1998f8d5f66ac77f81dbbb644fb020ba50f Author: zsummer <yawei.zhang@foxmail.com> Date: Tue Aug 8 21:28:54 2023 +0800 optimize Lex src/include/fn_load.h | 2 +- src/include/fn_parse.h | 320 +++++++++++++++++++++++++++++-------------------- 2 files changed, 193 insertions(+), 129 deletions(-)
+commit 59cc55b24054f38ef93c66c2d786a4c5a2176e6c Author: zsummer <yawei.zhang@foxmail.com> Date: Wed Aug 9 01:09:34 2023 +0800 change var, def impl src/include/fn_parse.h | 183 +++++++++++++++++++++++++++++-------------------- 1 file changed, 108 insertions(+), 75 deletions(-)

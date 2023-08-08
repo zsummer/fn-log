@@ -403,16 +403,19 @@ cd ../bin
 # 宏语义 要注意不要替换掉正常的字符串, 包含值中的内容  
  
 
-# 变量 和宏替换类似, 不同点在于执行替换动作时候会增加前缀$进行替换, 并包裹{}重复执行一次.   例如var:{tag0:1}  会替换掉${tag0} 和 $tag0  
+# 变量 和宏替换类似, 不同点在于执行替换动作时候会增加前缀$进行替换, 并包裹{}重复执行一次.   例如var:{tag0=1}  会替换掉${tag0} 和 $tag0  
 
 # 宏,变量 均不能重复定义 (替换无法再替换)   
 # 宏,变量 通常为符号名+字面量 用来定义在随后重复使用的数字类编号 category, indentify, mask等  
 
 
-- define: {tag0:0, tag2:1, tag3:1, tag4:1}
-- define: "tag9:0"
+- define: LIST______ 0,1,2,3   # used like c-style;  warn: def name len must bigger than content.    
+- def: EMPTY______    
 
-- var: "tag:324234"  #only replace ${tag}  
+- var: id = 234
+- var: id0 = 0, id1 =1    # use var $id0  or ${id0}  
+- var: {key="sss", val=999}   
+
 
 # - shm_key: 33321231
 # - hot_update:[true][false]
