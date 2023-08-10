@@ -1,6 +1,6 @@
 version:
-last_sha1(./src)=59cc55b24054f38ef93c66c2d786a4c5a2176e6c
-last_date(./src)=2023-08-09 01:09:34 +0800
+last_sha1(./src)=0b6a811806e5acabb6c3a32bf2ae95abf7c5f469
+last_date(./src)=2023-08-10 11:20:38 +0800
 
 git log -1 --stat ./src:
-commit 59cc55b24054f38ef93c66c2d786a4c5a2176e6c Author: zsummer <yawei.zhang@foxmail.com> Date: Wed Aug 9 01:09:34 2023 +0800 change var, def impl src/include/fn_parse.h | 183 +++++++++++++++++++++++++++++-------------------- 1 file changed, 108 insertions(+), 75 deletions(-)
+commit 0b6a811806e5acabb6c3a32bf2ae95abf7c5f469 Author: zsummer <yawei.zhang@foxmail.com> Date: Thu Aug 10 11:20:38 2023 +0800 def bound protect src/include/fn_parse.h | 147 ++++++++++++++++++++++++++++++++++++------------- 1 file changed, 108 insertions(+), 39 deletions(-)
