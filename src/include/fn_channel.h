@@ -410,7 +410,7 @@ namespace FNLog
     {
         if (channel_id >= logger.shm_->channel_size_ || channel_id < 0)
         {
-            return E_OUT_CHANNEL_SIZE;
+            return E_INVALID_CHANNEL_SIZE;
         }
         if (hold_idx >= RingBuffer::BUFFER_LEN || hold_idx < 0)
         {
@@ -420,7 +420,7 @@ namespace FNLog
         RingBuffer& ring_buffer = logger.shm_->ring_buffers_[channel_id];
         if (channel.channel_state_ != CHANNEL_STATE_RUNNING)
         {
-            return E_LOGGER_STATE_NOT_RUNNING;
+            return E_LOGGER_NOT_RUNNING;
         }
 
         LogData& log = ring_buffer.buffer_[hold_idx];
@@ -461,7 +461,7 @@ namespace FNLog
     {
         if (log.channel_id_ == channel_id)
         {
-            return E_ILL_PARAMS;
+            return 0;
         }
         int hold_idx = FNLog::HoldChannel(logger, channel_id, log.priority_, category, identify);
         if (hold_idx < 0)
@@ -470,7 +470,7 @@ namespace FNLog
             {
                 return 0;
             }
-            return E_INNER_ERROR;
+            return 0;
         }
         LogData& trans_log = logger.shm_->ring_buffers_[channel_id].buffer_[hold_idx];
         trans_log.channel_id_ = channel_id;

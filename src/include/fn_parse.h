@@ -20,7 +20,6 @@ namespace FNLog
         PEC_NONE = E_SUCCESS,
         PEC_ERROR = E_BASE_ERRNO_MAX,
         PEC_NONSUPPORT_SYNTAX,
-        PEC_ILLEGAL_CHARACTER,
         PEC_ILLEGAL_KEY,
         PEC_ILLEGAL_VAR_NAME,
         PEC_ILLEGAL_VAR_VALUE,
@@ -34,13 +33,6 @@ namespace FNLog
         PEC_UNDEFINED_CHANNEL_KEY,
         PEC_UNDEFINED_GLOBAL_KEY,
 
-        PEC_DEVICE_INDEX_OUT_MAX,
-        PEC_DEVICE_INDEX_NOT_SEQUENCE,
- 
-
-        PEC_CHANNEL_INDEX_OUT_MAX,
-        PEC_CHANNEL_INDEX_NOT_SEQUENCE,
-        PEC_NO_ANY_CHANNEL,
     };
 
 
@@ -50,41 +42,52 @@ namespace FNLog
         {
         case E_SUCCESS:
             return "success";
-        case E_INNER_ERROR:
-        case E_UNKNOWN_ERROR:
-        case E_UNKNOWN_CHANNEL_SYNC:
-        case E_ILL_PARAMS:
-        case E_LOGGER_STATE_NOT_UNINIT:
-        case E_LOGGER_STATE_NOT_INIT:
-        case E_LOGGER_STATE_NOT_RUNNING:
-        case E_CONFIG_OUT_CHANNEL_MAX:
-        case E_CONFIG_DISABLE_HOTUPDATE:
-        case E_CONFIG_NOT_FROM_PATHFILE:
-            return "error";
-        case E_NOT_FIND_CONFIG_FILE:
-            return "not find config file";
-        case E_CONFIG_FILE_NOT_CHANGE:
-            return "error";
-        case E_OUT_CHANNEL_SIZE:
-            return "channel size limited";
-        case E_OUT_RINGBUFFER:
-        case E_NEW_THREAD_ERROR:
-        case E_NEW_THREAD_LOSS:
-            return "error";
+        case E_LOGGER_IN_USE:
+            return "logger alread in use";
+        case E_LOGGER_NOT_RUNNING:
+            return "logger not running";
+        case E_INVALID_CONFIG_PATH:
+            return "invalid config path";
+        case E_INVALID_CHANNEL_SIZE:
+            return "invalid channel size";
+        case E_INVALID_CHANNEL_SYNC:
+            return "invalid channel sync";
+        case E_INVALID_CHANNEL_STATE:
+            return "invalid channel state";
+        case E_CHANNEL_THREAD_FAILED:
+            return "create thread faield";
+        case E_CHANNEL_NOT_SEQUENCE:
+            return "channel index need sequence.";
+
+        case E_INVALID_DEVICE_SIZE:
+            return "invalid device size";
+        case E_DEVICE_NOT_SEQUENCE:
+            return "device index need sequence.";
+
         case E_SHMGET_PROBE_ERROR:
         case E_SHMGET_CREATE_ERROR:
         case E_SHMAT_ERROR:
         case E_SHM_VERSION_WRONG:
-        case E_CONFIG_VERSION_MISMATCH:
+        case E_VERSION_MISMATCH:
             return "shm error";
+        
+        case E_DISABLE_HOTUPDATE:
+        case E_NO_CONFIG_PATH:
+        case E_CONFIG_NO_CHANGE:
+        case E_OUT_RINGBUFFER:
+            return "some warn";
+
         case PEC_ERROR:
+            return "syntax error";
         case PEC_NONSUPPORT_SYNTAX:
-        case PEC_ILLEGAL_CHARACTER:
+            return "unsupport syntax";
         case PEC_ILLEGAL_KEY:
+            return "unknown key";
+
         case PEC_ILLEGAL_VAR_NAME:
-            return "name or key error";
+            return "name or key invalid";
         case PEC_NOT_CLOSURE:
-            return "not closure";
+            return "not closure line ";
         case PEC_ILLEGAL_ADDR_IP:
         case PEC_ILLEGAL_ADDR_PORT:
             return "udp addr error";
@@ -97,16 +100,10 @@ namespace FNLog
         case PEC_UNDEFINED_GLOBAL_KEY:
             return "undefined type";
 
-        case PEC_DEVICE_INDEX_OUT_MAX:
-            return "device size limited";
-        case PEC_DEVICE_INDEX_NOT_SEQUENCE:
-            return "device index need sequence.";
-        case PEC_CHANNEL_INDEX_OUT_MAX:
-            return "channel size limited";
-        case PEC_CHANNEL_INDEX_NOT_SEQUENCE:
-            return "channel index need sequence.";
-        case PEC_NO_ANY_CHANNEL:
-            return "empty configure.";
+
+
+
+
         default:
             break;
         }
@@ -1242,11 +1239,11 @@ namespace FNLog
                     int device_id = atoi(ls.line_.val_begin_);
                     if (channel.device_size_ >= Channel::MAX_DEVICE_SIZE)
                     {
-                        return PEC_DEVICE_INDEX_OUT_MAX;
+                        return E_INVALID_DEVICE_SIZE;
                     }
                     if (device_id != channel.device_size_)
                     {
-                        return PEC_DEVICE_INDEX_NOT_SEQUENCE;
+                        return E_DEVICE_NOT_SEQUENCE;
                     }
                     Device& device = channel.devices_[channel.device_size_++];
                     memset(&device, 0, sizeof(device));
@@ -1343,11 +1340,11 @@ namespace FNLog
                     int channel_id = atoi(ls.line_.val_begin_);
                     if (ls.channel_size_ >= Logger::MAX_CHANNEL_SIZE)
                     {
-                        return PEC_CHANNEL_INDEX_OUT_MAX;
+                        return E_INVALID_CHANNEL_SIZE;
                     }
                     if (ls.channel_size_ != channel_id)
                     {
-                        return PEC_CHANNEL_INDEX_NOT_SEQUENCE;
+                        return E_CHANNEL_NOT_SEQUENCE;
                     }
                     Channel& channel = ls.channels_[ls.channel_size_++];
                     memset(&channel, 0, sizeof(channel));
@@ -1365,7 +1362,7 @@ namespace FNLog
         } while (ls.current_ < ls.end_);
         if (ls.channel_size_ == 0)
         {
-            return PEC_NO_ANY_CHANNEL;
+            return E_INVALID_CHANNEL_SIZE;
         }
         return PEC_NONE;
     }

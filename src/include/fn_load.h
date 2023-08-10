@@ -163,7 +163,7 @@ namespace FNLog
         if (logger.logger_state_ != LOGGER_STATE_UNINIT)
         {
             printf("InitFromYMAL:<%s> text error\n", path.c_str());
-            return E_LOGGER_STATE_NOT_UNINIT;
+            return E_LOGGER_IN_USE;
         }
 
         std::unique_ptr<LexState> ls(new LexState);
@@ -190,7 +190,7 @@ namespace FNLog
         if (logger.logger_state_ != LOGGER_STATE_UNINIT)
         {
             printf("InitFromYMAL:<%s> text error\n", path.c_str());
-            return E_LOGGER_STATE_NOT_UNINIT;
+            return E_LOGGER_IN_USE;
         }
 
 
@@ -233,7 +233,7 @@ namespace FNLog
         if (logger.shm_->channel_size_ > Logger::MAX_CHANNEL_SIZE || logger.shm_->channel_size_ <= 0)
         {
             printf("InitFromYMAL channel size:%d out channel max%d. \n", logger.shm_->channel_size_, Logger::MAX_CHANNEL_SIZE);
-            return E_CONFIG_OUT_CHANNEL_MAX;
+            return E_INVALID_CHANNEL_SIZE;
         }
         return 0;
     }
@@ -250,7 +250,7 @@ namespace FNLog
         if (!config.is_open())
         {
             printf("InitFromYMALFile:<%s> open file error\n", path.c_str());
-            return E_NOT_FIND_CONFIG_FILE;
+            return E_INVALID_CONFIG_PATH;
         }
         std::string text = config.read_content();
         config.close();
@@ -272,15 +272,15 @@ namespace FNLog
     {
         if (logger.shm_->channel_size_ <= channel_id)
         {
-            return E_OUT_CHANNEL_SIZE;
+            return E_INVALID_CHANNEL_SIZE;
         }
         if (!logger.hot_update_)
         {
-            return E_CONFIG_DISABLE_HOTUPDATE;
+            return E_DISABLE_HOTUPDATE;
         }
         if (logger.yaml_path_.empty())
         {
-            return E_CONFIG_NOT_FROM_PATHFILE;
+            return E_NO_CONFIG_PATH;
         }
 
         Channel& dst_chl = logger.shm_->channels_[channel_id];
@@ -296,15 +296,15 @@ namespace FNLog
         config.open(logger.yaml_path_.c_str(), "rb", file_stat);
         if (!config.is_open())
         {
-            return E_NOT_FIND_CONFIG_FILE;
+            return E_INVALID_CONFIG_PATH;
         }
         if (file_stat.st_mtime == dst_chl.yaml_mtime_)
         {
-            return E_CONFIG_FILE_NOT_CHANGE;
+            return E_CONFIG_NO_CHANGE;
         }
         if (logger.logger_state_ != LOGGER_STATE_RUNNING)
         {
-            return E_LOGGER_STATE_NOT_RUNNING;
+            return E_LOGGER_NOT_RUNNING;
         }
 
         std::string text = config.read_content();
@@ -320,11 +320,11 @@ namespace FNLog
         Logger::StateLockGuard state_guard(logger.state_lock_);
         if (logger.logger_state_ != LOGGER_STATE_RUNNING)
         {
-            return E_LOGGER_STATE_NOT_RUNNING;
+            return E_LOGGER_NOT_RUNNING;
         }
         if (!logger.hot_update_)
         {
-            return E_CONFIG_DISABLE_HOTUPDATE;
+            return E_DISABLE_HOTUPDATE;
         }
         dst_chl.yaml_mtime_ = file_stat.st_mtime;
         logger.hot_update_ = ls->hot_update_;
@@ -339,7 +339,7 @@ namespace FNLog
         Channel& src_chl = ls->channels_[channel_id];
         if (dst_chl.channel_id_ != src_chl.channel_id_ || src_chl.channel_id_ != channel_id)
         {
-            return E_CONFIG_VERSION_MISMATCH;
+            return E_VERSION_MISMATCH;
         }
         for (int field_id = 0; field_id < CHANNEL_CFG_MAX_ID; field_id++)
         {
@@ -353,21 +353,21 @@ namespace FNLog
             Device& src_dvc = src_chl.devices_[device_id];
             if (src_dvc.device_id_ != device_id)
             {
-                return E_CONFIG_VERSION_MISMATCH;
+                return E_VERSION_MISMATCH;
             }
             if (device_id < dst_chl.device_size_)
             {
                 Device& dst_dvc = dst_chl.devices_[device_id];
                 if (dst_dvc.device_id_ != device_id)
                 {
-                    return E_CONFIG_VERSION_MISMATCH;
+                    return E_VERSION_MISMATCH;
                 }
                 memcpy(&dst_dvc.config_fields_, &src_dvc.config_fields_, sizeof(dst_dvc.config_fields_));
                 continue;
             }
             if (dst_chl.device_size_ != device_id)
             {
-                return E_CONFIG_VERSION_MISMATCH;
+                return E_VERSION_MISMATCH;
             }
             memcpy(&dst_chl.devices_[dst_chl.device_size_++], &src_dvc, sizeof(src_dvc));
             
