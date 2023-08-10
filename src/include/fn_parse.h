@@ -635,7 +635,6 @@ namespace FNLog
     inline int PredefinedMacro(LexState& ls, std::string& text)
     {
         std::string line(ls.line_.val_begin_, ls.line_.val_end_ - ls.line_.val_begin_);
-        std::string::size_type offset = 0;
         std::string symbol;
         std::string::size_type sep = line.find(' ');
         if (sep == std::string::npos)
