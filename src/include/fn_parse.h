@@ -44,6 +44,76 @@ namespace FNLog
     };
 
 
+    inline std::string DebugErrno(int error_code)
+    {
+        switch (error_code)
+        {
+        case E_SUCCESS:
+            return "success";
+        case E_INNER_ERROR:
+        case E_UNKNOWN_ERROR:
+        case E_UNKNOWN_CHANNEL_SYNC:
+        case E_ILL_PARAMS:
+        case E_LOGGER_STATE_NOT_UNINIT:
+        case E_LOGGER_STATE_NOT_INIT:
+        case E_LOGGER_STATE_NOT_RUNNING:
+        case E_CONFIG_OUT_CHANNEL_MAX:
+        case E_CONFIG_DISABLE_HOTUPDATE:
+        case E_CONFIG_NOT_FROM_PATHFILE:
+            return "error";
+        case E_NOT_FIND_CONFIG_FILE:
+            return "not find config file";
+        case E_CONFIG_FILE_NOT_CHANGE:
+            return "error";
+        case E_OUT_CHANNEL_SIZE:
+            return "channel size limited";
+        case E_OUT_RINGBUFFER:
+        case E_NEW_THREAD_ERROR:
+        case E_NEW_THREAD_LOSS:
+            return "error";
+        case E_SHMGET_PROBE_ERROR:
+        case E_SHMGET_CREATE_ERROR:
+        case E_SHMAT_ERROR:
+        case E_SHM_VERSION_WRONG:
+        case E_CONFIG_VERSION_MISMATCH:
+            return "shm error";
+        case PEC_ERROR:
+        case PEC_NONSUPPORT_SYNTAX:
+        case PEC_ILLEGAL_CHARACTER:
+        case PEC_ILLEGAL_KEY:
+        case PEC_ILLEGAL_VAR_NAME:
+            return "name or key error";
+        case PEC_NOT_CLOSURE:
+            return "not closure";
+        case PEC_ILLEGAL_ADDR_IP:
+        case PEC_ILLEGAL_ADDR_PORT:
+            return "udp addr error";
+        case PEC_DEFINED_TARGET_TOO_LONG:
+            return "var/macro name len must longger than/equal new name.";
+
+        case PEC_UNDEFINED_DEVICE_KEY:
+        case PEC_UNDEFINED_DEVICE_TYPE:
+        case PEC_UNDEFINED_CHANNEL_KEY:
+        case PEC_UNDEFINED_GLOBAL_KEY:
+            return "undefined type";
+
+        case PEC_DEVICE_INDEX_OUT_MAX:
+            return "device size limited";
+        case PEC_DEVICE_INDEX_NOT_SEQUENCE:
+            return "device index need sequence.";
+        case PEC_CHANNEL_INDEX_OUT_MAX:
+            return "channel size limited";
+        case PEC_CHANNEL_INDEX_NOT_SEQUENCE:
+            return "channel index need sequence.";
+        case PEC_NO_ANY_CHANNEL:
+            return "empty configure.";
+        default:
+            break;
+        }
+        return "unknown error.";
+    }
+
+
     enum BlockType
     {
         BLOCK_NONE,

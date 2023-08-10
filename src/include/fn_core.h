@@ -253,7 +253,7 @@ namespace FNLog
         int ret = InitFromYMAL(logger, config_content, "");
         if (ret != 0)
         {
-            printf("ParseAndStartLogger error. ret:<%d>.\n", ret);
+            printf("ParseAndStartLogger error. ret:<%d>:%s.\n", ret, DebugErrno(ret).c_str());
             return ret;
         }
         ret = StartLogger(logger);
@@ -276,7 +276,7 @@ namespace FNLog
         int ret = InitFromYMALFile(logger, confg_path);
         if (ret != 0)
         {
-            printf("LoadAndStartLogger error. ret:<%d>.\n", ret);
+            printf("LoadAndStartLogger error. ret:<%d %s>.\n", ret, DebugErrno(ret).c_str());
             return ret;
         }
         ret = StartLogger(logger);

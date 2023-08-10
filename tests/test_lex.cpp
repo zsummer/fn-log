@@ -63,7 +63,7 @@ int main(int argc, char* argv[])
     if (true)
     {
         std::string content = "";
-        memset(&ls, 0, sizeof(FNLog::LexState));
+        InitState(ls);
         ls.first_ = content.c_str();
         ls.end_ = ls.first_ + content.length();
         ls.current_ = ls.first_;
@@ -81,7 +81,7 @@ int main(int argc, char* argv[])
     if (true)
     {
         std::string content = "\r\n\r\n";
-        memset(&ls, 0, sizeof(FNLog::LexState));
+        InitState(ls);
         ls.first_ = content.c_str();
         ls.end_ = ls.first_ + content.length();
         ls.current_ = ls.first_;
@@ -118,7 +118,7 @@ int main(int argc, char* argv[])
 
     {
         std::string content = "#dfsdf\r\n";
-        memset(&ls, 0, sizeof(FNLog::LexState));
+        InitState(ls);
         ls.first_ = content.c_str();
         ls.end_ = ls.first_ + content.length();
         ls.current_ = ls.first_;
@@ -134,7 +134,7 @@ int main(int argc, char* argv[])
 
     {
         std::string content = " \t  #dfsdf\r\n";
-        memset(&ls, 0, sizeof(FNLog::LexState));
+        InitState(ls);
         ls.first_ = content.c_str();
         ls.end_ = ls.first_ + content.length();
         ls.current_ = ls.first_;
@@ -151,7 +151,7 @@ int main(int argc, char* argv[])
 
     {
         std::string content = " file: {::\": }  #dfsdf";
-        memset(&ls, 0, sizeof(FNLog::LexState));
+        InitState(ls);
         ls.first_ = content.c_str();
         ls.end_ = ls.first_ + content.length();
         ls.current_ = ls.first_;
@@ -170,7 +170,7 @@ int main(int argc, char* argv[])
 
     {
         std::string content = " file  : \",::{}[]: \"";
-        memset(&ls, 0, sizeof(FNLog::LexState));
+        InitState(ls);
         ls.first_ = content.c_str();
         ls.end_ = ls.first_ + content.length();
         ls.current_ = ls.first_;
@@ -190,7 +190,7 @@ int main(int argc, char* argv[])
 
     {
         std::string content = " file  : \",::{}[]: \" \n   \r  \r\n #dfsdf";
-        memset(&ls, 0, sizeof(FNLog::LexState));
+        InitState(ls);
         ls.first_ = content.c_str();
         ls.end_ = ls.first_ + content.length();
         ls.current_ = ls.first_;
@@ -212,7 +212,7 @@ int main(int argc, char* argv[])
 
     {
         std::string content = " -file  : \" path  \"";
-        memset(&ls, 0, sizeof(FNLog::LexState));
+        InitState(ls);
         ls.first_ = content.c_str();
         ls.end_ = ls.first_ + content.length();
         ls.current_ = ls.first_;
@@ -226,7 +226,7 @@ int main(int argc, char* argv[])
 
     {
         std::string content = " -file  : \"   \"";
-        memset(&ls, 0, sizeof(FNLog::LexState));
+        InitState(ls);
         ls.first_ = content.c_str();
         ls.end_ = ls.first_ + content.length();
         ls.current_ = ls.first_;
@@ -240,7 +240,7 @@ int main(int argc, char* argv[])
 
     {
         std::string content = " -file  :";
-        memset(&ls, 0, sizeof(FNLog::LexState));
+        InitState(ls);
         ls.first_ = content.c_str();
         ls.end_ = ls.first_ + content.length();
         ls.current_ = ls.first_;
@@ -254,7 +254,7 @@ int main(int argc, char* argv[])
 
     {
         std::string content = " -file  :#fdsafdasf";
-        memset(&ls, 0, sizeof(FNLog::LexState));
+        InitState(ls);
         ls.first_ = content.c_str();
         ls.end_ = ls.first_ + content.length();
         ls.current_ = ls.first_;
@@ -268,7 +268,7 @@ int main(int argc, char* argv[])
 
     {
         std::string content = "- file dfafa : \" path  \"";
-        memset(&ls, 0, sizeof(FNLog::LexState));
+        InitState(ls);
         ls.first_ = content.c_str();
         ls.end_ = ls.first_ + content.length();
         ls.current_ = ls.first_;
@@ -280,7 +280,7 @@ int main(int argc, char* argv[])
 
     {
         std::string content = " -file  :,,,,,,";
-        memset(&ls, 0, sizeof(FNLog::LexState));
+        InitState(ls);
         ls.first_ = content.c_str();
         ls.end_ = ls.first_ + content.length();
         ls.current_ = ls.first_;
@@ -295,7 +295,7 @@ int main(int argc, char* argv[])
 
     {
         std::string content = " -file  :::::::";
-        memset(&ls, 0, sizeof(FNLog::LexState));
+        InitState(ls);
         ls.first_ = content.c_str();
         ls.end_ = ls.first_ + content.length();
         ls.current_ = ls.first_;
@@ -310,7 +310,7 @@ int main(int argc, char* argv[])
     {
         //not support stack block  
         std::string content = " -file  :{[32423]}";
-        memset(&ls, 0, sizeof(FNLog::LexState));
+        InitState(ls);
         ls.first_ = content.c_str();
         ls.end_ = ls.first_ + content.length();
         ls.current_ = ls.first_;
@@ -327,7 +327,7 @@ int main(int argc, char* argv[])
     {
         //indent 
         std::string content = " -file  :";
-        memset(&ls, 0, sizeof(FNLog::LexState));
+        InitState(ls);
         ls.first_ = content.c_str();
         ls.end_ = ls.first_ + content.length();
         ls.current_ = ls.first_;
@@ -341,7 +341,7 @@ int main(int argc, char* argv[])
     {
         //indent 
         std::string content = " file  :";
-        memset(&ls, 0, sizeof(FNLog::LexState));
+        InitState(ls);
         ls.first_ = content.c_str();
         ls.end_ = ls.first_ + content.length();
         ls.current_ = ls.first_;
@@ -355,7 +355,7 @@ int main(int argc, char* argv[])
     {
         //indent 
         std::string content = " - file  :";
-        memset(&ls, 0, sizeof(FNLog::LexState));
+        InitState(ls);
         ls.first_ = content.c_str();
         ls.end_ = ls.first_ + content.length();
         ls.current_ = ls.first_;
@@ -370,7 +370,7 @@ int main(int argc, char* argv[])
     {
         //indent 
         std::string content = " - file  : 1, 23,  2";
-        memset(&ls, 0, sizeof(FNLog::LexState));
+        InitState(ls);
         ls.first_ = content.c_str();
         ls.end_ = ls.first_ + content.length();
         ls.current_ = ls.first_;

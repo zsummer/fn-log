@@ -171,7 +171,7 @@ namespace FNLog
         if (ret != PEC_NONE)
         {
             std::stringstream os;
-            os << "ParseLogger has error:<" << ret << "> in line:[" << ls->line_no_ << "] ";
+            os << "ParseLogger has error:<" << ret << " " << DebugErrno(ret).c_str() << "> in line:[" << ls->line_no_ << "] ";
             if (ls->current_ != nullptr)
             {
                 os << " before:";
@@ -257,7 +257,7 @@ namespace FNLog
         int ret = InitFromYMAL(logger, text, path);
         if (ret != 0)
         {
-            printf("InitFromYMALFile:<%s> has parse/init error\n", path.c_str());
+            printf("InitFromYMALFile:<%s> has parse/init error:%d %s\n", path.c_str(), ret, DebugErrno(ret).c_str());
             return ret;
         }
 

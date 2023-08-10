@@ -74,7 +74,7 @@ int main(int argc, char* argv[])
         std::string content = R"----(
                             - define: sdfdsf  234  
                             file:sdfdsf)----";
-        memset(&ls, 0, sizeof(FNLog::LexState));
+        InitState(ls);
         ls.first_ = content.c_str();
         ls.end_ = ls.first_ + content.length();
         ls.current_ = ls.first_;
@@ -96,7 +96,7 @@ int main(int argc, char* argv[])
         std::string content = R"----(
                             - define: listxxxx  2,3, 4  
                             file:listxxxx)----";
-        memset(&ls, 0, sizeof(FNLog::LexState));
+        InitState(ls);
         ls.first_ = content.c_str();
         ls.end_ = ls.first_ + content.length();
         ls.current_ = ls.first_;
@@ -118,7 +118,7 @@ int main(int argc, char* argv[])
         std::string content = R"----(
                             - def: listxxxx  2,3, 4  
                             file:listxxxx)----";
-        memset(&ls, 0, sizeof(FNLog::LexState));
+        InitState(ls);
         ls.first_ = content.c_str();
         ls.end_ = ls.first_ + content.length();
         ls.current_ = ls.first_;
@@ -140,7 +140,7 @@ int main(int argc, char* argv[])
         std::string content = R"----(
                             - def: listxxxx  2,3, 4  
                             file:1listxxxx)----"; //not match
-        memset(&ls, 0, sizeof(FNLog::LexState));
+        InitState(ls);
         ls.first_ = content.c_str();
         ls.end_ = ls.first_ + content.length();
         ls.current_ = ls.first_;
@@ -162,7 +162,7 @@ int main(int argc, char* argv[])
         std::string content = R"----(
                             - def: listxxxx  2,3, 4  
                             file:listxxxx0)----"; //not match
-        memset(&ls, 0, sizeof(FNLog::LexState));
+        InitState(ls);
         ls.first_ = content.c_str();
         ls.end_ = ls.first_ + content.length();
         ls.current_ = ls.first_;
@@ -183,7 +183,7 @@ int main(int argc, char* argv[])
         std::string content = R"----(
                             - def: listxxxx  2,3, 4  
                             file:listxxxxx)----"; //not match
-        memset(&ls, 0, sizeof(FNLog::LexState));
+        InitState(ls);
         ls.first_ = content.c_str();
         ls.end_ = ls.first_ + content.length();
         ls.current_ = ls.first_;
@@ -205,7 +205,7 @@ int main(int argc, char* argv[])
         std::string content = R"----(
                             - def: listxxxx  2,3, 4  
                             file:llistxxxxx)----"; //not match
-        memset(&ls, 0, sizeof(FNLog::LexState));
+        InitState(ls);
         ls.first_ = content.c_str();
         ls.end_ = ls.first_ + content.length();
         ls.current_ = ls.first_;
@@ -227,7 +227,7 @@ int main(int argc, char* argv[])
         std::string content = R"----(
                             - var: tag=  2,3, 4  
                             file:tag)----";
-        memset(&ls, 0, sizeof(FNLog::LexState));
+        InitState(ls);
         ls.first_ = content.c_str();
         ls.end_ = ls.first_ + content.length();
         ls.current_ = ls.first_;
@@ -246,7 +246,7 @@ int main(int argc, char* argv[])
         std::string content = R"----(
                             - var: tag=  2,tag1=3, tag2=4  
                             file:tag)----";
-        memset(&ls, 0, sizeof(FNLog::LexState));
+        InitState(ls);
         ls.first_ = content.c_str();
         ls.end_ = ls.first_ + content.length();
         ls.current_ = ls.first_;
@@ -267,7 +267,7 @@ int main(int argc, char* argv[])
         std::string content = R"----(
                             - var: tag=  2,tag1=3, tag2=4  
                             file:$tag1)----";
-        memset(&ls, 0, sizeof(FNLog::LexState));
+        InitState(ls);
         ls.first_ = content.c_str();
         ls.end_ = ls.first_ + content.length();
         ls.current_ = ls.first_;
@@ -289,7 +289,7 @@ int main(int argc, char* argv[])
         std::string content = R"----(
                             - var: tag=  2,tag1=3, tag2=4  
                             file:$tag)----";
-        memset(&ls, 0, sizeof(FNLog::LexState));
+        InitState(ls);
         ls.first_ = content.c_str();
         ls.end_ = ls.first_ + content.length();
         ls.current_ = ls.first_;
@@ -310,7 +310,7 @@ int main(int argc, char* argv[])
         std::string content = R"----(
                             - var: tag=  2,tag1=3, tag2=4  
                             file:$tag2)----";
-        memset(&ls, 0, sizeof(FNLog::LexState));
+        InitState(ls);
         ls.first_ = content.c_str();
         ls.end_ = ls.first_ + content.length();
         ls.current_ = ls.first_;
@@ -332,7 +332,7 @@ int main(int argc, char* argv[])
         std::string content = R"----(
                             - var: {tag=  2,tag1=3, tag2=4}  
                             file:$tag2)----";
-        memset(&ls, 0, sizeof(FNLog::LexState));
+        InitState(ls);
         ls.first_ = content.c_str();
         ls.end_ = ls.first_ + content.length();
         ls.current_ = ls.first_;
@@ -354,7 +354,7 @@ int main(int argc, char* argv[])
         std::string content = R"----(
                             - var: [tag=  2,tag1=3, tag2=4]  
                             file:$tag2)----";
-        memset(&ls, 0, sizeof(FNLog::LexState));
+        InitState(ls);
         ls.first_ = content.c_str();
         ls.end_ = ls.first_ + content.length();
         ls.current_ = ls.first_;
@@ -376,7 +376,7 @@ int main(int argc, char* argv[])
         std::string content = R"----(
                             - var: "tag=  2,tag1=3, tag2=4"  
                             file:$tag2)----";
-        memset(&ls, 0, sizeof(FNLog::LexState));
+        InitState(ls);
         ls.first_ = content.c_str();
         ls.end_ = ls.first_ + content.length();
         ls.current_ = ls.first_;
@@ -398,7 +398,7 @@ int main(int argc, char* argv[])
         std::string content = R"----(
                             - var: {tag="tag  ,tag1=3, tag2=4}  
                             file:$tag)----";
-        memset(&ls, 0, sizeof(FNLog::LexState));
+        InitState(ls);
         ls.first_ = content.c_str();
         ls.end_ = ls.first_ + content.length();
         ls.current_ = ls.first_;
@@ -421,7 +421,7 @@ int main(int argc, char* argv[])
         std::string content = R"----(
                             - var: "tag=  2,tag1=3, tag2=4  
                             file:$tag2)----";
-        memset(&ls, 0, sizeof(FNLog::LexState));
+        InitState(ls);
         ls.first_ = content.c_str();
         ls.end_ = ls.first_ + content.length();
         ls.current_ = ls.first_;
@@ -437,7 +437,7 @@ int main(int argc, char* argv[])
         std::string content = R"----(
                             - var: {tag=  2,tag1=3, tag2=4  
                             file:$tag2)----";
-        memset(&ls, 0, sizeof(FNLog::LexState));
+        InitState(ls);
         ls.first_ = content.c_str();
         ls.end_ = ls.first_ + content.length();
         ls.current_ = ls.first_;
@@ -460,7 +460,7 @@ int main(int argc, char* argv[])
         - var: {tag2=  2}  
         file:$tag2)----";
 
-        memset(&ls, 0, sizeof(FNLog::LexState));
+        InitState(ls);
         ls.first_ = content.c_str();
         ls.end_ = ls.first_ + content.length();
         ls.current_ = ls.first_;
@@ -480,7 +480,7 @@ int main(int argc, char* argv[])
         - var: {0tag=  2}  
         file:$tag2)----";
 
-        memset(&ls, 0, sizeof(FNLog::LexState));
+        InitState(ls);
         ls.first_ = content.c_str();
         ls.end_ = ls.first_ + content.length();
         ls.current_ = ls.first_;
