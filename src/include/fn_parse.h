@@ -126,7 +126,88 @@ namespace FNLog
         int name_len_;
     };
 
+    inline bool IsBlank(char ch)
+    {
+        //not std::isblank
+        switch (ch)
+        {
+        case ' ':
+        case '\t': 
+        case '\v':
+        case '\f':
+            return true;
+        default:
+            break;
+        }
+        return false;
+    }
+    inline bool IsSoftLineBound(char ch)
+    {
+        //not std::isblank
+        switch (ch)
+        {
+        case '\0':
+        case '\r':
+        case '\n':
+        case '#':
+            return true;
+        default:
+            break;
+        }
+        return false;
+    }
+    inline bool IsLineBound(char ch)
+    {
+        //not std::isblank
+        switch (ch)
+        {
+        case '\0':
+        case '\r':
+        case '\n':
+            return true;
+        default:
+            break;
+        }
+        return false;
+    }
 
+    inline bool IsValidName(char ch)
+    {
+        if (ch >= 'a' && ch <= 'z')
+        {
+            return true;
+        }
+        if (ch >= 'A' && ch <= 'Z')
+        {
+            return true;
+        }
+        if (ch >= '0' && ch <= '9')
+        {
+            return true;
+        }
+        if (ch == '_')
+        {
+            return true;
+        }
+        return false;
+    }
+
+    inline bool IsValidNameFirst(char ch)
+    {
+        if (ch >= 'a' && ch <= 'z')
+        {
+            return true;
+        }
+        if (ch >= 'A' && ch <= 'Z')
+        {
+            return true;
+        }
+        if (ch == '_')
+        {
+            return true;
+        }
+        return false;
+    }
 
     inline ReseveKey ParseReserve(const char* begin, const char* end)
     {
@@ -489,7 +570,7 @@ namespace FNLog
         }
         return bitmap;
     }
-    inline int PredefinedInplace(std::string& text, std::string::size_type text_offset, std::string key, std::string val, bool suffix_bound)
+    inline int PredefinedInplace(std::string& text, std::string::size_type text_offset, std::string key, std::string val, bool pre_bound, bool suffix_bound)
     {
         if (val.length() > key.length())
         {
@@ -512,32 +593,30 @@ namespace FNLog
                 break;
             }
             bool bound_ok = true;
-            while (suffix_bound)
+            while (bound_ok && pre_bound)
+            {
+                if (text_offset == 0)
+                {
+                    break;
+                }
+                char ch = text[text_offset - 1];
+                if (IsValidName(ch))
+                {
+                    bound_ok = false;
+                    text_offset++;
+                    break;
+                }
+                break;
+            }
+
+            while (bound_ok && suffix_bound)
             {
                 if (text_offset + val.length() == text.length())
                 {
                     break;
                 }
                 char ch = text[text_offset + val.length()];
-                if (ch >= 'a' && ch <= 'z')
-                {
-                    bound_ok = false;
-                    text_offset++;
-                    break;
-                }
-                if (ch >= 'A' && ch <= 'Z')
-                {
-                    bound_ok = false;
-                    text_offset++;
-                    break;
-                }
-                if (ch >= '0' && ch <= '9')
-                {
-                    bound_ok = false;
-                    text_offset++;
-                    break;
-                }
-                if (ch == '_')
+                if (IsValidName(ch))
                 {
                     bound_ok = false;
                     text_offset++;
@@ -571,7 +650,7 @@ namespace FNLog
 
         while (sep < line.length())
         {
-            if (line[sep] == ' ' || line[sep] == '\t' || line[sep] == '\v' || line[sep] == '\f')
+            if (IsBlank(line[sep]))
             {
                 sep++;
                 continue;
@@ -580,7 +659,7 @@ namespace FNLog
         }
         std::string content = line.substr(sep);
 
-        int ret = PredefinedInplace(text, ls.line_.val_end_ - text.c_str(), symbol, content, true);
+        int ret = PredefinedInplace(text, ls.line_.val_end_ - text.c_str(), symbol, content, true, true);
         if (ret != PEC_NONE)
         {
             return ret;
@@ -615,7 +694,7 @@ namespace FNLog
                 return PEC_ILLEGAL_VAR_VALUE;
             }
             var = line.substr(offset, sep - offset);
-            while (!var.empty() && (var.back() == ' ' || var.back() == '\t'))
+            while (!var.empty() && IsBlank(var.back()))
             {
                 var.pop_back();
             }
@@ -627,8 +706,8 @@ namespace FNLog
                 //continue;
                 return PEC_DEFINED_TARGET_TOO_LONG;
             }
-            //not valid var name 
-            if (!(var[0] >= 'a' && var[0] <= 'z')  && !(var[0] >= 'A' && var[0] <= 'Z') &&  var[0] != '_')
+
+            if (!IsValidNameFirst(var[0]))
             {
                 //has dot but wrong
                 offset = dot + 1;
@@ -637,12 +716,12 @@ namespace FNLog
             }
 
             sep++;
-            while (sep < dot && (line.at(offset) == ' ' || line.at(offset) == '\t'))
+            while (sep < dot &&  IsBlank(line.at(offset)))
             {
                 sep++;
             }
             val = line.substr(sep, dot - sep);
-            while (!val.empty() && (val.back() == ' ' || val.back() == '\t'))
+            while (!val.empty() && IsBlank(val.back()))
             {
                 val.pop_back();
             }
@@ -651,13 +730,13 @@ namespace FNLog
 
             std::string::size_type text_offset = ls.line_.val_end_ - text.c_str();
 
-            int ret = PredefinedInplace(text, text_offset, std::string("${") + var + "}", val, false);
+            int ret = PredefinedInplace(text, text_offset, std::string("${") + var + "}", val, false, false);
             if (ret != 0)
             {
                 offset = dot + 1;
                 return ret;
             }
-            ret = PredefinedInplace(text, text_offset, std::string("$") + var, val, true);
+            ret = PredefinedInplace(text, text_offset, std::string("$") + var, val, false, true);
             if (ret != 0)
             {
                 offset = dot + 1;
@@ -692,20 +771,10 @@ namespace FNLog
             char ch = *ls.current_++;
             ls.line_.chars_++;
 
-            bool is_blank = false;
-            bool is_end_char = false;
-            if (ch == ' ' || ch == '\t' || ch == '\f' || ch == '\v')
-            {
-                is_blank = true;
-            }
+            bool is_blank = IsBlank(ch);
+            bool is_end_char = IsSoftLineBound(ch);
 
-            if (ch == '\0' || ch == '\n' || ch == '\r' || ch == '#')
-            {
-                is_end_char = true;
-            }
-
-
-            if (ls.line_.block_type_ == BLOCK_CLEAN && ch != '\0' && ch != '\r' && ch != '\n')
+            if (ls.line_.block_type_ == BLOCK_CLEAN && !IsLineBound(ch))
             {
                 continue;
             }
@@ -739,7 +808,7 @@ namespace FNLog
                 while (ls.line_.val_end_ > ls.line_.val_begin_)
                 {
                     char suffix = *(ls.line_.val_end_ - 1);
-                    if (suffix == ' ' || suffix == '\t' || suffix == '\v' || suffix == '\f')
+                    if (IsBlank(suffix))
                     {
                         ls.line_.val_end_--;
                         continue;
@@ -833,7 +902,7 @@ namespace FNLog
 
             if (ls.line_.block_type_ == BLOCK_PRE_VAL)
             {
-                if (ch == ' ' || ch == '\t' || ch == '\f' || ch == '\v')
+                if (IsBlank(ch))
                 {
                     continue;
                 }

@@ -138,6 +138,93 @@ int main(int argc, char* argv[])
     if (true)
     {
         std::string content = R"----(
+                            - def: listxxxx  2,3, 4  
+                            file:1listxxxx)----"; //not match
+        memset(&ls, 0, sizeof(FNLog::LexState));
+        ls.first_ = content.c_str();
+        ls.end_ = ls.first_ + content.length();
+        ls.current_ = ls.first_;
+        int ret = 0;
+        ret = FNLog::Lex(ls);
+        FNLOG_ASSERT(ret == FNLog::PEC_NONE, "");
+        ret = FNLog::Lex(ls);
+        FNLOG_ASSERT(ret == FNLog::PEC_NONE, "");
+
+        FNLOG_ASSERT(ls.line_.key_ == FNLog::RK_DEFINE, "");
+        FNLOG_ASSERT(FNLog::PredefinedMacro(ls, content) == FNLog::PEC_NONE, "");
+
+        std::string sub = content.substr(content.length() - 10);
+        FNLOG_ASSERT(sub.find("2,3, 4") == std::string::npos, "");
+    }
+
+    if (true)
+    {
+        std::string content = R"----(
+                            - def: listxxxx  2,3, 4  
+                            file:listxxxx0)----"; //not match
+        memset(&ls, 0, sizeof(FNLog::LexState));
+        ls.first_ = content.c_str();
+        ls.end_ = ls.first_ + content.length();
+        ls.current_ = ls.first_;
+        int ret = 0;
+        ret = FNLog::Lex(ls);
+        FNLOG_ASSERT(ret == FNLog::PEC_NONE, "");
+        ret = FNLog::Lex(ls);
+        FNLOG_ASSERT(ret == FNLog::PEC_NONE, "");
+
+        FNLOG_ASSERT(ls.line_.key_ == FNLog::RK_DEFINE, "");
+        FNLOG_ASSERT(FNLog::PredefinedMacro(ls, content) == FNLog::PEC_NONE, "");
+
+        std::string sub = content.substr(content.length() - 10);
+        FNLOG_ASSERT(sub.find("2,3, 4") == std::string::npos, "");
+    }
+    if (true)
+    {
+        std::string content = R"----(
+                            - def: listxxxx  2,3, 4  
+                            file:listxxxxx)----"; //not match
+        memset(&ls, 0, sizeof(FNLog::LexState));
+        ls.first_ = content.c_str();
+        ls.end_ = ls.first_ + content.length();
+        ls.current_ = ls.first_;
+        int ret = 0;
+        ret = FNLog::Lex(ls);
+        FNLOG_ASSERT(ret == FNLog::PEC_NONE, "");
+        ret = FNLog::Lex(ls);
+        FNLOG_ASSERT(ret == FNLog::PEC_NONE, "");
+
+        FNLOG_ASSERT(ls.line_.key_ == FNLog::RK_DEFINE, "");
+        FNLOG_ASSERT(FNLog::PredefinedMacro(ls, content) == FNLog::PEC_NONE, "");
+
+        std::string sub = content.substr(content.length() - 10);
+        FNLOG_ASSERT(sub.find("2,3, 4") == std::string::npos, "");
+    }
+
+    if (true)
+    {
+        std::string content = R"----(
+                            - def: listxxxx  2,3, 4  
+                            file:llistxxxxx)----"; //not match
+        memset(&ls, 0, sizeof(FNLog::LexState));
+        ls.first_ = content.c_str();
+        ls.end_ = ls.first_ + content.length();
+        ls.current_ = ls.first_;
+        int ret = 0;
+        ret = FNLog::Lex(ls);
+        FNLOG_ASSERT(ret == FNLog::PEC_NONE, "");
+        ret = FNLog::Lex(ls);
+        FNLOG_ASSERT(ret == FNLog::PEC_NONE, "");
+
+        FNLOG_ASSERT(ls.line_.key_ == FNLog::RK_DEFINE, "");
+        FNLOG_ASSERT(FNLog::PredefinedMacro(ls, content) == FNLog::PEC_NONE, "");
+
+        std::string sub = content.substr(content.length() - 10);
+        FNLOG_ASSERT(sub.find("2,3, 4") == std::string::npos, "");
+    }
+
+    if (true)
+    {
+        std::string content = R"----(
                             - var: tag=  2,3, 4  
                             file:tag)----";
         memset(&ls, 0, sizeof(FNLog::LexState));
@@ -360,6 +447,55 @@ int main(int argc, char* argv[])
         ret = FNLog::Lex(ls);
         FNLOG_ASSERT(ret != FNLog::PEC_NONE, "");
     }
+
+
+
+
+    //---------- ill syntax  ------
+
+    if (true)
+    {
+        std::string content =
+            R"----(
+        - var: {tag2=  2}  
+        file:$tag2)----";
+
+        memset(&ls, 0, sizeof(FNLog::LexState));
+        ls.first_ = content.c_str();
+        ls.end_ = ls.first_ + content.length();
+        ls.current_ = ls.first_;
+        int ret = 0;
+        ret = FNLog::Lex(ls);
+        FNLOG_ASSERT(ret == FNLog::PEC_NONE, "");
+        ret = FNLog::Lex(ls);
+        FNLOG_ASSERT(ret == FNLog::PEC_NONE, "");
+        FNLOG_ASSERT(ls.line_.key_ == FNLog::RK_VARIABLE, "");
+        FNLOG_ASSERT(FNLog::PredefinedVar(ls, content) == FNLog::PEC_NONE, "");//tag2 is key
+    }
+
+    if (true)
+    {
+        std::string content = 
+        R"----(
+        - var: {0tag=  2}  
+        file:$tag2)----";
+
+        memset(&ls, 0, sizeof(FNLog::LexState));
+        ls.first_ = content.c_str();
+        ls.end_ = ls.first_ + content.length();
+        ls.current_ = ls.first_;
+        int ret = 0;
+        ret = FNLog::Lex(ls);
+        FNLOG_ASSERT(ret == FNLog::PEC_NONE, "");
+        ret = FNLog::Lex(ls);
+        FNLOG_ASSERT(ret == FNLog::PEC_NONE, "");  
+        FNLOG_ASSERT(ls.line_.key_ == FNLog::RK_VARIABLE, "");
+        FNLOG_ASSERT(FNLog::PredefinedVar(ls, content) != FNLog::PEC_NONE, "");//0tag not key
+    }
+
+
+
+
 
     LogAlarm() << "finish";
 

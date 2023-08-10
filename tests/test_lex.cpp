@@ -382,6 +382,13 @@ int main(int argc, char* argv[])
         FNLOG_ASSERT(std::string(ls.line_.val_begin_, ls.line_.val_end_ - ls.line_.val_begin_) == "1, 23,  2", "");
     }
 
+
+    //---------- ill syntax  ------
+
+
+
+
+
     LogAlarm() << "all finish";
 
     return 0;
