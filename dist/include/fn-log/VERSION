@@ -1,6 +1,6 @@
 version:
-last_sha1(./src)=99b2b49ec124ecb0373532140ee40bb2da108eb2
-last_date(./src)=2023-08-16 15:12:26 +0800
+last_sha1(./src)=e5cdaf12452ab5ddcc28ccffd37d6e4b5160dfaf
+last_date(./src)=2023-08-16 22:01:08 +0800
 
 git log -1 --stat ./src:
-commit 99b2b49ec124ecb0373532140ee40bb2da108eb2 Author: zsummer <yawei.zhang@foxmail.com> Date: Wed Aug 16 15:12:26 2023 +0800 change daily roll logic src/include/fn_data.h | 1 + src/include/fn_out_file_device.h | 40 ++++++++++++++++++---------------------- 2 files changed, 19 insertions(+), 22 deletions(-)
+commit e5cdaf12452ab5ddcc28ccffd37d6e4b5160dfaf Author: zsummer <yawei.zhang@foxmail.com> Date: Wed Aug 16 22:00:47 2023 +0800 support ipv4 dns src/include/fn_file.h | 3 +- src/include/fn_parse.h | 84 +++++++++++++++++++++++++++++++++++++++++--------- 2 files changed, 72 insertions(+), 15 deletions(-)
