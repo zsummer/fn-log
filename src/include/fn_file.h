@@ -47,6 +47,7 @@
 #include <io.h>
 #include <shlwapi.h>
 #include <process.h>
+#include <ws2tcpip.h>
 #pragma comment(lib, "shlwapi")
 #pragma comment(lib, "User32.lib")
 #pragma comment(lib,"ws2_32.lib")
@@ -67,7 +68,7 @@
 #include <sys/ipc.h>
 #include <sys/shm.h>
 #include <stdlib.h>
-#
+#include <netdb.h>
 #endif
 
 
