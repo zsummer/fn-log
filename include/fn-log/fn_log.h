@@ -51,6 +51,7 @@
 #include <io.h>
 #include <shlwapi.h>
 #include <process.h>
+#include <ws2tcpip.h>
 #pragma comment(lib, "shlwapi")
 #pragma comment(lib, "User32.lib")
 #pragma comment(lib,"ws2_32.lib")
@@ -71,7 +72,7 @@
 #include <sys/ipc.h>
 #include <sys/shm.h>
 #include <stdlib.h>
-#
+#include <netdb.h>
 #endif
 
 
@@ -1530,34 +1531,89 @@ namespace FNLog
         return DEVICE_OUT_NULL;
     }
 
-    inline std::pair<long long, const char*> ParseAddresIP(const char* begin, const char* end)
+    inline std::pair<long long, const char*> ParseAddresIP(const char* begin, const char* end, bool parse_dn)
     {
         if (end <= begin)
         {
             return std::make_pair(0, end);
         }
+        //only support ipv4 
         const char* ip_begin = begin;
-        while ((*ip_begin < '1' || *ip_begin > '9') && ip_begin != end)
+        while (IsBlank(*ip_begin) && ip_begin != end)
         {
             ip_begin++;
         }
         const char* ip_end = ip_begin;
-        while (((*ip_end >= '0' && *ip_end <= '9') || *ip_end == '.') && ip_end != end)
+        bool is_dn = false;
+        while (!(IsBlank(*ip_end) || *ip_end == ':') && ip_end != end)
         {
+            if (!(*ip_end >= '0' && *ip_end <= '9') && *ip_end != '.')
+            {
+                is_dn = true;
+            }
             ip_end++;
         }
-        if (ip_end - ip_begin > 40)
+
+        if (ip_end - ip_begin <= 0)
         {
             return std::make_pair(0, end);
         }
-        char buff[50];
-        memcpy(buff, ip_begin, ip_end - ip_begin);
-        buff[ip_end - ip_begin] = '\0';
-        return std::make_pair((long long)inet_addr(buff), ip_end); 
+        std::string dn(ip_begin, ip_end - ip_begin);
+
+        if (is_dn) //syn to get    
+        {
+            if (false)
+            {
+                struct addrinfo* res = nullptr;
+                struct addrinfo hints;
+                memset(&hints, 0, sizeof(hints));
+                hints.ai_family = AF_UNSPEC;
+                hints.ai_socktype = SOCK_STREAM;
+                hints.ai_flags = AI_PASSIVE;
+                
+                if (getaddrinfo(dn.c_str(), "", &hints, &res) == 0)
+                {
+                    char buf[100] = { 0 };
+                    if (res->ai_family == AF_INET)
+                    {
+                        inet_ntop(res->ai_family, &(((sockaddr_in*)res->ai_addr)->sin_addr), buf, 100);
+                    }
+                    else if (res->ai_family == AF_INET6)
+                    {
+                        inet_ntop(res->ai_family, &(((sockaddr_in6*)res->ai_addr)->sin6_addr), buf, 100);
+                    }
+                    return std::make_pair((long long)inet_addr(buf), ip_end);
+                }
+            }
+            if (parse_dn)
+            {
+                struct hostent* rhost = gethostbyname(dn.c_str());
+                if (rhost == nullptr)
+                {
+                    return std::make_pair(0, end);
+                }
+                if (rhost->h_addrtype == AF_INET)
+                {
+                    int i = 0;
+                    struct in_addr addr;
+                    while (rhost->h_addr_list[i] != 0) 
+                    {
+                        addr.s_addr = *(u_long*)rhost->h_addr_list[i++];
+                        return std::make_pair((long long)inet_addr(inet_ntoa(addr)), ip_end);
+                        //printf("%s", inet_ntoa(addr));
+                    }
+                }
+                
+            }
+            return std::make_pair(0, end);
+        }
+
+
+        return std::make_pair((long long)inet_addr(dn.c_str()), ip_end);
     }
 
 
-    inline void ParseAddres(const char* begin, const char* end, long long & ip, long long& port)
+    inline void ParseAddres(const char* begin, const char* end, bool parse_dn, long long & ip, long long& port)
     {
         ip = 0;
         port = 0;
@@ -1565,7 +1621,7 @@ namespace FNLog
         {
             return;
         }
-        auto result_ip = ParseAddresIP(begin, end);
+        auto result_ip = ParseAddresIP(begin, end, parse_dn);
         const char* port_begin = result_ip.second;
         while (port_begin != end && (*port_begin < '1' || *port_begin > '9')  )
         {
@@ -2113,20 +2169,21 @@ namespace FNLog
                 }
                 break;
             case RK_UDP_ADDR:
-                if (true)
+                if (true) 
                 {
                     long long ip = 0;
                     long long port = 0;
-                    ParseAddres(ls.line_.val_begin_, ls.line_.val_end_, ip, port);
+                    bool parse_dn = device.config_fields_[DEVICE_CFG_ABLE] != 0;
+                    ParseAddres(ls.line_.val_begin_, ls.line_.val_end_, parse_dn, ip, port);
                     device.config_fields_[DEVICE_CFG_UDP_IP] = ip;
                     device.config_fields_[DEVICE_CFG_UDP_PORT] = port;
                 }
                 
-                if (device.config_fields_[DEVICE_CFG_UDP_IP] == 0)
+                if (device.config_fields_[DEVICE_CFG_ABLE] && device.config_fields_[DEVICE_CFG_UDP_IP] == 0)
                 {
                     return PEC_ILLEGAL_ADDR_IP;
                 }
-                if (device.config_fields_[DEVICE_CFG_UDP_PORT] == 0)
+                if (device.config_fields_[DEVICE_CFG_ABLE] && device.config_fields_[DEVICE_CFG_UDP_PORT] == 0)
                 {
                     return PEC_ILLEGAL_ADDR_PORT;
                 }
