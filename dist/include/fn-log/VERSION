@@ -1,6 +1,6 @@
 version:
-last_sha1(./src)=ef2d0b72b6dc5da8f7331d7af63a9d5892d118ae
-last_date(./src)=2023-08-11 01:59:39 +0800
+last_sha1(./src)=99b2b49ec124ecb0373532140ee40bb2da108eb2
+last_date(./src)=2023-08-16 15:12:26 +0800
 
 git log -1 --stat ./src:
-commit ef2d0b72b6dc5da8f7331d7af63a9d5892d118ae Author: zsummer <yawei.zhang@foxmail.com> Date: Fri Aug 11 01:59:39 2023 +0800 ERROCODE src/include/fn_channel.h | 8 ++--- src/include/fn_core.h | 30 ++++++++-------- src/include/fn_data.h | 44 ++++++++++++++--------- src/include/fn_load.h | 32 ++++++++--------- src/include/fn_parse.h | 93 +++++++++++++++++++++++------------------------- 5 files changed, 107 insertions(+), 100 deletions(-)
+commit 99b2b49ec124ecb0373532140ee40bb2da108eb2 Author: zsummer <yawei.zhang@foxmail.com> Date: Wed Aug 16 15:12:26 2023 +0800 change daily roll logic src/include/fn_data.h | 1 + src/include/fn_out_file_device.h | 40 ++++++++++++++++++---------------------- 2 files changed, 19 insertions(+), 22 deletions(-)
