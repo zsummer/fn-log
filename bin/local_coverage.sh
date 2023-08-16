@@ -3,6 +3,7 @@ if command -v lcov >/dev/null 2>&1; then
   echo 'exists lcov' 
 else 
   echo 'no exists lcov'
+  sleep 5
   exit 2 
 fi
 
@@ -17,7 +18,8 @@ make -j4
 cd ..
 
 cd bin
-ts=`find ./ -maxdepth 1 -type f |egrep -v "log" | grep "test_"| egrep -v "\."`
+ts=`find ./ -maxdepth 1 -type f |egrep -v "log" | grep "test_" |egrep -v "pdb"`
+echo $ts
 for t in $ts ;
 do
   echo begin test $t 

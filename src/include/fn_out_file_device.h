@@ -196,8 +196,7 @@ namespace FNLog
         bool close_file = false;
         bool limit_out = false;
 
-        //stuff up when rollback , or configure set   (such as only 1 rollback, start logger as is clean all old log.)     
-        bool stuff_up = AtomicLoadC(device, DEVICE_CFG_FILE_ROLLBACK) > 0 ? true : (bool)AtomicLoadC(device, DEVICE_CFG_FILE_STUFF_UP);  
+        
 
         do
         {
@@ -210,33 +209,27 @@ namespace FNLog
                 break;
             }
 
-
-            if (!stuff_up)
+            //daily rolling
+            if (AtomicLoadC(device, DEVICE_CFG_FILE_ROLLDAILY))
             {
-                //daily rolling
-                if (AtomicLoadC(device, DEVICE_CFG_FILE_ROLLDAILY))
+                if (log.timestamp_ < AtomicLoadL(device, DEVICE_LOG_CUR_FILE_CREATE_DAY)
+                    || log.timestamp_ >= AtomicLoadL(device, DEVICE_LOG_CUR_FILE_CREATE_DAY) + 24 * 3600)
                 {
-                    if (log.timestamp_ < AtomicLoadL(device, DEVICE_LOG_CUR_FILE_CREATE_DAY)
-                        || log.timestamp_ >= AtomicLoadL(device, DEVICE_LOG_CUR_FILE_CREATE_DAY) + 24 * 3600)
-                    {
-                        close_file = true;
-                    }
-                    break;
+                    close_file = true;
                 }
-
-                //hourly rolling 
-                if (AtomicLoadC(device, DEVICE_CFG_FILE_ROLLHOURLY))
-                {
-                    if (log.timestamp_ < AtomicLoadL(device, DEVICE_LOG_CUR_FILE_CREATE_HOUR)
-                        || log.timestamp_ >= AtomicLoadL(device, DEVICE_LOG_CUR_FILE_CREATE_HOUR) + 3600)
-                    {
-                        close_file = true;
-                    }
-                    break;
-                }
-
+                break;
             }
 
+            //hourly rolling 
+            if (AtomicLoadC(device, DEVICE_CFG_FILE_ROLLHOURLY))
+            {
+                if (log.timestamp_ < AtomicLoadL(device, DEVICE_LOG_CUR_FILE_CREATE_HOUR)
+                    || log.timestamp_ >= AtomicLoadL(device, DEVICE_LOG_CUR_FILE_CREATE_HOUR) + 3600)
+                {
+                    close_file = true;
+                }
+                break;
+            }
 
         } while (false);
 
@@ -292,6 +285,7 @@ namespace FNLog
 
         if (AtomicLoadC(device, DEVICE_CFG_FILE_ROLLBACK) > 0 || AtomicLoadC(device, DEVICE_CFG_FILE_LIMIT_SIZE) > 0)
         {
+            bool stuff_up = (bool)AtomicLoadC(device, DEVICE_CFG_FILE_STUFF_UP);
             if (!stuff_up || limit_out)
             {
                 //when no rollback but has limit size. need try rollback once.
@@ -310,6 +304,8 @@ namespace FNLog
             return;
         }
         
+        AtomicAddL(device, DEVICE_LOG_LAST_TRY_CREATE_CNT);
+
         AtomicStoreL(device, DEVICE_LOG_LAST_TRY_CREATE_ERROR, 0);
         AtomicStoreL(device, DEVICE_LOG_LAST_TRY_CREATE_TIMESTAMP, 0);
         AtomicStoreL(device, DEVICE_LOG_CUR_FILE_CREATE_TIMESTAMP, log.timestamp_);
