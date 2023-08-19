@@ -60,7 +60,7 @@ int main(int argc, char* argv[])
 
     int total_count = 0;
 
-    constexpr int max_count = 200000;
+    constexpr int max_count = 100000;
 
     double begin_s = Now();
 
@@ -105,6 +105,15 @@ int main(int argc, char* argv[])
     }
     LogInfo() << "per second file write and send:" << lines / (end_1s - begin_s);
     LogInfo() << "per second udp recv:" << lines / (end_2s - begin_s);
+
+
+    if (lines*100/max_count < 10)
+    {
+        //lose 90% 
+        LogFatal() << "lose udp logs";
+        return -1;
+    }
+
 
     LogAlarmStream(0, 1, 0) << "finish";
 
