@@ -73,8 +73,6 @@ int main(int argc, char* argv[])
 
     FNLog::Channel& channel0 = FNLog::GetDefaultLogger().shm_->channels_[0];
     FNLog::Channel& channel1 = FNLog::GetDefaultLogger().shm_->channels_[1];
-    FNLog::Device& sender = FNLog::GetDefaultLogger().shm_->channels_[0].devices_[1];
-    FNLog::Device& receiver = FNLog::GetDefaultLogger().shm_->channels_[1].devices_[0];
 
 
     long long lines =  FNLog::AtomicLoadDeviceLog(channel1, 0, FNLog::DEVICE_LOG_TOTAL_WRITE_LINE);
