@@ -1,6 +1,6 @@
 version:
-last_sha1(./src)=e5cdaf12452ab5ddcc28ccffd37d6e4b5160dfaf
-last_date(./src)=2023-08-16 22:01:08 +0800
+last_sha1(./src)=78836240eb721345481051003a0ae91aefbea3cc
+last_date(./src)=2023-08-19 16:59:28 +0800
 
 git log -1 --stat ./src:
-commit e5cdaf12452ab5ddcc28ccffd37d6e4b5160dfaf Author: zsummer <yawei.zhang@foxmail.com> Date: Wed Aug 16 22:00:47 2023 +0800 support ipv4 dns src/include/fn_file.h | 3 +- src/include/fn_parse.h | 84 +++++++++++++++++++++++++++++++++++++++++--------- 2 files changed, 72 insertions(+), 15 deletions(-)
+commit 78836240eb721345481051003a0ae91aefbea3cc Author: zsummer <yawei.zhang@foxmail.com> Date: Sat Aug 19 16:59:28 2023 +0800 support in/out type device ; support local udp listener. src/include/fn_channel.h | 71 ++++++++++++++++++++++++++++++++--- src/include/fn_core.h | 3 +- src/include/fn_data.h | 18 ++++++++- src/include/fn_file.h | 82 +++++++++++++++++++++++++++++++++++------ src/include/fn_out_udp_device.h | 11 +++++- src/include/fn_parse.h | 45 +++++++++++++++++----- 6 files changed, 201 insertions(+), 29 deletions(-)

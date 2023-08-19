@@ -431,6 +431,8 @@ public:
     {
         chunk_1_[0] = '\0';
         handler_ = FNLOG_INVALID_SOCKET;
+        open_ts_ = 0;
+        memset(&addr_, 0, sizeof(addr_));
     }
     ~UDPHandler()
     {
@@ -445,9 +447,52 @@ public:
         return handler_ != FNLOG_INVALID_SOCKET;
     }
 
-    void open()
+    int open()
     {
+        if (time(NULL) <= open_ts_ + 2)
+        {
+            return 0; //but not open
+        }
+        open_ts_ = time(NULL);
+
         handler_ = socket(AF_INET, SOCK_DGRAM, 0);
+        if (handler_ == FNLOG_INVALID_SOCKET)
+        {
+            return -1;
+        }
+        memset(&addr_, 0, sizeof(addr_));
+#ifdef WIN32
+        u_long argp = 1;
+        int ret = ioctlsocket(handler_, FIONBIO, &argp);
+        if (ret != NO_ERROR)
+        {
+            return -2;
+        }
+#else
+        int oldf = fcntl(handler_, F_GETFL, 0);
+        int newf = oldf | O_NONBLOCK;
+        int ret = fcntl(handler_, F_SETFL, newf);
+        if (ret == -1)
+        {
+            return -2;
+        }
+#endif
+        
+        return 0;
+    }
+
+    int bind(unsigned int ip, unsigned short port)
+    {
+        addr_.sin_family = AF_INET;
+        addr_.sin_port = port;
+        addr_.sin_addr.s_addr = ip;
+        int ret = ::bind(handler_, (struct sockaddr*)&addr_, sizeof(addr_));
+        (void)ret;
+        if (ret != 0)
+        {
+            return ret;
+        }
+        return 0;
     }
 
     void close()
@@ -463,24 +508,39 @@ public:
         }
     }
 
-    void write(unsigned int ip, unsigned short port, const char* data, int len)
+
+    int write(unsigned int ip, unsigned short port, const char* data, int len)
     {
         if (handler_ == FNLOG_INVALID_SOCKET)
         {
-            return;
+            return 0;
+        }
+        addr_.sin_family = AF_INET;
+        addr_.sin_port = port;
+        addr_.sin_addr.s_addr = ip;
+        int ret = sendto(handler_, data, len, 0, (struct sockaddr*) &addr_, sizeof(addr_));
+        (void)ret;
+        return ret;
+    }
+
+    int read(char* data, int data_len)
+    {
+        if (handler_ == FNLOG_INVALID_SOCKET)
+        {
+            return 0;
         }
 
-        struct sockaddr_in addr;
-        memset(&addr, 0, sizeof(addr));
-        addr.sin_family = AF_INET;
-        addr.sin_port = port;
-        addr.sin_addr.s_addr = ip;
-        int ret = sendto(handler_, data, len, 0, (struct sockaddr*) &addr, sizeof(addr));
-        (void)ret;
+        int ret = recvfrom(handler_, data, data_len, 0, NULL, NULL);
+        if (ret < 0)
+        {
+            return 0;
+        }
+        return ret;
     }
- 
 public:
     char chunk_1_[128];
+    time_t open_ts_;
+    struct sockaddr_in addr_;
     FNLOG_SOCKET handler_;
 };
 
@@ -547,6 +607,13 @@ public:
 #define FN_LOG_MAX_LOG_QUEUE_SIZE 1000
 #endif
 
+#ifndef FN_LOG_MAX_ASYNC_SLEEP_MS 
+#define FN_LOG_MAX_ASYNC_SLEEP_MS 10
+#endif
+
+#ifndef FN_LOG_FORCE_FLUSH_QUE 
+#define FN_LOG_FORCE_FLUSH_QUE 10000
+#endif
 
 #ifndef FN_LOG_HOTUPDATE_INTERVEL
 #define FN_LOG_HOTUPDATE_INTERVEL 5
@@ -620,6 +687,11 @@ namespace FNLog
         char content_[LOG_SIZE]; //content
     };
 
+    enum DeviceInType
+    {
+        DEVICE_IN_NULL,
+        DEVICE_IN_UDP,
+    };
 
     enum DeviceOutType
     {
@@ -664,7 +736,8 @@ namespace FNLog
         DEVICE_LOG_PRIORITY, //== PRIORITY_TRACE
         DEVICE_LOG_PRIORITY_MAX = DEVICE_LOG_PRIORITY + PRIORITY_MAX,
         DEVICE_LOG_TOTAL_WRITE_LINE,
-        DEVICE_LOG_TOTAL_WRITE_BYTE,  
+        DEVICE_LOG_TOTAL_WRITE_BYTE,
+        DEVICE_LOG_TOTAL_LOSE_LINE,
         DEVICE_LOG_MAX_ID
     };
 
@@ -692,6 +765,7 @@ namespace FNLog
     public:
         int device_id_;
         unsigned int out_type_;
+        unsigned int in_type_;
         char out_file_[MAX_LOGGER_NAME_LEN];
         char out_path_[MAX_PATH_LEN];
         ConfigFields config_fields_;
@@ -760,6 +834,8 @@ namespace FNLog
         std::atomic_int proc_idx_;
         char chunk_5_[CHUNK_SIZE];
         LogData buffer_[BUFFER_LEN];
+        char chunk_6_[CHUNK_SIZE];
+        LogData udp_buffer_;
     };
 
     struct Channel
@@ -1122,6 +1198,7 @@ namespace FNLog
         RK_IDENTIFY_BLIST,
         RK_IDENTIFY_WMASK,
         RK_IDENTIFY_BMASK, 
+        RK_IN_TYPE,
         RK_OUT_TYPE,
         RK_FILE,
         RK_PATH,
@@ -1324,7 +1401,11 @@ namespace FNLog
         case 'h':
             return RK_HOT_UPDATE;
         case 'i':
-            if (end - begin > (int)sizeof("identify_ex") - 1)
+            if (*(begin+1) == 'n')
+            {
+                return RK_IN_TYPE;
+            }
+            else if (end - begin > (int)sizeof("identify_ex") - 1)
             {
                 if (*(begin + 9) == 'e')
                 {
@@ -1506,7 +1587,21 @@ namespace FNLog
         }
         return CHANNEL_SYNC;
     }
-    
+
+    inline DeviceInType ParseInType(const char* begin, const char* end)
+    {
+        if (end <= begin)
+        {
+            return DEVICE_IN_NULL;
+        }
+        switch (*begin)
+        {
+        case 'u': case 'U':
+            return DEVICE_IN_UDP;
+        }
+        return DEVICE_IN_NULL;
+    }
+
     inline DeviceOutType ParseOutType(const char* begin, const char* end)
     {
         if (end <= begin)
@@ -2088,6 +2183,9 @@ namespace FNLog
 
             switch (ls.line_.key_)
             {
+            case RK_IN_TYPE:
+                device.in_type_ = ParseInType(ls.line_.val_begin_, ls.line_.val_end_);
+                break;
             case RK_OUT_TYPE:
                 device.out_type_ = ParseOutType(ls.line_.val_begin_, ls.line_.val_end_);
                 if (device.out_type_ == DEVICE_OUT_NULL)
@@ -2178,15 +2276,20 @@ namespace FNLog
                     device.config_fields_[DEVICE_CFG_UDP_IP] = ip;
                     device.config_fields_[DEVICE_CFG_UDP_PORT] = port;
                 }
-                
-                if (device.config_fields_[DEVICE_CFG_ABLE] && device.config_fields_[DEVICE_CFG_UDP_IP] == 0)
+                if (device.config_fields_[DEVICE_CFG_ABLE])
                 {
-                    return PEC_ILLEGAL_ADDR_IP;
+                    if (device.in_type_ == DEVICE_IN_NULL && device.config_fields_[DEVICE_CFG_UDP_IP] == 0)
+                    {
+                        return PEC_ILLEGAL_ADDR_IP;
+                    }
+
+                    if (device.config_fields_[DEVICE_CFG_UDP_PORT] == 0)
+                    {
+                        return PEC_ILLEGAL_ADDR_PORT;
+                    }
                 }
-                if (device.config_fields_[DEVICE_CFG_ABLE] && device.config_fields_[DEVICE_CFG_UDP_PORT] == 0)
-                {
-                    return PEC_ILLEGAL_ADDR_PORT;
-                }
+
+
                 break;
             default:
                 return PEC_UNDEFINED_DEVICE_KEY;
@@ -3583,18 +3686,25 @@ namespace FNLog
     inline void EnterProcOutUDPDevice(Logger& logger, int channel_id, int device_id, LogData& log)
     {
         auto& udp = logger.udp_handles_[channel_id * Channel::MAX_DEVICE_SIZE + device_id];
+        Device& device = logger.shm_->channels_[channel_id].devices_[device_id];
+
         if (!udp.is_open())
         {
             udp.open();
         }
         if (!udp.is_open())
         {
+            AtomicAddL(device, DEVICE_LOG_TOTAL_LOSE_LINE);
             return;
         }
-        Device& device = logger.shm_->channels_[channel_id].devices_[device_id];
+        
         long long ip = AtomicLoadC(device, DEVICE_CFG_UDP_IP);
         long long port = AtomicLoadC(device, DEVICE_CFG_UDP_PORT);
-        udp.write((unsigned long)ip, (unsigned short)port, log.content_, log.content_len_);
+        int ret = udp.write((unsigned long)ip, (unsigned short)port, log.content_, log.content_len_);
+        if (ret <= 0)
+        {
+            AtomicAddL(device, DEVICE_LOG_TOTAL_LOSE_LINE);
+        }
         AtomicAddL(device, DEVICE_LOG_TOTAL_WRITE_LINE);
         AtomicAddLV(device, DEVICE_LOG_TOTAL_WRITE_BYTE, log.content_len_);
         AtomicAddLV(device, DEVICE_LOG_PRIORITY + log.priority_, log.content_len_);
@@ -3796,6 +3906,10 @@ namespace FNLog
             {
                 continue;
             }
+            if (device.in_type_ != DEVICE_IN_NULL)
+            {
+                continue;
+            }
             if (log.priority_ < AtomicLoadC(device, DEVICE_CFG_PRIORITY))
             {
                 continue;
@@ -3826,7 +3940,8 @@ namespace FNLog
             EnterProcDevice(logger, channel.channel_id_, device_id, log);
         }
     }
-    
+
+    inline void InitLogData(Logger& logger, LogData& log, int channel_id, int priority, int category, unsigned long long identify, unsigned int prefix);
  
     inline void EnterProcChannel(Logger& logger, int channel_id)
     {
@@ -3900,8 +4015,9 @@ namespace FNLog
                 } while (true);  
 
                 //if want the high log security can reduce this threshold or enable shared memory queue.  
-                if (local_write_count > 10000)
+                if (local_write_count > FN_LOG_FORCE_FLUSH_QUE)
                 {
+                    //break;
                     local_write_count = 0;
                     for (int i = 0; i < channel.device_size_; i++)
                     {
@@ -3929,10 +4045,65 @@ namespace FNLog
                     }
                 }
             }
-            HotUpdateLogger(logger, channel.channel_id_);
-            if (channel.channel_type_ == CHANNEL_ASYNC)
+
+            for (int i = 0; i < channel.device_size_; i++)
             {
-                std::this_thread::sleep_for(std::chrono::milliseconds(10));
+                Device& device = channel.devices_[i];
+                if (device.in_type_ != DEVICE_IN_UDP)
+                {
+                    continue;
+                }
+
+                UDPHandler& udp = logger.udp_handles_[channel_id * Channel::MAX_DEVICE_SIZE + i];
+                if (!device.config_fields_[DEVICE_CFG_ABLE])
+                {
+                    if (udp.is_open())
+                    {
+                        udp.close();
+                    }
+                    continue;
+                }
+                
+                if (!udp.is_open())
+                {
+                    udp.open();
+                    if (udp.is_open())
+                    {
+                        int ret = udp.bind((unsigned int)AtomicLoadC(device, DEVICE_CFG_UDP_IP), (unsigned short)AtomicLoadC(device, DEVICE_CFG_UDP_PORT));
+                        if (ret != 0)
+                        {
+                            udp.close();
+                        }
+                    }
+                }
+
+                if (!udp.is_open())
+                {
+                    continue;
+                }
+                
+                for (int i = 0; i < 1000; i++)
+                {
+                    InitLogData(logger, ring_buffer.udp_buffer_, channel.channel_id_, PRIORITY_INFO, 0, 0, LOG_PREFIX_NULL);
+                    ring_buffer.udp_buffer_.content_len_ = udp.read(ring_buffer.udp_buffer_.content_, LogData::LOG_SIZE);
+                    if (ring_buffer.udp_buffer_.content_len_ == LogData::LOG_SIZE)
+                    {
+                        ring_buffer.udp_buffer_.content_[ring_buffer.udp_buffer_.content_len_ - 2] = '\n';
+                        ring_buffer.udp_buffer_.content_[ring_buffer.udp_buffer_.content_len_ - 1] = '\0';
+                    }
+                    if (ring_buffer.udp_buffer_.content_len_ == 0)
+                    {
+                        break;
+                    }
+                    local_write_count++;
+                    EnterProcDevice(logger, channel.channel_id_, device.device_id_, ring_buffer.udp_buffer_);
+                }
+            }
+
+            HotUpdateLogger(logger, channel.channel_id_);
+            if (channel.channel_type_ == CHANNEL_ASYNC && local_write_count == 0)
+            {
+                std::this_thread::sleep_for(std::chrono::milliseconds(FN_LOG_MAX_ASYNC_SLEEP_MS));
             }
             
         } while (channel.channel_type_ == CHANNEL_ASYNC 
@@ -4111,7 +4282,7 @@ namespace FNLog
             if (state > 0)
             {
                 AtomicAddL(channel, CHANNEL_LOG_WAIT_COUNT);
-                std::this_thread::sleep_for(std::chrono::milliseconds(10));
+                std::this_thread::sleep_for(std::chrono::milliseconds(FN_LOG_MAX_ASYNC_SLEEP_MS));
             }
             state++;
 
@@ -4275,7 +4446,7 @@ namespace FNLog
     }
 
     //not thread-safe
-    inline Device* NewDevice(Logger& logger, Channel& channel, int out_type)
+    inline Device* NewDevice(Logger& logger, Channel& channel, unsigned int out_type, unsigned int in_type = DEVICE_IN_NULL)
     {
         (void)logger;
         Device* device = nullptr;
@@ -4285,6 +4456,7 @@ namespace FNLog
             channel.device_size_++;
             device = &channel.devices_[device_id];
             device->device_id_ = device_id;
+            device->in_type_ = in_type;
             device->out_type_ = out_type;
             device->config_fields_[DEVICE_CFG_ABLE] = 1;
             return device;
