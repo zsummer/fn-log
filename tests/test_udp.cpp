@@ -24,7 +24,7 @@ R"----(
         disable: false
         in_type: udp
         out_type: file
-        udp_addr: 0.0.0.0:9909
+        udp_addr: localhost:9909
         out_type: file
         path: "./"
         file: "$PNAME_receiver"
