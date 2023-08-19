@@ -427,6 +427,8 @@ public:
     {
         chunk_1_[0] = '\0';
         handler_ = FNLOG_INVALID_SOCKET;
+        open_ts_ = 0;
+        memset(&addr_, 0, sizeof(addr_));
     }
     ~UDPHandler()
     {
@@ -441,9 +443,52 @@ public:
         return handler_ != FNLOG_INVALID_SOCKET;
     }
 
-    void open()
+    int open()
     {
+        if (time(NULL) <= open_ts_ + 2)
+        {
+            return 0; //but not open
+        }
+        open_ts_ = time(NULL);
+
         handler_ = socket(AF_INET, SOCK_DGRAM, 0);
+        if (handler_ == FNLOG_INVALID_SOCKET)
+        {
+            return -1;
+        }
+        memset(&addr_, 0, sizeof(addr_));
+#ifdef WIN32
+        u_long argp = 1;
+        int ret = ioctlsocket(handler_, FIONBIO, &argp);
+        if (ret != NO_ERROR)
+        {
+            return -2;
+        }
+#else
+        int oldf = fcntl(handler_, F_GETFL, 0);
+        int newf = oldf | O_NONBLOCK;
+        int ret = fcntl(handler_, F_SETFL, newf);
+        if (ret == -1)
+        {
+            return -2;
+        }
+#endif
+        
+        return 0;
+    }
+
+    int bind(unsigned int ip, unsigned short port)
+    {
+        addr_.sin_family = AF_INET;
+        addr_.sin_port = port;
+        addr_.sin_addr.s_addr = ip;
+        int ret = ::bind(handler_, (struct sockaddr*)&addr_, sizeof(addr_));
+        (void)ret;
+        if (ret != 0)
+        {
+            return ret;
+        }
+        return 0;
     }
 
     void close()
@@ -459,24 +504,39 @@ public:
         }
     }
 
-    void write(unsigned int ip, unsigned short port, const char* data, int len)
+
+    int write(unsigned int ip, unsigned short port, const char* data, int len)
     {
         if (handler_ == FNLOG_INVALID_SOCKET)
         {
-            return;
+            return 0;
+        }
+        addr_.sin_family = AF_INET;
+        addr_.sin_port = port;
+        addr_.sin_addr.s_addr = ip;
+        int ret = sendto(handler_, data, len, 0, (struct sockaddr*) &addr_, sizeof(addr_));
+        (void)ret;
+        return ret;
+    }
+
+    int read(char* data, int data_len)
+    {
+        if (handler_ == FNLOG_INVALID_SOCKET)
+        {
+            return 0;
         }
 
-        struct sockaddr_in addr;
-        memset(&addr, 0, sizeof(addr));
-        addr.sin_family = AF_INET;
-        addr.sin_port = port;
-        addr.sin_addr.s_addr = ip;
-        int ret = sendto(handler_, data, len, 0, (struct sockaddr*) &addr, sizeof(addr));
-        (void)ret;
+        int ret = recvfrom(handler_, data, data_len, 0, NULL, NULL);
+        if (ret < 0)
+        {
+            return 0;
+        }
+        return ret;
     }
- 
 public:
     char chunk_1_[128];
+    time_t open_ts_;
+    struct sockaddr_in addr_;
     FNLOG_SOCKET handler_;
 };
 

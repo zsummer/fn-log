@@ -43,7 +43,7 @@ namespace FNLog
     }
 
     //not thread-safe
-    inline Device* NewDevice(Logger& logger, Channel& channel, int out_type)
+    inline Device* NewDevice(Logger& logger, Channel& channel, unsigned int out_type, unsigned int in_type = DEVICE_IN_NULL)
     {
         (void)logger;
         Device* device = nullptr;
@@ -53,6 +53,7 @@ namespace FNLog
             channel.device_size_++;
             device = &channel.devices_[device_id];
             device->device_id_ = device_id;
+            device->in_type_ = in_type;
             device->out_type_ = out_type;
             device->config_fields_[DEVICE_CFG_ABLE] = 1;
             return device;

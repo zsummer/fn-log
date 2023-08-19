@@ -147,6 +147,7 @@ namespace FNLog
         RK_IDENTIFY_BLIST,
         RK_IDENTIFY_WMASK,
         RK_IDENTIFY_BMASK, 
+        RK_IN_TYPE,
         RK_OUT_TYPE,
         RK_FILE,
         RK_PATH,
@@ -349,7 +350,11 @@ namespace FNLog
         case 'h':
             return RK_HOT_UPDATE;
         case 'i':
-            if (end - begin > (int)sizeof("identify_ex") - 1)
+            if (*(begin+1) == 'n')
+            {
+                return RK_IN_TYPE;
+            }
+            else if (end - begin > (int)sizeof("identify_ex") - 1)
             {
                 if (*(begin + 9) == 'e')
                 {
@@ -531,7 +536,21 @@ namespace FNLog
         }
         return CHANNEL_SYNC;
     }
-    
+
+    inline DeviceInType ParseInType(const char* begin, const char* end)
+    {
+        if (end <= begin)
+        {
+            return DEVICE_IN_NULL;
+        }
+        switch (*begin)
+        {
+        case 'u': case 'U':
+            return DEVICE_IN_UDP;
+        }
+        return DEVICE_IN_NULL;
+    }
+
     inline DeviceOutType ParseOutType(const char* begin, const char* end)
     {
         if (end <= begin)
@@ -1113,6 +1132,9 @@ namespace FNLog
 
             switch (ls.line_.key_)
             {
+            case RK_IN_TYPE:
+                device.in_type_ = ParseInType(ls.line_.val_begin_, ls.line_.val_end_);
+                break;
             case RK_OUT_TYPE:
                 device.out_type_ = ParseOutType(ls.line_.val_begin_, ls.line_.val_end_);
                 if (device.out_type_ == DEVICE_OUT_NULL)
@@ -1203,15 +1225,20 @@ namespace FNLog
                     device.config_fields_[DEVICE_CFG_UDP_IP] = ip;
                     device.config_fields_[DEVICE_CFG_UDP_PORT] = port;
                 }
-                
-                if (device.config_fields_[DEVICE_CFG_ABLE] && device.config_fields_[DEVICE_CFG_UDP_IP] == 0)
+                if (device.config_fields_[DEVICE_CFG_ABLE])
                 {
-                    return PEC_ILLEGAL_ADDR_IP;
+                    if (device.in_type_ == DEVICE_IN_NULL && device.config_fields_[DEVICE_CFG_UDP_IP] == 0)
+                    {
+                        return PEC_ILLEGAL_ADDR_IP;
+                    }
+
+                    if (device.config_fields_[DEVICE_CFG_UDP_PORT] == 0)
+                    {
+                        return PEC_ILLEGAL_ADDR_PORT;
+                    }
                 }
-                if (device.config_fields_[DEVICE_CFG_ABLE] && device.config_fields_[DEVICE_CFG_UDP_PORT] == 0)
-                {
-                    return PEC_ILLEGAL_ADDR_PORT;
-                }
+
+
                 break;
             default:
                 return PEC_UNDEFINED_DEVICE_KEY;

@@ -60,6 +60,13 @@
 #define FN_LOG_MAX_LOG_QUEUE_SIZE 1000
 #endif
 
+#ifndef FN_LOG_MAX_ASYNC_SLEEP_MS 
+#define FN_LOG_MAX_ASYNC_SLEEP_MS 10
+#endif
+
+#ifndef FN_LOG_FORCE_FLUSH_QUE 
+#define FN_LOG_FORCE_FLUSH_QUE 10000
+#endif
 
 #ifndef FN_LOG_HOTUPDATE_INTERVEL
 #define FN_LOG_HOTUPDATE_INTERVEL 5
@@ -133,6 +140,11 @@ namespace FNLog
         char content_[LOG_SIZE]; //content
     };
 
+    enum DeviceInType
+    {
+        DEVICE_IN_NULL,
+        DEVICE_IN_UDP,
+    };
 
     enum DeviceOutType
     {
@@ -177,7 +189,8 @@ namespace FNLog
         DEVICE_LOG_PRIORITY, //== PRIORITY_TRACE
         DEVICE_LOG_PRIORITY_MAX = DEVICE_LOG_PRIORITY + PRIORITY_MAX,
         DEVICE_LOG_TOTAL_WRITE_LINE,
-        DEVICE_LOG_TOTAL_WRITE_BYTE,  
+        DEVICE_LOG_TOTAL_WRITE_BYTE,
+        DEVICE_LOG_TOTAL_LOSE_LINE,
         DEVICE_LOG_MAX_ID
     };
 
@@ -205,6 +218,7 @@ namespace FNLog
     public:
         int device_id_;
         unsigned int out_type_;
+        unsigned int in_type_;
         char out_file_[MAX_LOGGER_NAME_LEN];
         char out_path_[MAX_PATH_LEN];
         ConfigFields config_fields_;
@@ -273,6 +287,8 @@ namespace FNLog
         std::atomic_int proc_idx_;
         char chunk_5_[CHUNK_SIZE];
         LogData buffer_[BUFFER_LEN];
+        char chunk_6_[CHUNK_SIZE];
+        LogData udp_buffer_;
     };
 
     struct Channel

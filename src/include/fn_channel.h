@@ -59,6 +59,10 @@ namespace FNLog
             {
                 continue;
             }
+            if (device.in_type_ != DEVICE_IN_NULL)
+            {
+                continue;
+            }
             if (log.priority_ < AtomicLoadC(device, DEVICE_CFG_PRIORITY))
             {
                 continue;
@@ -89,7 +93,8 @@ namespace FNLog
             EnterProcDevice(logger, channel.channel_id_, device_id, log);
         }
     }
-    
+
+    inline void InitLogData(Logger& logger, LogData& log, int channel_id, int priority, int category, unsigned long long identify, unsigned int prefix);
  
     inline void EnterProcChannel(Logger& logger, int channel_id)
     {
@@ -163,8 +168,9 @@ namespace FNLog
                 } while (true);  
 
                 //if want the high log security can reduce this threshold or enable shared memory queue.  
-                if (local_write_count > 10000)
+                if (local_write_count > FN_LOG_FORCE_FLUSH_QUE)
                 {
+                    //break;
                     local_write_count = 0;
                     for (int i = 0; i < channel.device_size_; i++)
                     {
@@ -192,10 +198,65 @@ namespace FNLog
                     }
                 }
             }
-            HotUpdateLogger(logger, channel.channel_id_);
-            if (channel.channel_type_ == CHANNEL_ASYNC)
+
+            for (int i = 0; i < channel.device_size_; i++)
             {
-                std::this_thread::sleep_for(std::chrono::milliseconds(10));
+                Device& device = channel.devices_[i];
+                if (device.in_type_ != DEVICE_IN_UDP)
+                {
+                    continue;
+                }
+
+                UDPHandler& udp = logger.udp_handles_[channel_id * Channel::MAX_DEVICE_SIZE + i];
+                if (!device.config_fields_[DEVICE_CFG_ABLE])
+                {
+                    if (udp.is_open())
+                    {
+                        udp.close();
+                    }
+                    continue;
+                }
+                
+                if (!udp.is_open())
+                {
+                    udp.open();
+                    if (udp.is_open())
+                    {
+                        int ret = udp.bind((unsigned int)AtomicLoadC(device, DEVICE_CFG_UDP_IP), (unsigned short)AtomicLoadC(device, DEVICE_CFG_UDP_PORT));
+                        if (ret != 0)
+                        {
+                            udp.close();
+                        }
+                    }
+                }
+
+                if (!udp.is_open())
+                {
+                    continue;
+                }
+                
+                for (int i = 0; i < 1000; i++)
+                {
+                    InitLogData(logger, ring_buffer.udp_buffer_, channel.channel_id_, PRIORITY_INFO, 0, 0, LOG_PREFIX_NULL);
+                    ring_buffer.udp_buffer_.content_len_ = udp.read(ring_buffer.udp_buffer_.content_, LogData::LOG_SIZE);
+                    if (ring_buffer.udp_buffer_.content_len_ == LogData::LOG_SIZE)
+                    {
+                        ring_buffer.udp_buffer_.content_[ring_buffer.udp_buffer_.content_len_ - 2] = '\n';
+                        ring_buffer.udp_buffer_.content_[ring_buffer.udp_buffer_.content_len_ - 1] = '\0';
+                    }
+                    if (ring_buffer.udp_buffer_.content_len_ == 0)
+                    {
+                        break;
+                    }
+                    local_write_count++;
+                    EnterProcDevice(logger, channel.channel_id_, device.device_id_, ring_buffer.udp_buffer_);
+                }
+            }
+
+            HotUpdateLogger(logger, channel.channel_id_);
+            if (channel.channel_type_ == CHANNEL_ASYNC && local_write_count == 0)
+            {
+                std::this_thread::sleep_for(std::chrono::milliseconds(FN_LOG_MAX_ASYNC_SLEEP_MS));
             }
             
         } while (channel.channel_type_ == CHANNEL_ASYNC 
@@ -374,7 +435,7 @@ namespace FNLog
             if (state > 0)
             {
                 AtomicAddL(channel, CHANNEL_LOG_WAIT_COUNT);
-                std::this_thread::sleep_for(std::chrono::milliseconds(10));
+                std::this_thread::sleep_for(std::chrono::milliseconds(FN_LOG_MAX_ASYNC_SLEEP_MS));
             }
             state++;
 
