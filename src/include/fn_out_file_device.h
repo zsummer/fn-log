@@ -202,7 +202,7 @@ namespace FNLog
         {
             //rollback only limit size && rollback > 0 
             if (AtomicLoadC(device, DEVICE_CFG_FILE_LIMIT_SIZE) > 0 && AtomicLoadC(device, DEVICE_CFG_FILE_ROLLBACK) > 0
-                && AtomicLoadL(device, DEVICE_LOG_CUR_FILE_SIZE) + log.content_len_ > AtomicLoadC(device, DEVICE_CFG_FILE_LIMIT_SIZE))
+                && AtomicLoadDeviceLog(channel, device.device_id_, DEVICE_LOG_CUR_FILE_SIZE) + log.content_len_ > AtomicLoadC(device, DEVICE_CFG_FILE_LIMIT_SIZE))
             {
                 close_file = true;
                 limit_out = true;
@@ -212,8 +212,8 @@ namespace FNLog
             //daily rolling
             if (AtomicLoadC(device, DEVICE_CFG_FILE_ROLLDAILY))
             {
-                if (log.timestamp_ < AtomicLoadL(device, DEVICE_LOG_CUR_FILE_CREATE_DAY)
-                    || log.timestamp_ >= AtomicLoadL(device, DEVICE_LOG_CUR_FILE_CREATE_DAY) + 24 * 3600)
+                if (log.timestamp_ < AtomicLoadDeviceLog(channel, device.device_id_, DEVICE_LOG_CUR_FILE_CREATE_DAY)
+                    || log.timestamp_ >= AtomicLoadDeviceLog(channel, device.device_id_, DEVICE_LOG_CUR_FILE_CREATE_DAY) + 24 * 3600)
                 {
                     close_file = true;
                 }
@@ -223,8 +223,8 @@ namespace FNLog
             //hourly rolling 
             if (AtomicLoadC(device, DEVICE_CFG_FILE_ROLLHOURLY))
             {
-                if (log.timestamp_ < AtomicLoadL(device, DEVICE_LOG_CUR_FILE_CREATE_HOUR)
-                    || log.timestamp_ >= AtomicLoadL(device, DEVICE_LOG_CUR_FILE_CREATE_HOUR) + 3600)
+                if (log.timestamp_ < AtomicLoadDeviceLog(channel, device.device_id_, DEVICE_LOG_CUR_FILE_CREATE_HOUR)
+                    || log.timestamp_ >= AtomicLoadDeviceLog(channel, device.device_id_, DEVICE_LOG_CUR_FILE_CREATE_HOUR) + 3600)
                 {
                     close_file = true;
                 }
@@ -236,7 +236,7 @@ namespace FNLog
 
         if (close_file)
         {
-            AtomicStoreL(device, DEVICE_LOG_CUR_FILE_SIZE, 0);
+            AtomicStoreDeviceLog(channel, device.device_id_, DEVICE_LOG_CUR_FILE_SIZE, 0);
             if (writer.is_open())
             {
                 writer.close();
@@ -278,8 +278,8 @@ namespace FNLog
 
         if (path.length() >= Device::MAX_PATH_LEN + Device::MAX_LOGGER_NAME_LEN)
         {
-            AtomicStoreL(device, DEVICE_LOG_LAST_TRY_CREATE_ERROR, 1);
-            AtomicStoreL(device, DEVICE_LOG_LAST_TRY_CREATE_TIMESTAMP, log.timestamp_);
+            AtomicStoreDeviceLog(channel, device.device_id_, DEVICE_LOG_LAST_TRY_CREATE_ERROR, 1);
+            AtomicStoreDeviceLog(channel, device.device_id_, DEVICE_LOG_LAST_TRY_CREATE_TIMESTAMP, log.timestamp_);
             return;
         }
 
@@ -299,19 +299,19 @@ namespace FNLog
         long writed_byte = writer.open(path.c_str(), "ab", file_stat);
         if (!writer.is_open())
         {
-            AtomicStoreL(device, DEVICE_LOG_LAST_TRY_CREATE_ERROR, 2);
-            AtomicStoreL(device, DEVICE_LOG_LAST_TRY_CREATE_TIMESTAMP, log.timestamp_);
+            AtomicStoreDeviceLog(channel, device.device_id_, DEVICE_LOG_LAST_TRY_CREATE_ERROR, 2);
+            AtomicStoreDeviceLog(channel, device.device_id_, DEVICE_LOG_LAST_TRY_CREATE_TIMESTAMP, log.timestamp_);
             return;
         }
         
-        AtomicAddL(device, DEVICE_LOG_LAST_TRY_CREATE_CNT);
+        AtomicIncDeviceLog(channel, device.device_id_, DEVICE_LOG_LAST_TRY_CREATE_CNT, 1);
 
-        AtomicStoreL(device, DEVICE_LOG_LAST_TRY_CREATE_ERROR, 0);
-        AtomicStoreL(device, DEVICE_LOG_LAST_TRY_CREATE_TIMESTAMP, 0);
-        AtomicStoreL(device, DEVICE_LOG_CUR_FILE_CREATE_TIMESTAMP, log.timestamp_);
-        AtomicStoreL(device, DEVICE_LOG_CUR_FILE_CREATE_DAY, create_day);
-        AtomicStoreL(device, DEVICE_LOG_CUR_FILE_CREATE_HOUR, create_hour);
-        AtomicStoreL(device, DEVICE_LOG_CUR_FILE_SIZE, writed_byte);
+        AtomicStoreDeviceLog(channel, device.device_id_, DEVICE_LOG_LAST_TRY_CREATE_ERROR, 0);
+        AtomicStoreDeviceLog(channel, device.device_id_, DEVICE_LOG_LAST_TRY_CREATE_TIMESTAMP, 0);
+        AtomicStoreDeviceLog(channel, device.device_id_, DEVICE_LOG_CUR_FILE_CREATE_TIMESTAMP, log.timestamp_);
+        AtomicStoreDeviceLog(channel, device.device_id_, DEVICE_LOG_CUR_FILE_CREATE_DAY, create_day);
+        AtomicStoreDeviceLog(channel, device.device_id_, DEVICE_LOG_CUR_FILE_CREATE_HOUR, create_hour);
+        AtomicStoreDeviceLog(channel, device.device_id_, DEVICE_LOG_CUR_FILE_SIZE, writed_byte);
     }
 
 
@@ -322,7 +322,7 @@ namespace FNLog
         Device& device = channel.devices_[device_id];
         FileHandler& writer = logger.file_handles_[channel_id * Channel::MAX_DEVICE_SIZE + device_id];
 
-        if (!writer.is_open() && AtomicLoadL(device, DEVICE_LOG_LAST_TRY_CREATE_TIMESTAMP) + 5 > log.timestamp_)
+        if (!writer.is_open() && AtomicLoadDeviceLog(channel, device_id, DEVICE_LOG_LAST_TRY_CREATE_TIMESTAMP) + 5 > log.timestamp_)
         {
             return;
         }
@@ -332,10 +332,10 @@ namespace FNLog
             return;
         }
         writer.write(log.content_, log.content_len_);
-        AtomicAddL(device, DEVICE_LOG_TOTAL_WRITE_LINE);
-        AtomicAddLV(device, DEVICE_LOG_TOTAL_WRITE_BYTE, log.content_len_);
-        AtomicAddLV(device, DEVICE_LOG_CUR_FILE_SIZE, log.content_len_);
-        AtomicAddLV(device, DEVICE_LOG_PRIORITY + log.priority_, log.content_len_);
+        AtomicIncDeviceLog(channel, device_id, DEVICE_LOG_TOTAL_WRITE_LINE, 1);
+        AtomicIncDeviceLog(channel, device_id, DEVICE_LOG_TOTAL_WRITE_BYTE, log.content_len_);
+        AtomicIncDeviceLog(channel, device_id, DEVICE_LOG_CUR_FILE_SIZE, log.content_len_);
+        AtomicIncDeviceLog(channel, device_id, DEVICE_LOG_PRIORITY + log.priority_, log.content_len_);
     }
 
 

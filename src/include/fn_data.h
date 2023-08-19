@@ -213,18 +213,14 @@ namespace FNLog
 #else
         using ConfigFields = long long[DEVICE_CFG_MAX_ID];
 #endif // FN_LOG_USING_ATOM_CFG
-        using LogFields = std::array<std::atomic_llong, DEVICE_LOG_MAX_ID>;
-
+        
     public:
-        char chunk_1_[CHUNK_SIZE];
         int device_id_;
         unsigned int out_type_;
         unsigned int in_type_;
         char out_file_[MAX_LOGGER_NAME_LEN];
         char out_path_[MAX_PATH_LEN];
         ConfigFields config_fields_;
-        char chunk_2_[CHUNK_SIZE];
-        LogFields log_fields_;
     };
 
    
@@ -302,9 +298,9 @@ namespace FNLog
         using ConfigFields = long long[CHANNEL_CFG_MAX_ID];
 #endif // FN_LOG_USING_ATOM_CFG
 
-        using LogFields = std::array<std::atomic_llong, CHANNEL_LOG_MAX_ID>;
+        using ChannelLogFields = std::array<std::atomic_llong, CHANNEL_LOG_MAX_ID>;
         static const int MAX_DEVICE_SIZE = FN_LOG_MAX_DEVICE_SIZE;
-
+        using DeviceLogFields = std::array<std::atomic_llong, DEVICE_LOG_MAX_ID>;
 
     public:
         
@@ -314,15 +310,14 @@ namespace FNLog
         int device_size_;
         unsigned int channel_state_;
         ConfigFields config_fields_;
+        Device devices_[MAX_DEVICE_SIZE];
 
         char chunk_1_[CHUNK_SIZE];
 
         time_t yaml_mtime_;
         time_t last_hot_check_;
-        LogFields log_fields_;
-
-        Device devices_[MAX_DEVICE_SIZE];
-        
+        ChannelLogFields channel_log_fields_;
+        DeviceLogFields device_log_fields_[MAX_DEVICE_SIZE];
     };
 
 
@@ -437,28 +432,36 @@ namespace FNLog
 #define AtomicLoadC(m, eid) m.config_fields_[eid]
 #endif // FN_LOG_USING_ATOM_CFG
 
-
-    template <class M>
-    inline long long AtomicLoadL(M& m, unsigned eid)
+    inline long long AtomicLoadChannelLog(Channel& c, unsigned eid)
     {
-        return m.log_fields_[eid].load(std::memory_order_relaxed);
+        return c.channel_log_fields_[eid].load(std::memory_order_relaxed);
     }
 
-    template <class M>
-    inline void AtomicAddL(M& m, unsigned eid)
+    inline void AtomicIncChannelLog(Channel& c, unsigned eid, long long v)
     {
-        m.log_fields_[eid].fetch_add(1, std::memory_order_relaxed);
-    }
-    template <class M>
-    inline void AtomicAddLV(M& m, unsigned eid, long long v)
-    {
-        m.log_fields_[eid].fetch_add(v, std::memory_order_relaxed);
+        c.channel_log_fields_[eid].fetch_add(v, std::memory_order_relaxed);
     }
 
-    template <class M>
-    inline void AtomicStoreL(M& m, unsigned eid, long long v)
+    inline void AtomicStoreChannelLog(Channel& c, unsigned eid, long long v)
     {
-        m.log_fields_[eid].store(v, std::memory_order_relaxed);
+        c.channel_log_fields_[eid].store(v, std::memory_order_relaxed);
+    }
+
+
+
+    inline long long AtomicLoadDeviceLog(Channel& c, int device_id, unsigned eid)
+    {
+        return c.device_log_fields_[device_id][eid].load(std::memory_order_relaxed);
+    }
+
+    inline void AtomicIncDeviceLog(Channel& c, int device_id, unsigned eid, long long v)
+    {
+        c.device_log_fields_[device_id][eid].fetch_add(v, std::memory_order_relaxed);
+    }
+
+    inline void AtomicStoreDeviceLog(Channel& c, int device_id, unsigned eid, long long v)
+    {
+        c.device_log_fields_[device_id][eid].store(v, std::memory_order_relaxed);
     }
 
 

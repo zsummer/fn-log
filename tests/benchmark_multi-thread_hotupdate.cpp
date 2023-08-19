@@ -142,9 +142,9 @@ int main(int argc, char* argv[])
 
     do
     {
-        long long last_writed = FNLog::AtomicLoadL(logger.shm_->channels_[0], FNLog::CHANNEL_LOG_PROCESSED);
+        long long last_writed = FNLog::AtomicLoadChannelLog(logger.shm_->channels_[0], FNLog::CHANNEL_LOG_PROCESSED);
         std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-        long long now_writed = FNLog::AtomicLoadL(logger.shm_->channels_[0], FNLog::CHANNEL_LOG_PROCESSED);
+        long long now_writed = FNLog::AtomicLoadChannelLog(logger.shm_->channels_[0], FNLog::CHANNEL_LOG_PROCESSED);
         LogInfo() << "now thread:" << thread_id + 1 << ": writed:" << now_writed - last_writed;
 
 
@@ -173,11 +173,11 @@ int main(int argc, char* argv[])
         FNLog::Channel& channel = logger.shm_->channels_[channel_id];
         for (int field = 0; field < FNLog::CHANNEL_LOG_MAX_ID; field++)
         {
-            if (channel.log_fields_[field] <= 0)
+            if (FNLog::AtomicLoadChannelLog(channel, field) <= 0)
             {
                 continue;
             }
-            LogInfoStream(0, 1, 0) << "channel[" << channel_id << "] log field[" << field << "]:" << channel.log_fields_[field];
+            LogInfoStream(0, 1, 0) << "channel[" << channel_id << "] log field[" << field << "]:" << FNLog::AtomicLoadChannelLog(channel, field);
         }
     }
 

@@ -63,10 +63,9 @@ namespace FNLog
             int content_len_ = FN_MIN(log.content_len_, LogData::LOG_SIZE - 1);
             log.content_[content_len_] = '\0'; //virtual device hook maybe direct used content like c-string 
 
-            Device& device = logger.shm_->channels_[channel_id].devices_[device_id];
-            AtomicAddL(device, DEVICE_LOG_TOTAL_WRITE_LINE);
-            AtomicAddLV(device, DEVICE_LOG_TOTAL_WRITE_BYTE, log.content_len_);
-            AtomicAddLV(device, DEVICE_LOG_PRIORITY + log.priority_, log.content_len_);
+            AtomicIncDeviceLog(channel, device_id, DEVICE_LOG_TOTAL_WRITE_LINE, 1);
+            AtomicIncDeviceLog(channel, device_id, DEVICE_LOG_TOTAL_WRITE_BYTE, log.content_len_);
+            AtomicIncDeviceLog(channel, device_id, DEVICE_LOG_PRIORITY + log.priority_, log.content_len_);
             (*RefVirtualDevice())(log);
         }
     }

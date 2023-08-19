@@ -272,7 +272,7 @@ namespace FNLog
         {
             return 0;
         }
-        return AtomicLoadL(channel, field);
+        return AtomicLoadChannelLog(channel, field);
     }
 
     inline void SetChannelConfig(Logger& logger, int channel_id, ChannelConfigEnum field, long long val)
@@ -304,7 +304,7 @@ namespace FNLog
         {
             return 0;
         }
-        return AtomicLoadL(channel.devices_[device_id], field);
+        return AtomicLoadDeviceLog(channel, device_id, field);
     }
 
     inline void SetDeviceConfig(Logger& logger, int channel_id, int device_id, DeviceConfigEnum field, long long val)

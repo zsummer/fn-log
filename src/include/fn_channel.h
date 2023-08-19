@@ -122,8 +122,8 @@ namespace FNLog
                 auto& cur_log = ring_buffer.buffer_[old_idx];
                 DispatchLog(logger, channel, cur_log);
                 cur_log.data_mark_ = 0;
-                AtomicAddL(channel, CHANNEL_LOG_PROCESSED);
-                AtomicAddLV(channel, CHANNEL_LOG_PROCESSED_BYTES, cur_log.content_len_);
+                AtomicIncChannelLog(channel, CHANNEL_LOG_PROCESSED, 1);
+                AtomicIncChannelLog(channel, CHANNEL_LOG_PROCESSED_BYTES, cur_log.content_len_);
                 local_write_count ++;
 
                 int write_id = ring_buffer.write_idx_.load(std::memory_order_acquire);
@@ -137,18 +137,18 @@ namespace FNLog
                     proc_que_size = write_id + RingBuffer::BUFFER_LEN - old_idx;
                 }
 
-                if (proc_que_size > channel.log_fields_.at(CHANNEL_LOG_MAX_PROC_QUE_SIZE))
+                if (proc_que_size > AtomicLoadChannelLog(channel, CHANNEL_LOG_MAX_PROC_QUE_SIZE))
                 {
-                    AtomicStoreL(channel, CHANNEL_LOG_MAX_PROC_QUE_SIZE, proc_que_size);
+                    AtomicStoreChannelLog(channel, CHANNEL_LOG_MAX_PROC_QUE_SIZE, proc_que_size);
                 }
 
                 if (cur_log.timestamp_ > 0)
                 {
                     long long now = (long long)time(NULL);
                     long long diff = now - 1 - cur_log.timestamp_;
-                    if (diff > channel.log_fields_.at(CHANNEL_LOG_MAX_DELAY_TIME_S))
+                    if (diff > AtomicLoadChannelLog(channel, CHANNEL_LOG_MAX_DELAY_TIME_S) )
                     {
-                        AtomicStoreL(channel, CHANNEL_LOG_MAX_DELAY_TIME_S, diff);
+                        AtomicStoreChannelLog(channel, CHANNEL_LOG_MAX_DELAY_TIME_S, diff);
                     }
                 }
                 do
@@ -434,7 +434,7 @@ namespace FNLog
         {
             if (state > 0)
             {
-                AtomicAddL(channel, CHANNEL_LOG_WAIT_COUNT);
+                AtomicIncChannelLog(channel, CHANNEL_LOG_WAIT_COUNT, 1);
                 std::this_thread::sleep_for(std::chrono::milliseconds(FN_LOG_MAX_ASYNC_SLEEP_MS));
             }
             state++;
@@ -453,7 +453,7 @@ namespace FNLog
                 }
                 if (ring_buffer.hold_idx_.compare_exchange_strong(old_idx, hold_idx))
                 {
-                    AtomicAddL(channel, CHANNEL_LOG_HOLD);
+                    AtomicIncChannelLog(channel, CHANNEL_LOG_HOLD, 1);
                     ring_buffer.buffer_[old_idx].data_mark_.store(MARK_HOLD, std::memory_order_release);
                     return old_idx;
                 }
@@ -490,7 +490,7 @@ namespace FNLog
         log.content_[log.content_len_] = '\0';
 
         log.data_mark_ = 2;
-        AtomicAddLV(channel, CHANNEL_LOG_PRIORITY + log.priority_, log.content_len_);
+        AtomicIncChannelLog(channel, CHANNEL_LOG_PRIORITY + log.priority_, log.content_len_);
 
         do
         {
@@ -506,7 +506,7 @@ namespace FNLog
             }
             if (ring_buffer.write_idx_.compare_exchange_strong(old_idx, next_idx))
             {
-                AtomicAddL(channel, CHANNEL_LOG_PUSH);
+                AtomicIncChannelLog(channel, CHANNEL_LOG_PUSH, 1);
             }
         } while (channel.channel_state_ == CHANNEL_STATE_RUNNING);
 

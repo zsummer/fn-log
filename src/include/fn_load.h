@@ -207,10 +207,10 @@ namespace FNLog
         logger.yaml_path_ = path;
         logger.hot_update_ = ls->hot_update_;
         logger.shm_key_ = ls->shm_key_;
-        if (logger.shm_  == NULL)
+        if (logger.shm_ == NULL)
         {
             ret = LoadSharedMemory(logger);
-            if (ret != 0)
+            if (ret != 0 || logger.shm_ == NULL)
             {
                 printf("InitFromYMAL has error:%d,  yaml:%s\n", ret, text.c_str());
                 return ret;
@@ -219,14 +219,11 @@ namespace FNLog
         logger.shm_->channel_size_ = ls->channel_size_;
         for (int i = 0; i < ls->channel_size_; i++)
         {
-            memcpy(&ls->channels_[i].log_fields_, &logger.shm_->channels_[i].log_fields_,
-                sizeof(ls->channels_[i].log_fields_));
-            for (int j = 0; j < ls->channels_[i].device_size_; j++)
-            {
-                memcpy(&ls->channels_[i].devices_[j].log_fields_, 
-                    &logger.shm_->channels_[i].devices_[j].log_fields_,
-                    sizeof(ls->channels_[i].devices_[j].log_fields_));
-            }
+            memcpy(&ls->channels_[i].channel_log_fields_, &logger.shm_->channels_[i].channel_log_fields_,
+                sizeof(ls->channels_[i].channel_log_fields_));
+
+            memcpy(&ls->channels_[i].device_log_fields_, &logger.shm_->channels_[i].device_log_fields_,
+                sizeof(ls->channels_[i].device_log_fields_));
         }
         memcpy(&logger.shm_->channels_, &ls->channels_, sizeof(logger.shm_->channels_));
 

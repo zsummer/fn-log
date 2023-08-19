@@ -19,6 +19,7 @@ namespace FNLog
     inline void EnterProcOutUDPDevice(Logger& logger, int channel_id, int device_id, LogData& log)
     {
         auto& udp = logger.udp_handles_[channel_id * Channel::MAX_DEVICE_SIZE + device_id];
+        Channel& channel = logger.shm_->channels_[channel_id];
         Device& device = logger.shm_->channels_[channel_id].devices_[device_id];
 
         if (!udp.is_open())
@@ -27,7 +28,7 @@ namespace FNLog
         }
         if (!udp.is_open())
         {
-            AtomicAddL(device, DEVICE_LOG_TOTAL_LOSE_LINE);
+            AtomicIncDeviceLog(channel, device_id, DEVICE_LOG_TOTAL_LOSE_LINE, 1);
             return;
         }
         
@@ -36,11 +37,11 @@ namespace FNLog
         int ret = udp.write((unsigned long)ip, (unsigned short)port, log.content_, log.content_len_);
         if (ret <= 0)
         {
-            AtomicAddL(device, DEVICE_LOG_TOTAL_LOSE_LINE);
+            AtomicIncDeviceLog(channel, device_id, DEVICE_LOG_TOTAL_LOSE_LINE, 1);
         }
-        AtomicAddL(device, DEVICE_LOG_TOTAL_WRITE_LINE);
-        AtomicAddLV(device, DEVICE_LOG_TOTAL_WRITE_BYTE, log.content_len_);
-        AtomicAddLV(device, DEVICE_LOG_PRIORITY + log.priority_, log.content_len_);
+        AtomicIncDeviceLog(channel, device_id, DEVICE_LOG_TOTAL_WRITE_LINE, 1);
+        AtomicIncDeviceLog(channel, device_id, DEVICE_LOG_TOTAL_WRITE_BYTE, log.content_len_);
+        AtomicIncDeviceLog(channel, device_id, DEVICE_LOG_PRIORITY + log.priority_, log.content_len_);
     }
 }
 

@@ -123,15 +123,15 @@ int main(int argc, char* argv[])
     FNLOG_ASSERT(FNLog::FastStartDefaultLogger(config_text_249) == 0, "start");
     FNLOG_ASSERT(FNLog::GetDefaultLogger().shm_->channels_[0].devices_[0].config_fields_[FNLog::DEVICE_CFG_CATEGORY_MASK] == 249, "");
     LogInfoStream(0, 0, 0); //ok
-    FNLOG_ASSERT(FNLog::GetDefaultLogger().shm_->channels_[0].devices_[0].log_fields_[FNLog::DEVICE_LOG_TOTAL_WRITE_LINE] == 1, "");
+    FNLOG_ASSERT(FNLog::AtomicLoadDeviceLog(FNLog::GetDefaultLogger().shm_->channels_[0], 0, FNLog::DEVICE_LOG_TOTAL_WRITE_LINE) == 1, "");
     LogInfoStream(0, 1, 0); //block
-    FNLOG_ASSERT(FNLog::GetDefaultLogger().shm_->channels_[0].devices_[0].log_fields_[FNLog::DEVICE_LOG_TOTAL_WRITE_LINE] == 1, "");
+    FNLOG_ASSERT(FNLog::AtomicLoadDeviceLog(FNLog::GetDefaultLogger().shm_->channels_[0], 0, FNLog::DEVICE_LOG_TOTAL_WRITE_LINE) == 1, "");
 
     LogInfoStream(0, 2, 0); //block
-    FNLOG_ASSERT(FNLog::GetDefaultLogger().shm_->channels_[0].devices_[0].log_fields_[FNLog::DEVICE_LOG_TOTAL_WRITE_LINE] == 1, "");
+    FNLOG_ASSERT(FNLog::AtomicLoadDeviceLog(FNLog::GetDefaultLogger().shm_->channels_[0], 0, FNLog::DEVICE_LOG_TOTAL_WRITE_LINE) == 1, "");
 
     LogInfoStream(0, 3, 0); //ok
-    FNLOG_ASSERT(FNLog::GetDefaultLogger().shm_->channels_[0].devices_[0].log_fields_[FNLog::DEVICE_LOG_TOTAL_WRITE_LINE] == 2, "");
+    FNLOG_ASSERT(FNLog::AtomicLoadDeviceLog(FNLog::GetDefaultLogger().shm_->channels_[0], 0, FNLog::DEVICE_LOG_TOTAL_WRITE_LINE) == 2, "");
 
 
     FNLog::StopLogger(FNLog::GetDefaultLogger());
@@ -151,15 +151,15 @@ int main(int argc, char* argv[])
     FNLOG_ASSERT(FNLog::GetDefaultLogger().shm_->channels_[0].config_fields_[FNLog::CHANNEL_CFG_CATEGORY_MASK] == 249, "");
 
     LogInfoStream(0, 0, 0); //ok
-    FNLOG_ASSERT(FNLog::GetDefaultLogger().shm_->channels_[0].devices_[0].log_fields_[FNLog::DEVICE_LOG_TOTAL_WRITE_LINE] == 3, "");
+    FNLOG_ASSERT(FNLog::AtomicLoadDeviceLog(FNLog::GetDefaultLogger().shm_->channels_[0], 0, FNLog::DEVICE_LOG_TOTAL_WRITE_LINE) == 3, "");
     LogInfoStream(0, 1, 0); //block
-    FNLOG_ASSERT(FNLog::GetDefaultLogger().shm_->channels_[0].devices_[0].log_fields_[FNLog::DEVICE_LOG_TOTAL_WRITE_LINE] == 3, "");
+    FNLOG_ASSERT(FNLog::AtomicLoadDeviceLog(FNLog::GetDefaultLogger().shm_->channels_[0], 0, FNLog::DEVICE_LOG_TOTAL_WRITE_LINE) == 3, "");
 
     LogInfoStream(0, 2, 0); //block
-    FNLOG_ASSERT(FNLog::GetDefaultLogger().shm_->channels_[0].devices_[0].log_fields_[FNLog::DEVICE_LOG_TOTAL_WRITE_LINE] == 3, "");
+    FNLOG_ASSERT(FNLog::AtomicLoadDeviceLog(FNLog::GetDefaultLogger().shm_->channels_[0], 0, FNLog::DEVICE_LOG_TOTAL_WRITE_LINE) == 3, "");
 
     LogInfoStream(0, 3, 0); //ok
-    FNLOG_ASSERT(FNLog::GetDefaultLogger().shm_->channels_[0].devices_[0].log_fields_[FNLog::DEVICE_LOG_TOTAL_WRITE_LINE] == 4, "");
+    FNLOG_ASSERT(FNLog::AtomicLoadDeviceLog(FNLog::GetDefaultLogger().shm_->channels_[0], 0, FNLog::DEVICE_LOG_TOTAL_WRITE_LINE) == 4, "");
 
 
 

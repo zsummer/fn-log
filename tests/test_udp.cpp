@@ -71,16 +71,17 @@ int main(int argc, char* argv[])
     double end_1s = Now();
     double end_2s = Now();
 
-
+    FNLog::Channel& channel0 = FNLog::GetDefaultLogger().shm_->channels_[0];
+    FNLog::Channel& channel1 = FNLog::GetDefaultLogger().shm_->channels_[1];
     FNLog::Device& sender = FNLog::GetDefaultLogger().shm_->channels_[0].devices_[1];
     FNLog::Device& receiver = FNLog::GetDefaultLogger().shm_->channels_[1].devices_[0];
 
 
-    long long lines = receiver.log_fields_[FNLog::DEVICE_LOG_TOTAL_WRITE_LINE];
+    long long lines =  FNLog::AtomicLoadDeviceLog(channel1, 0, FNLog::DEVICE_LOG_TOTAL_WRITE_LINE);
     do
     {
         std::this_thread::sleep_for(std::chrono::milliseconds(50));
-        long long news = lines = receiver.log_fields_[FNLog::DEVICE_LOG_TOTAL_WRITE_LINE];
+        long long news = FNLog::AtomicLoadDeviceLog(channel1, 0, FNLog::DEVICE_LOG_TOTAL_WRITE_LINE);
 
         if (news == lines)
         {
@@ -93,16 +94,14 @@ int main(int argc, char* argv[])
 
 
     
-    LogInfo() << "sender:" << sender.log_fields_[FNLog::DEVICE_LOG_TOTAL_WRITE_LINE];
-    if (sender.log_fields_[FNLog::DEVICE_LOG_TOTAL_WRITE_LINE] > 0)
+    LogInfo() << "sender:" << FNLog::AtomicLoadDeviceLog(channel0, 1, FNLog::DEVICE_LOG_TOTAL_WRITE_LINE);
+    if (FNLog::AtomicLoadDeviceLog(channel0, 1, FNLog::DEVICE_LOG_TOTAL_WRITE_LINE) > 0)
     {
-        LogInfo() << "sender lose:" << sender.log_fields_[FNLog::DEVICE_LOG_TOTAL_LOSE_LINE] * 100.0 / sender.log_fields_[FNLog::DEVICE_LOG_TOTAL_WRITE_LINE] <<"%";
+        LogInfo() << "sender lose:" << FNLog::AtomicLoadDeviceLog(channel0, 1, FNLog::DEVICE_LOG_TOTAL_LOSE_LINE) * 100.0 / FNLog::AtomicLoadDeviceLog(channel0, 1, FNLog::DEVICE_LOG_TOTAL_WRITE_LINE) <<"%";
     }
-    LogInfo() << "receiver:" << receiver.log_fields_[FNLog::DEVICE_LOG_TOTAL_WRITE_LINE];
-    if (sender.log_fields_[FNLog::DEVICE_LOG_TOTAL_WRITE_LINE] > 0)
-    {
-        LogInfo() << "receiver lose:" << (max_count - lines) * 100.0 / max_count << "%";
-    }
+    LogInfo() << "receiver:" << FNLog::AtomicLoadDeviceLog(channel1, 0, FNLog::DEVICE_LOG_TOTAL_WRITE_LINE);
+    LogInfo() << "receiver lose:" << (max_count - lines) * 100.0 / max_count << "%";
+
     LogInfo() << "per second file write and send:" << lines / (end_1s - begin_s);
     LogInfo() << "per second udp recv:" << lines / (end_2s - begin_s);
 

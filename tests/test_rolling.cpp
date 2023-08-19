@@ -298,14 +298,14 @@ int main(int argc, char* argv[])
 
         FNLog::FileHandler& writer = FNLog::GetDefaultLogger().file_handles_[1 * FNLog::Channel::MAX_DEVICE_SIZE + 0];
         FNLOG_ASSERT(writer.is_open(), "");
-        long long writed = FNLog::GetDefaultLogger().shm_->channels_[1].devices_[0].log_fields_[FNLog::DEVICE_LOG_CUR_FILE_SIZE];
+        long long writed = FNLog::AtomicLoadDeviceLog(FNLog::GetDefaultLogger().shm_->channels_[1], 0, FNLog::DEVICE_LOG_CUR_FILE_SIZE);
         if (true)
         {
             FNLog::LogStream ls = std::move( LOG_STREAM_DEFAULT_LOGGER(1, FNLog::PRIORITY_DEBUG, 0, 0, 0) <<"any");
             ls.log_data_->timestamp_ += 24 * 3600;
         }
         FNLOG_ASSERT(writer.is_open(), "");
-        long long now_writed = FNLog::GetDefaultLogger().shm_->channels_[1].devices_[0].log_fields_[FNLog::DEVICE_LOG_CUR_FILE_SIZE];
+        long long now_writed = FNLog::AtomicLoadDeviceLog(FNLog::GetDefaultLogger().shm_->channels_[1], 0, FNLog::DEVICE_LOG_CUR_FILE_SIZE);
 
         FNLOG_ASSERT(now_writed == writed, "");
 
@@ -323,14 +323,14 @@ int main(int argc, char* argv[])
 
         FNLog::FileHandler& writer = FNLog::GetDefaultLogger().file_handles_[1 * FNLog::Channel::MAX_DEVICE_SIZE + 0];
         FNLOG_ASSERT(writer.is_open(), "");
-        long long writed = FNLog::GetDefaultLogger().shm_->channels_[1].devices_[0].log_fields_[FNLog::DEVICE_LOG_CUR_FILE_SIZE];
+        long long writed = FNLog::AtomicLoadDeviceLog(FNLog::GetDefaultLogger().shm_->channels_[1], 0, FNLog::DEVICE_LOG_CUR_FILE_SIZE);
         if (true)
         {
             FNLog::LogStream ls = std::move(LOG_STREAM_DEFAULT_LOGGER(1, FNLog::PRIORITY_DEBUG, 0, 0, 0) << "any");
             ls.log_data_->timestamp_ += 24 * 3600;
         }
         FNLOG_ASSERT(writer.is_open(), "");
-        long long now_writed = FNLog::GetDefaultLogger().shm_->channels_[1].devices_[0].log_fields_[FNLog::DEVICE_LOG_CUR_FILE_SIZE];
+        long long now_writed = FNLog::AtomicLoadDeviceLog(FNLog::GetDefaultLogger().shm_->channels_[1], 0, FNLog::DEVICE_LOG_CUR_FILE_SIZE);
 
         FNLOG_ASSERT(now_writed <= writed, "");
 
@@ -347,14 +347,14 @@ int main(int argc, char* argv[])
 
         FNLog::FileHandler& writer = FNLog::GetDefaultLogger().file_handles_[1 * FNLog::Channel::MAX_DEVICE_SIZE + 0];
         FNLOG_ASSERT(writer.is_open(), "");
-        long long writed = FNLog::GetDefaultLogger().shm_->channels_[1].devices_[0].log_fields_[FNLog::DEVICE_LOG_CUR_FILE_SIZE];
+        long long writed = FNLog::AtomicLoadDeviceLog(FNLog::GetDefaultLogger().shm_->channels_[1], 0, FNLog::DEVICE_LOG_CUR_FILE_SIZE);
         if (true)
         {
             FNLog::LogStream ls = std::move(LOG_STREAM_DEFAULT_LOGGER(1, FNLog::PRIORITY_DEBUG, 0, 0, 0) << "any");
             ls.log_data_->timestamp_ += 3600;
         }
         FNLOG_ASSERT(writer.is_open(), "");
-        long long now_writed = FNLog::GetDefaultLogger().shm_->channels_[1].devices_[0].log_fields_[FNLog::DEVICE_LOG_CUR_FILE_SIZE];
+        long long now_writed = FNLog::AtomicLoadDeviceLog(FNLog::GetDefaultLogger().shm_->channels_[1], 0, FNLog::DEVICE_LOG_CUR_FILE_SIZE);
 
         FNLOG_ASSERT(now_writed == writed, "");
 
@@ -372,14 +372,14 @@ int main(int argc, char* argv[])
 
         FNLog::FileHandler& writer = FNLog::GetDefaultLogger().file_handles_[1 * FNLog::Channel::MAX_DEVICE_SIZE + 0];
         FNLOG_ASSERT(writer.is_open(), "");
-        long long writed = FNLog::GetDefaultLogger().shm_->channels_[1].devices_[0].log_fields_[FNLog::DEVICE_LOG_CUR_FILE_SIZE];
+        long long writed = FNLog::AtomicLoadDeviceLog(FNLog::GetDefaultLogger().shm_->channels_[1], 0, FNLog::DEVICE_LOG_CUR_FILE_SIZE);
         if (true)
         {
             FNLog::LogStream ls = std::move(LOG_STREAM_DEFAULT_LOGGER(1, FNLog::PRIORITY_DEBUG, 0, 0, 0) << "any");
             ls.log_data_->timestamp_ += 3600;
         }
         FNLOG_ASSERT(writer.is_open(), "");
-        long long now_writed = FNLog::GetDefaultLogger().shm_->channels_[1].devices_[0].log_fields_[FNLog::DEVICE_LOG_CUR_FILE_SIZE];
+        long long now_writed = FNLog::AtomicLoadDeviceLog(FNLog::GetDefaultLogger().shm_->channels_[1], 0, FNLog::DEVICE_LOG_CUR_FILE_SIZE);
 
         FNLOG_ASSERT(now_writed <= writed, "");
 
@@ -397,14 +397,14 @@ int main(int argc, char* argv[])
 
         FNLog::FileHandler& writer = FNLog::GetDefaultLogger().file_handles_[1 * FNLog::Channel::MAX_DEVICE_SIZE + 0];
         FNLOG_ASSERT(writer.is_open(), "");
-        long long writed = FNLog::GetDefaultLogger().shm_->channels_[1].devices_[0].log_fields_[FNLog::DEVICE_LOG_CUR_FILE_SIZE];
+        long long writed = FNLog::AtomicLoadDeviceLog(FNLog::GetDefaultLogger().shm_->channels_[1], 0, FNLog::DEVICE_LOG_CUR_FILE_SIZE);
         if (true)
         {
             FNLog::LogStream ls = std::move(LOG_STREAM_DEFAULT_LOGGER(1, FNLog::PRIORITY_DEBUG, 0, 0, 0) << "any");
             ls.log_data_->timestamp_ += 24*3600;
         }
         FNLOG_ASSERT(writer.is_open(), "");
-        long long now_writed = FNLog::GetDefaultLogger().shm_->channels_[1].devices_[0].log_fields_[FNLog::DEVICE_LOG_CUR_FILE_SIZE];
+        long long now_writed = FNLog::AtomicLoadDeviceLog(FNLog::GetDefaultLogger().shm_->channels_[1], 0, FNLog::DEVICE_LOG_CUR_FILE_SIZE);
 
         FNLOG_ASSERT(now_writed <= writed, "");
 
@@ -422,19 +422,19 @@ int main(int argc, char* argv[])
 
         FNLog::FileHandler& writer = FNLog::GetDefaultLogger().file_handles_[1 * FNLog::Channel::MAX_DEVICE_SIZE + 0];
         FNLOG_ASSERT(writer.is_open(), "");
-        long long writed = FNLog::GetDefaultLogger().shm_->channels_[1].devices_[0].log_fields_[FNLog::DEVICE_LOG_CUR_FILE_SIZE];
+        long long writed = FNLog::AtomicLoadDeviceLog(FNLog::GetDefaultLogger().shm_->channels_[1], 0, FNLog::DEVICE_LOG_CUR_FILE_SIZE);
         if (true)
         {
             FNLog::LogStream ls = std::move(LOG_STREAM_DEFAULT_LOGGER(1, FNLog::PRIORITY_DEBUG, 0, 0, 0) << "any");
             ls.log_data_->timestamp_ += 24 * 3600;
         }
         FNLOG_ASSERT(writer.is_open(), "");
-        long long now_writed = FNLog::GetDefaultLogger().shm_->channels_[1].devices_[0].log_fields_[FNLog::DEVICE_LOG_CUR_FILE_SIZE];
+        long long now_writed = FNLog::AtomicLoadDeviceLog(FNLog::GetDefaultLogger().shm_->channels_[1], 0, FNLog::DEVICE_LOG_CUR_FILE_SIZE);
 
         FNLOG_ASSERT(now_writed <= writed, "");
 
     }
-    volatile long long cnt = FNLog::GetDefaultLogger().shm_->channels_[1].devices_[0].log_fields_[FNLog::DEVICE_LOG_LAST_TRY_CREATE_CNT];
+    volatile long long cnt = FNLog::AtomicLoadDeviceLog(FNLog::GetDefaultLogger().shm_->channels_[1], 0, FNLog::DEVICE_LOG_LAST_TRY_CREATE_CNT);   
     (void)cnt;
     return 0;
 }
