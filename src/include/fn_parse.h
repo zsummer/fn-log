@@ -44,6 +44,8 @@ namespace FNLog
             return "success";
         case E_LOGGER_IN_USE:
             return "logger alread in use";
+        case E_LOGGER_NOT_INIT:
+            return "logger not init";
         case E_LOGGER_NOT_RUNNING:
             return "logger not running";
         case E_INVALID_CONFIG_PATH:

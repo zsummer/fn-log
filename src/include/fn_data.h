@@ -216,12 +216,14 @@ namespace FNLog
         using LogFields = std::array<std::atomic_llong, DEVICE_LOG_MAX_ID>;
 
     public:
+        char chunk_1_[CHUNK_SIZE];
         int device_id_;
         unsigned int out_type_;
         unsigned int in_type_;
         char out_file_[MAX_LOGGER_NAME_LEN];
         char out_path_[MAX_PATH_LEN];
         ConfigFields config_fields_;
+        char chunk_2_[CHUNK_SIZE];
         LogFields log_fields_;
     };
 
@@ -305,20 +307,22 @@ namespace FNLog
 
 
     public:
-        char chunk_1_[CHUNK_SIZE];
-
+        
         int  channel_id_;
         int  channel_type_;
-        unsigned int channel_state_;
-        time_t yaml_mtime_;
-        time_t last_hot_check_;
-
-        int chunk_;
         int virtual_device_id_;
         int device_size_;
-        Device devices_[MAX_DEVICE_SIZE];
+        unsigned int channel_state_;
         ConfigFields config_fields_;
+
+        char chunk_1_[CHUNK_SIZE];
+
+        time_t yaml_mtime_;
+        time_t last_hot_check_;
         LogFields log_fields_;
+
+        Device devices_[MAX_DEVICE_SIZE];
+        
     };
 
 
@@ -463,6 +467,7 @@ namespace FNLog
         E_SUCCESS = 0,
 
         E_LOGGER_IN_USE,
+        E_LOGGER_NOT_INIT,
         E_LOGGER_NOT_RUNNING,
 
         E_INVALID_CONFIG_PATH,

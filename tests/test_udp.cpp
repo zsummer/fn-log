@@ -60,7 +60,7 @@ int main(int argc, char* argv[])
 
     int total_count = 0;
 
-    constexpr int max_count = 100000;
+    constexpr int max_count = 50000;
 
     double begin_s = Now();
 
@@ -79,7 +79,7 @@ int main(int argc, char* argv[])
     long long lines = receiver.log_fields_[FNLog::DEVICE_LOG_TOTAL_WRITE_LINE];
     do
     {
-        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        std::this_thread::sleep_for(std::chrono::milliseconds(50));
         long long news = lines = receiver.log_fields_[FNLog::DEVICE_LOG_TOTAL_WRITE_LINE];
 
         if (news == lines)

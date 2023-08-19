@@ -18,10 +18,10 @@ namespace FNLog
 
     inline void EnterProcOutEmptyDevice(Logger& logger, int channel_id, int device_id, LogData& log)
     {
-        (void)logger;
-        (void)channel_id;
-        (void)device_id;
-        (void)log;
+        Device& device = logger.shm_->channels_[channel_id].devices_[device_id];
+        AtomicAddL(device, DEVICE_LOG_TOTAL_WRITE_LINE);
+        AtomicAddLV(device, DEVICE_LOG_TOTAL_WRITE_BYTE, log.content_len_);
+        AtomicAddLV(device, DEVICE_LOG_PRIORITY + log.priority_, log.content_len_);
     }
 
 }
