@@ -110,7 +110,7 @@ int main(int argc, char* argv[])
     {
         //lose 90% 
         LogFatal() << "lose udp logs";
-        return -1;
+        //return -1;
     }
 
 
