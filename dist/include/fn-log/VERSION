@@ -1,6 +1,6 @@
 version:
-last_sha1(./src)=0abcf6446fd2a57eb382159a91635f059714d741
-last_date(./src)=2023-08-20 02:48:32 +0800
+last_sha1(./src)=14b3ae4731bb45ba19da9c13c1ce3750af96cc62
+last_date(./src)=2023-08-20 03:51:56 +0800
 
 git log -1 --stat ./src:
-commit 0abcf6446fd2a57eb382159a91635f059714d741 Author: zsummer <yawei.zhang@foxmail.com> Date: Sun Aug 20 02:47:59 2023 +0800 optimize code and clean code src/include/fn_core.h | 43 +++++++-------------------------------- src/include/fn_data.h | 19 ++++++++++------- src/include/fn_out_empty_device.h | 8 ++++---- src/include/fn_parse.h | 2 ++ 4 files changed, 25 insertions(+), 47 deletions(-)
+commit 14b3ae4731bb45ba19da9c13c1ce3750af96cc62 Author: zsummer <yawei.zhang@foxmail.com> Date: Sun Aug 20 03:51:24 2023 +0800 cacheline optimize src/include/fn_channel.h | 20 +++++++-------- src/include/fn_core.h | 4 +-- src/include/fn_data.h | 49 ++++++++++++++++++++----------------- src/include/fn_load.h | 17 ++++++------- src/include/fn_out_empty_device.h | 8 +++--- src/include/fn_out_file_device.h | 46 +++++++++++++++++----------------- src/include/fn_out_screen_device.h | 9 ++++--- src/include/fn_out_udp_device.h | 11 +++++---- src/include/fn_out_virtual_device.h | 7 +++--- 9 files changed, 86 insertions(+), 85 deletions(-)
