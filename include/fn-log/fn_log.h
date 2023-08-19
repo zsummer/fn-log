@@ -760,18 +760,14 @@ namespace FNLog
 #else
         using ConfigFields = long long[DEVICE_CFG_MAX_ID];
 #endif // FN_LOG_USING_ATOM_CFG
-        using LogFields = std::array<std::atomic_llong, DEVICE_LOG_MAX_ID>;
-
+        
     public:
-        char chunk_1_[CHUNK_SIZE];
         int device_id_;
         unsigned int out_type_;
         unsigned int in_type_;
         char out_file_[MAX_LOGGER_NAME_LEN];
         char out_path_[MAX_PATH_LEN];
         ConfigFields config_fields_;
-        char chunk_2_[CHUNK_SIZE];
-        LogFields log_fields_;
     };
 
    
@@ -849,9 +845,9 @@ namespace FNLog
         using ConfigFields = long long[CHANNEL_CFG_MAX_ID];
 #endif // FN_LOG_USING_ATOM_CFG
 
-        using LogFields = std::array<std::atomic_llong, CHANNEL_LOG_MAX_ID>;
+        using ChannelLogFields = std::array<std::atomic_llong, CHANNEL_LOG_MAX_ID>;
         static const int MAX_DEVICE_SIZE = FN_LOG_MAX_DEVICE_SIZE;
-
+        using DeviceLogFields = std::array<std::atomic_llong, DEVICE_LOG_MAX_ID>;
 
     public:
         
@@ -861,15 +857,14 @@ namespace FNLog
         int device_size_;
         unsigned int channel_state_;
         ConfigFields config_fields_;
+        Device devices_[MAX_DEVICE_SIZE];
 
         char chunk_1_[CHUNK_SIZE];
 
         time_t yaml_mtime_;
         time_t last_hot_check_;
-        LogFields log_fields_;
-
-        Device devices_[MAX_DEVICE_SIZE];
-        
+        ChannelLogFields channel_log_fields_;
+        DeviceLogFields device_log_fields_[MAX_DEVICE_SIZE];
     };
 
 
@@ -984,28 +979,36 @@ namespace FNLog
 #define AtomicLoadC(m, eid) m.config_fields_[eid]
 #endif // FN_LOG_USING_ATOM_CFG
 
-
-    template <class M>
-    inline long long AtomicLoadL(M& m, unsigned eid)
+    inline long long AtomicLoadChannelLog(Channel& c, unsigned eid)
     {
-        return m.log_fields_[eid].load(std::memory_order_relaxed);
+        return c.channel_log_fields_[eid].load(std::memory_order_relaxed);
     }
 
-    template <class M>
-    inline void AtomicAddL(M& m, unsigned eid)
+    inline void AtomicIncChannelLog(Channel& c, unsigned eid, long long v)
     {
-        m.log_fields_[eid].fetch_add(1, std::memory_order_relaxed);
-    }
-    template <class M>
-    inline void AtomicAddLV(M& m, unsigned eid, long long v)
-    {
-        m.log_fields_[eid].fetch_add(v, std::memory_order_relaxed);
+        c.channel_log_fields_[eid].fetch_add(v, std::memory_order_relaxed);
     }
 
-    template <class M>
-    inline void AtomicStoreL(M& m, unsigned eid, long long v)
+    inline void AtomicStoreChannelLog(Channel& c, unsigned eid, long long v)
     {
-        m.log_fields_[eid].store(v, std::memory_order_relaxed);
+        c.channel_log_fields_[eid].store(v, std::memory_order_relaxed);
+    }
+
+
+
+    inline long long AtomicLoadDeviceLog(Channel& c, int device_id, unsigned eid)
+    {
+        return c.device_log_fields_[device_id][eid].load(std::memory_order_relaxed);
+    }
+
+    inline void AtomicIncDeviceLog(Channel& c, int device_id, unsigned eid, long long v)
+    {
+        c.device_log_fields_[device_id][eid].fetch_add(v, std::memory_order_relaxed);
+    }
+
+    inline void AtomicStoreDeviceLog(Channel& c, int device_id, unsigned eid, long long v)
+    {
+        c.device_log_fields_[device_id][eid].store(v, std::memory_order_relaxed);
     }
 
 
@@ -3126,10 +3129,10 @@ namespace FNLog
         logger.yaml_path_ = path;
         logger.hot_update_ = ls->hot_update_;
         logger.shm_key_ = ls->shm_key_;
-        if (logger.shm_  == NULL)
+        if (logger.shm_ == NULL)
         {
             ret = LoadSharedMemory(logger);
-            if (ret != 0)
+            if (ret != 0 || logger.shm_ == NULL)
             {
                 printf("InitFromYMAL has error:%d,  yaml:%s\n", ret, text.c_str());
                 return ret;
@@ -3138,14 +3141,11 @@ namespace FNLog
         logger.shm_->channel_size_ = ls->channel_size_;
         for (int i = 0; i < ls->channel_size_; i++)
         {
-            memcpy(&ls->channels_[i].log_fields_, &logger.shm_->channels_[i].log_fields_,
-                sizeof(ls->channels_[i].log_fields_));
-            for (int j = 0; j < ls->channels_[i].device_size_; j++)
-            {
-                memcpy(&ls->channels_[i].devices_[j].log_fields_, 
-                    &logger.shm_->channels_[i].devices_[j].log_fields_,
-                    sizeof(ls->channels_[i].devices_[j].log_fields_));
-            }
+            memcpy(&ls->channels_[i].channel_log_fields_, &logger.shm_->channels_[i].channel_log_fields_,
+                sizeof(ls->channels_[i].channel_log_fields_));
+
+            memcpy(&ls->channels_[i].device_log_fields_, &logger.shm_->channels_[i].device_log_fields_,
+                sizeof(ls->channels_[i].device_log_fields_));
         }
         memcpy(&logger.shm_->channels_, &ls->channels_, sizeof(logger.shm_->channels_));
 
@@ -3320,10 +3320,10 @@ namespace FNLog
 
     inline void EnterProcOutEmptyDevice(Logger& logger, int channel_id, int device_id, LogData& log)
     {
-        Device& device = logger.shm_->channels_[channel_id].devices_[device_id];
-        AtomicAddL(device, DEVICE_LOG_TOTAL_WRITE_LINE);
-        AtomicAddLV(device, DEVICE_LOG_TOTAL_WRITE_BYTE, log.content_len_);
-        AtomicAddLV(device, DEVICE_LOG_PRIORITY + log.priority_, log.content_len_);
+        Channel& channel = logger.shm_->channels_[channel_id];
+        AtomicIncDeviceLog(channel, device_id, DEVICE_LOG_TOTAL_WRITE_LINE, 1);
+        AtomicIncDeviceLog(channel, device_id, DEVICE_LOG_TOTAL_WRITE_BYTE, log.content_len_);
+        AtomicIncDeviceLog(channel, device_id, DEVICE_LOG_PRIORITY + log.priority_, log.content_len_);
     }
 
 }
@@ -3533,7 +3533,7 @@ namespace FNLog
         {
             //rollback only limit size && rollback > 0 
             if (AtomicLoadC(device, DEVICE_CFG_FILE_LIMIT_SIZE) > 0 && AtomicLoadC(device, DEVICE_CFG_FILE_ROLLBACK) > 0
-                && AtomicLoadL(device, DEVICE_LOG_CUR_FILE_SIZE) + log.content_len_ > AtomicLoadC(device, DEVICE_CFG_FILE_LIMIT_SIZE))
+                && AtomicLoadDeviceLog(channel, device.device_id_, DEVICE_LOG_CUR_FILE_SIZE) + log.content_len_ > AtomicLoadC(device, DEVICE_CFG_FILE_LIMIT_SIZE))
             {
                 close_file = true;
                 limit_out = true;
@@ -3543,8 +3543,8 @@ namespace FNLog
             //daily rolling
             if (AtomicLoadC(device, DEVICE_CFG_FILE_ROLLDAILY))
             {
-                if (log.timestamp_ < AtomicLoadL(device, DEVICE_LOG_CUR_FILE_CREATE_DAY)
-                    || log.timestamp_ >= AtomicLoadL(device, DEVICE_LOG_CUR_FILE_CREATE_DAY) + 24 * 3600)
+                if (log.timestamp_ < AtomicLoadDeviceLog(channel, device.device_id_, DEVICE_LOG_CUR_FILE_CREATE_DAY)
+                    || log.timestamp_ >= AtomicLoadDeviceLog(channel, device.device_id_, DEVICE_LOG_CUR_FILE_CREATE_DAY) + 24 * 3600)
                 {
                     close_file = true;
                 }
@@ -3554,8 +3554,8 @@ namespace FNLog
             //hourly rolling 
             if (AtomicLoadC(device, DEVICE_CFG_FILE_ROLLHOURLY))
             {
-                if (log.timestamp_ < AtomicLoadL(device, DEVICE_LOG_CUR_FILE_CREATE_HOUR)
-                    || log.timestamp_ >= AtomicLoadL(device, DEVICE_LOG_CUR_FILE_CREATE_HOUR) + 3600)
+                if (log.timestamp_ < AtomicLoadDeviceLog(channel, device.device_id_, DEVICE_LOG_CUR_FILE_CREATE_HOUR)
+                    || log.timestamp_ >= AtomicLoadDeviceLog(channel, device.device_id_, DEVICE_LOG_CUR_FILE_CREATE_HOUR) + 3600)
                 {
                     close_file = true;
                 }
@@ -3567,7 +3567,7 @@ namespace FNLog
 
         if (close_file)
         {
-            AtomicStoreL(device, DEVICE_LOG_CUR_FILE_SIZE, 0);
+            AtomicStoreDeviceLog(channel, device.device_id_, DEVICE_LOG_CUR_FILE_SIZE, 0);
             if (writer.is_open())
             {
                 writer.close();
@@ -3609,8 +3609,8 @@ namespace FNLog
 
         if (path.length() >= Device::MAX_PATH_LEN + Device::MAX_LOGGER_NAME_LEN)
         {
-            AtomicStoreL(device, DEVICE_LOG_LAST_TRY_CREATE_ERROR, 1);
-            AtomicStoreL(device, DEVICE_LOG_LAST_TRY_CREATE_TIMESTAMP, log.timestamp_);
+            AtomicStoreDeviceLog(channel, device.device_id_, DEVICE_LOG_LAST_TRY_CREATE_ERROR, 1);
+            AtomicStoreDeviceLog(channel, device.device_id_, DEVICE_LOG_LAST_TRY_CREATE_TIMESTAMP, log.timestamp_);
             return;
         }
 
@@ -3630,19 +3630,19 @@ namespace FNLog
         long writed_byte = writer.open(path.c_str(), "ab", file_stat);
         if (!writer.is_open())
         {
-            AtomicStoreL(device, DEVICE_LOG_LAST_TRY_CREATE_ERROR, 2);
-            AtomicStoreL(device, DEVICE_LOG_LAST_TRY_CREATE_TIMESTAMP, log.timestamp_);
+            AtomicStoreDeviceLog(channel, device.device_id_, DEVICE_LOG_LAST_TRY_CREATE_ERROR, 2);
+            AtomicStoreDeviceLog(channel, device.device_id_, DEVICE_LOG_LAST_TRY_CREATE_TIMESTAMP, log.timestamp_);
             return;
         }
         
-        AtomicAddL(device, DEVICE_LOG_LAST_TRY_CREATE_CNT);
+        AtomicIncDeviceLog(channel, device.device_id_, DEVICE_LOG_LAST_TRY_CREATE_CNT, 1);
 
-        AtomicStoreL(device, DEVICE_LOG_LAST_TRY_CREATE_ERROR, 0);
-        AtomicStoreL(device, DEVICE_LOG_LAST_TRY_CREATE_TIMESTAMP, 0);
-        AtomicStoreL(device, DEVICE_LOG_CUR_FILE_CREATE_TIMESTAMP, log.timestamp_);
-        AtomicStoreL(device, DEVICE_LOG_CUR_FILE_CREATE_DAY, create_day);
-        AtomicStoreL(device, DEVICE_LOG_CUR_FILE_CREATE_HOUR, create_hour);
-        AtomicStoreL(device, DEVICE_LOG_CUR_FILE_SIZE, writed_byte);
+        AtomicStoreDeviceLog(channel, device.device_id_, DEVICE_LOG_LAST_TRY_CREATE_ERROR, 0);
+        AtomicStoreDeviceLog(channel, device.device_id_, DEVICE_LOG_LAST_TRY_CREATE_TIMESTAMP, 0);
+        AtomicStoreDeviceLog(channel, device.device_id_, DEVICE_LOG_CUR_FILE_CREATE_TIMESTAMP, log.timestamp_);
+        AtomicStoreDeviceLog(channel, device.device_id_, DEVICE_LOG_CUR_FILE_CREATE_DAY, create_day);
+        AtomicStoreDeviceLog(channel, device.device_id_, DEVICE_LOG_CUR_FILE_CREATE_HOUR, create_hour);
+        AtomicStoreDeviceLog(channel, device.device_id_, DEVICE_LOG_CUR_FILE_SIZE, writed_byte);
     }
 
 
@@ -3653,7 +3653,7 @@ namespace FNLog
         Device& device = channel.devices_[device_id];
         FileHandler& writer = logger.file_handles_[channel_id * Channel::MAX_DEVICE_SIZE + device_id];
 
-        if (!writer.is_open() && AtomicLoadL(device, DEVICE_LOG_LAST_TRY_CREATE_TIMESTAMP) + 5 > log.timestamp_)
+        if (!writer.is_open() && AtomicLoadDeviceLog(channel, device_id, DEVICE_LOG_LAST_TRY_CREATE_TIMESTAMP) + 5 > log.timestamp_)
         {
             return;
         }
@@ -3663,10 +3663,10 @@ namespace FNLog
             return;
         }
         writer.write(log.content_, log.content_len_);
-        AtomicAddL(device, DEVICE_LOG_TOTAL_WRITE_LINE);
-        AtomicAddLV(device, DEVICE_LOG_TOTAL_WRITE_BYTE, log.content_len_);
-        AtomicAddLV(device, DEVICE_LOG_CUR_FILE_SIZE, log.content_len_);
-        AtomicAddLV(device, DEVICE_LOG_PRIORITY + log.priority_, log.content_len_);
+        AtomicIncDeviceLog(channel, device_id, DEVICE_LOG_TOTAL_WRITE_LINE, 1);
+        AtomicIncDeviceLog(channel, device_id, DEVICE_LOG_TOTAL_WRITE_BYTE, log.content_len_);
+        AtomicIncDeviceLog(channel, device_id, DEVICE_LOG_CUR_FILE_SIZE, log.content_len_);
+        AtomicIncDeviceLog(channel, device_id, DEVICE_LOG_PRIORITY + log.priority_, log.content_len_);
     }
 
 
@@ -3693,6 +3693,7 @@ namespace FNLog
     inline void EnterProcOutUDPDevice(Logger& logger, int channel_id, int device_id, LogData& log)
     {
         auto& udp = logger.udp_handles_[channel_id * Channel::MAX_DEVICE_SIZE + device_id];
+        Channel& channel = logger.shm_->channels_[channel_id];
         Device& device = logger.shm_->channels_[channel_id].devices_[device_id];
 
         if (!udp.is_open())
@@ -3701,7 +3702,7 @@ namespace FNLog
         }
         if (!udp.is_open())
         {
-            AtomicAddL(device, DEVICE_LOG_TOTAL_LOSE_LINE);
+            AtomicIncDeviceLog(channel, device_id, DEVICE_LOG_TOTAL_LOSE_LINE, 1);
             return;
         }
         
@@ -3710,11 +3711,11 @@ namespace FNLog
         int ret = udp.write((unsigned long)ip, (unsigned short)port, log.content_, log.content_len_);
         if (ret <= 0)
         {
-            AtomicAddL(device, DEVICE_LOG_TOTAL_LOSE_LINE);
+            AtomicIncDeviceLog(channel, device_id, DEVICE_LOG_TOTAL_LOSE_LINE, 1);
         }
-        AtomicAddL(device, DEVICE_LOG_TOTAL_WRITE_LINE);
-        AtomicAddLV(device, DEVICE_LOG_TOTAL_WRITE_BYTE, log.content_len_);
-        AtomicAddLV(device, DEVICE_LOG_PRIORITY + log.priority_, log.content_len_);
+        AtomicIncDeviceLog(channel, device_id, DEVICE_LOG_TOTAL_WRITE_LINE, 1);
+        AtomicIncDeviceLog(channel, device_id, DEVICE_LOG_TOTAL_WRITE_BYTE, log.content_len_);
+        AtomicIncDeviceLog(channel, device_id, DEVICE_LOG_PRIORITY + log.priority_, log.content_len_);
     }
 }
 
@@ -3739,10 +3740,11 @@ namespace FNLog
     inline void EnterProcOutScreenDevice(Logger& logger, int channel_id, int device_id, LogData& log)
     {
         Logger::ScreenLockGuard l(logger.screen_lock_);
-        Device& device = logger.shm_->channels_[channel_id].devices_[device_id];
-        AtomicAddL(device, DEVICE_LOG_TOTAL_WRITE_LINE);
-        AtomicAddLV(device, DEVICE_LOG_TOTAL_WRITE_BYTE, log.content_len_);
-        AtomicAddLV(device, DEVICE_LOG_PRIORITY + log.priority_, log.content_len_);
+        Channel& channel = logger.shm_->channels_[channel_id];
+
+        AtomicIncDeviceLog(channel, device_id, DEVICE_LOG_TOTAL_WRITE_LINE, 1);
+        AtomicIncDeviceLog(channel, device_id, DEVICE_LOG_TOTAL_WRITE_BYTE, log.content_len_);
+        AtomicIncDeviceLog(channel, device_id, DEVICE_LOG_PRIORITY + log.priority_, log.content_len_);
 
         int priority = log.priority_;
         if (log.priority_ < PRIORITY_INFO)
@@ -3848,10 +3850,9 @@ namespace FNLog
             int content_len_ = FN_MIN(log.content_len_, LogData::LOG_SIZE - 1);
             log.content_[content_len_] = '\0'; //virtual device hook maybe direct used content like c-string 
 
-            Device& device = logger.shm_->channels_[channel_id].devices_[device_id];
-            AtomicAddL(device, DEVICE_LOG_TOTAL_WRITE_LINE);
-            AtomicAddLV(device, DEVICE_LOG_TOTAL_WRITE_BYTE, log.content_len_);
-            AtomicAddLV(device, DEVICE_LOG_PRIORITY + log.priority_, log.content_len_);
+            AtomicIncDeviceLog(channel, device_id, DEVICE_LOG_TOTAL_WRITE_LINE, 1);
+            AtomicIncDeviceLog(channel, device_id, DEVICE_LOG_TOTAL_WRITE_BYTE, log.content_len_);
+            AtomicIncDeviceLog(channel, device_id, DEVICE_LOG_PRIORITY + log.priority_, log.content_len_);
             (*RefVirtualDevice())(log);
         }
     }
@@ -3976,8 +3977,8 @@ namespace FNLog
                 auto& cur_log = ring_buffer.buffer_[old_idx];
                 DispatchLog(logger, channel, cur_log);
                 cur_log.data_mark_ = 0;
-                AtomicAddL(channel, CHANNEL_LOG_PROCESSED);
-                AtomicAddLV(channel, CHANNEL_LOG_PROCESSED_BYTES, cur_log.content_len_);
+                AtomicIncChannelLog(channel, CHANNEL_LOG_PROCESSED, 1);
+                AtomicIncChannelLog(channel, CHANNEL_LOG_PROCESSED_BYTES, cur_log.content_len_);
                 local_write_count ++;
 
                 int write_id = ring_buffer.write_idx_.load(std::memory_order_acquire);
@@ -3991,18 +3992,18 @@ namespace FNLog
                     proc_que_size = write_id + RingBuffer::BUFFER_LEN - old_idx;
                 }
 
-                if (proc_que_size > channel.log_fields_.at(CHANNEL_LOG_MAX_PROC_QUE_SIZE))
+                if (proc_que_size > AtomicLoadChannelLog(channel, CHANNEL_LOG_MAX_PROC_QUE_SIZE))
                 {
-                    AtomicStoreL(channel, CHANNEL_LOG_MAX_PROC_QUE_SIZE, proc_que_size);
+                    AtomicStoreChannelLog(channel, CHANNEL_LOG_MAX_PROC_QUE_SIZE, proc_que_size);
                 }
 
                 if (cur_log.timestamp_ > 0)
                 {
                     long long now = (long long)time(NULL);
                     long long diff = now - 1 - cur_log.timestamp_;
-                    if (diff > channel.log_fields_.at(CHANNEL_LOG_MAX_DELAY_TIME_S))
+                    if (diff > AtomicLoadChannelLog(channel, CHANNEL_LOG_MAX_DELAY_TIME_S) )
                     {
-                        AtomicStoreL(channel, CHANNEL_LOG_MAX_DELAY_TIME_S, diff);
+                        AtomicStoreChannelLog(channel, CHANNEL_LOG_MAX_DELAY_TIME_S, diff);
                     }
                 }
                 do
@@ -4288,7 +4289,7 @@ namespace FNLog
         {
             if (state > 0)
             {
-                AtomicAddL(channel, CHANNEL_LOG_WAIT_COUNT);
+                AtomicIncChannelLog(channel, CHANNEL_LOG_WAIT_COUNT, 1);
                 std::this_thread::sleep_for(std::chrono::milliseconds(FN_LOG_MAX_ASYNC_SLEEP_MS));
             }
             state++;
@@ -4307,7 +4308,7 @@ namespace FNLog
                 }
                 if (ring_buffer.hold_idx_.compare_exchange_strong(old_idx, hold_idx))
                 {
-                    AtomicAddL(channel, CHANNEL_LOG_HOLD);
+                    AtomicIncChannelLog(channel, CHANNEL_LOG_HOLD, 1);
                     ring_buffer.buffer_[old_idx].data_mark_.store(MARK_HOLD, std::memory_order_release);
                     return old_idx;
                 }
@@ -4344,7 +4345,7 @@ namespace FNLog
         log.content_[log.content_len_] = '\0';
 
         log.data_mark_ = 2;
-        AtomicAddLV(channel, CHANNEL_LOG_PRIORITY + log.priority_, log.content_len_);
+        AtomicIncChannelLog(channel, CHANNEL_LOG_PRIORITY + log.priority_, log.content_len_);
 
         do
         {
@@ -4360,7 +4361,7 @@ namespace FNLog
             }
             if (ring_buffer.write_idx_.compare_exchange_strong(old_idx, next_idx))
             {
-                AtomicAddL(channel, CHANNEL_LOG_PUSH);
+                AtomicIncChannelLog(channel, CHANNEL_LOG_PUSH, 1);
             }
         } while (channel.channel_state_ == CHANNEL_STATE_RUNNING);
 
@@ -4682,7 +4683,7 @@ namespace FNLog
         {
             return 0;
         }
-        return AtomicLoadL(channel, field);
+        return AtomicLoadChannelLog(channel, field);
     }
 
     inline void SetChannelConfig(Logger& logger, int channel_id, ChannelConfigEnum field, long long val)
@@ -4714,7 +4715,7 @@ namespace FNLog
         {
             return 0;
         }
-        return AtomicLoadL(channel.devices_[device_id], field);
+        return AtomicLoadDeviceLog(channel, device_id, field);
     }
 
     inline void SetDeviceConfig(Logger& logger, int channel_id, int device_id, DeviceConfigEnum field, long long val)
