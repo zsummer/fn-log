@@ -102,7 +102,8 @@ namespace FNLog
         RingBuffer& ring_buffer = logger.shm_->ring_buffers_[channel_id];
         do
         {
-            int local_write_count = 0;
+            int flush_count = 0;
+            bool empty_tick = true;
             do
             {
                 int old_idx = ring_buffer.proc_idx_.load(std::memory_order_acquire);
@@ -124,8 +125,8 @@ namespace FNLog
                 cur_log.data_mark_ = 0;
                 AtomicIncChannelLog(channel, CHANNEL_LOG_PROCESSED, 1);
                 AtomicIncChannelLog(channel, CHANNEL_LOG_PROCESSED_BYTES, cur_log.content_len_);
-                local_write_count ++;
-
+                flush_count ++;
+                empty_tick = false;
                 int write_id = ring_buffer.write_idx_.load(std::memory_order_acquire);
                 int proc_que_size = 0;
                 if (old_idx <= write_id)
@@ -168,10 +169,10 @@ namespace FNLog
                 } while (true);  
 
                 //if want the high log security can reduce this threshold or enable shared memory queue.  
-                if (local_write_count > FN_LOG_FORCE_FLUSH_QUE)
+                if (flush_count > FN_LOG_FORCE_FLUSH_QUE)
                 {
                     //break;
-                    local_write_count = 0;
+                    flush_count = 0;
                     for (int i = 0; i < channel.device_size_; i++)
                     {
                         if (channel.devices_[i].out_type_ == DEVICE_OUT_FILE)
@@ -188,7 +189,7 @@ namespace FNLog
                 channel.channel_state_ = CHANNEL_STATE_RUNNING;
             }
 
-            if (local_write_count)
+            if (flush_count != 0)
             {
                 for (int i = 0; i < channel.device_size_; i++)
                 {
@@ -248,13 +249,13 @@ namespace FNLog
                     {
                         break;
                     }
-                    local_write_count++;
+                    empty_tick = false; 
                     EnterProcDevice(logger, channel.channel_id_, device.device_id_, ring_buffer.udp_buffer_);
                 }
             }
 
             HotUpdateLogger(logger, channel.channel_id_);
-            if (channel.channel_type_ == CHANNEL_ASYNC && local_write_count == 0)
+            if (channel.channel_type_ == CHANNEL_ASYNC && !empty_tick)
             {
                 std::this_thread::sleep_for(std::chrono::milliseconds(FN_LOG_MAX_ASYNC_SLEEP_MS));
             }
@@ -381,6 +382,14 @@ namespace FNLog
             Device::ConfigFields& fields = channel.devices_[i].config_fields_;
             long long field_able = fields[FNLog::DEVICE_CFG_ABLE];
             long long field_priority = fields[FNLog::DEVICE_CFG_PRIORITY];
+            if (!field_able || priority < field_priority)
+            {
+                continue;
+            }
+            if (channel.devices_[i].in_type_ != DEVICE_IN_NULL)
+            {
+                continue;
+            }
             long long field_begin_category = fields[FNLog::DEVICE_CFG_CATEGORY];
             long long field_category_count = fields[FNLog::DEVICE_CFG_CATEGORY_EXTEND];
             unsigned long long field_category_mask = (unsigned long long)fields[FNLog::DEVICE_CFG_CATEGORY_MASK];
@@ -388,27 +397,25 @@ namespace FNLog
             long long field_identify_count = fields[FNLog::DEVICE_CFG_IDENTIFY_EXTEND];
             unsigned long long field_identify_mask = (unsigned long long)fields[FNLog::DEVICE_CFG_IDENTIFY_MASK];
 
-            if (field_able && priority >= field_priority)
+
+            if (field_category_count > 0 && (category < field_begin_category || category >= field_begin_category + field_category_count))
             {
-                if (field_category_count > 0 && (category < field_begin_category || category >= field_begin_category + field_category_count))
-                {
-                    continue;
-                }
-                if (field_identify_count > 0 && (identify < field_begin_identify || identify >= field_begin_identify + field_identify_count))
-                {
-                    continue;
-                }
-                if (field_category_mask &&  (field_category_mask & ((1ULL) << (unsigned int)category)) == 0)
-                {
-                    continue;
-                }
-                if (field_identify_mask &&  (field_identify_mask & ((1ULL) << (unsigned int)identify)) == 0)
-                {
-                    continue;
-                }
-                need_write = true;
-                break;
+                continue;
             }
+            if (field_identify_count > 0 && (identify < field_begin_identify || identify >= field_begin_identify + field_identify_count))
+            {
+                continue;
+            }
+            if (field_category_mask &&  (field_category_mask & ((1ULL) << (unsigned int)category)) == 0)
+            {
+                continue;
+            }
+            if (field_identify_mask &&  (field_identify_mask & ((1ULL) << (unsigned int)identify)) == 0)
+            {
+                continue;
+            }
+            need_write = true;
+            break;
         }
         if (!need_write)
         {
