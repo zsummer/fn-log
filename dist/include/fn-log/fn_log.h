@@ -763,12 +763,14 @@ namespace FNLog
         using LogFields = std::array<std::atomic_llong, DEVICE_LOG_MAX_ID>;
 
     public:
+        char chunk_1_[CHUNK_SIZE];
         int device_id_;
         unsigned int out_type_;
         unsigned int in_type_;
         char out_file_[MAX_LOGGER_NAME_LEN];
         char out_path_[MAX_PATH_LEN];
         ConfigFields config_fields_;
+        char chunk_2_[CHUNK_SIZE];
         LogFields log_fields_;
     };
 
@@ -852,20 +854,22 @@ namespace FNLog
 
 
     public:
-        char chunk_1_[CHUNK_SIZE];
-
+        
         int  channel_id_;
         int  channel_type_;
-        unsigned int channel_state_;
-        time_t yaml_mtime_;
-        time_t last_hot_check_;
-
-        int chunk_;
         int virtual_device_id_;
         int device_size_;
-        Device devices_[MAX_DEVICE_SIZE];
+        unsigned int channel_state_;
         ConfigFields config_fields_;
+
+        char chunk_1_[CHUNK_SIZE];
+
+        time_t yaml_mtime_;
+        time_t last_hot_check_;
         LogFields log_fields_;
+
+        Device devices_[MAX_DEVICE_SIZE];
+        
     };
 
 
@@ -1010,6 +1014,7 @@ namespace FNLog
         E_SUCCESS = 0,
 
         E_LOGGER_IN_USE,
+        E_LOGGER_NOT_INIT,
         E_LOGGER_NOT_RUNNING,
 
         E_INVALID_CONFIG_PATH,
@@ -1095,6 +1100,8 @@ namespace FNLog
             return "success";
         case E_LOGGER_IN_USE:
             return "logger alread in use";
+        case E_LOGGER_NOT_INIT:
+            return "logger not init";
         case E_LOGGER_NOT_RUNNING:
             return "logger not running";
         case E_INVALID_CONFIG_PATH:
@@ -3313,10 +3320,10 @@ namespace FNLog
 
     inline void EnterProcOutEmptyDevice(Logger& logger, int channel_id, int device_id, LogData& log)
     {
-        (void)logger;
-        (void)channel_id;
-        (void)device_id;
-        (void)log;
+        Device& device = logger.shm_->channels_[channel_id].devices_[device_id];
+        AtomicAddL(device, DEVICE_LOG_TOTAL_WRITE_LINE);
+        AtomicAddLV(device, DEVICE_LOG_TOTAL_WRITE_BYTE, log.content_len_);
+        AtomicAddLV(device, DEVICE_LOG_PRIORITY + log.priority_, log.content_len_);
     }
 
 }
@@ -4429,40 +4436,6 @@ namespace FNLog
         return PushChannel(logger, channel_id, hold_idx);
     }
 
-    //not thread-safe
-    inline Channel* NewChannel(Logger& logger, int channel_type)
-    {
-        Channel * channel = nullptr;
-        if (logger.shm_->channel_size_ < Logger::MAX_CHANNEL_SIZE) 
-        {
-            int channel_id = logger.shm_->channel_size_;
-            logger.shm_->channel_size_++;
-            channel = &logger.shm_->channels_[channel_id];
-            channel->channel_id_ = channel_id;
-            channel->channel_type_ = channel_type;
-            return channel;
-        }
-        return channel;
-    }
-
-    //not thread-safe
-    inline Device* NewDevice(Logger& logger, Channel& channel, unsigned int out_type, unsigned int in_type = DEVICE_IN_NULL)
-    {
-        (void)logger;
-        Device* device = nullptr;
-        if (channel.device_size_ < Channel::MAX_DEVICE_SIZE) 
-        {
-            int device_id = channel.device_size_;
-            channel.device_size_++;
-            device = &channel.devices_[device_id];
-            device->device_id_ = device_id;
-            device->in_type_ = in_type;
-            device->out_type_ = out_type;
-            device->config_fields_[DEVICE_CFG_ABLE] = 1;
-            return device;
-        }
-        return device;
-    }
 
     inline int StartChannels(Logger& logger)
     {
@@ -4550,9 +4523,14 @@ namespace FNLog
             printf("StartLogger error. state:<%u> not uninit:<%u>.\n", logger.logger_state_, LOGGER_STATE_UNINIT);
             return E_LOGGER_IN_USE;
         }
-        if (logger.shm_ == NULL || logger.shm_->channel_size_ > Logger::MAX_CHANNEL_SIZE || logger.shm_->channel_size_ <= 0)
+        if (logger.shm_ == NULL)
         {
-            printf("StartLogger error. channel size:<%d> invalid.\n", logger.shm_->channel_size_);
+            printf("StartLogger error. logger not init %p.\n", logger.shm_);
+            return E_LOGGER_NOT_INIT;
+        }
+        if (logger.shm_->channel_size_ > Logger::MAX_CHANNEL_SIZE || logger.shm_->channel_size_ <= 0)
+        {
+            printf("StartLogger error. logger invalid channel size: %d.\n", logger.shm_->channel_size_);
             return E_INVALID_CHANNEL_SIZE;
         }
         Logger::StateLockGuard state_guard(logger.state_lock_);
