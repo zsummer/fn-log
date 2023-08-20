@@ -63,13 +63,13 @@
         #category: id
         #category_extend: count
         #category_wmask: 255 (white mask)
-        #category_wlist: {2,3,43} (white list)
+        #category_wlist: {2-3,43} (white list)
         #category_bmask: 255 (black mask)
-        #category_blist: {1,23,4} (black list)
+        #category_blist: {1,23,4-5} (black list)
         #identify: id
         #identify_extend: count
         #identify_wmask: 255 (white mask)
-        #identify_wlist: {2,3,43} (white list)
+        #identify_wlist: {2-3,43} (white list)
         #identify_bmask: 255 (black mask)
         #identify_blist: {1,23,4} (black list)
         out_type: file
