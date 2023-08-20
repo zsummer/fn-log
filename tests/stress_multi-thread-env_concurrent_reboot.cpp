@@ -19,10 +19,10 @@ R"----(
 
 int total_loop_ = 80000;
 int cur_loop_ = 0;
-std::atomic<int> stop_cnt = 0.0;
-std::atomic<int> stop_ok = 0.0;
-std::atomic<int> start_cnt = 0.0;
-std::atomic<int> start_ok = 0.0;
+std::atomic<int> stop_cnt(0);
+std::atomic<int> stop_ok(0);
+std::atomic<int> start_cnt(0);
+std::atomic<int> start_ok(0);
 void thread_proc(int index)
 {
     LogInfo() << "thread:<" << index << "> begin.";
@@ -71,9 +71,9 @@ void Stop(int signo)
 }
 
 #ifndef WIN32
-#define dup _dup
-#define dup2 _dup2
-#define fileno _fileno
+#define _dup dup 
+#define _dup2 dup2 
+#define _fileno fileno 
 #endif // WIN32
 
 
@@ -85,9 +85,19 @@ int main(int argc, char* argv[])
     LogInfo() << "begin test...";
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
+   
+    //int fd = _dup(_fileno(stdout));
+    int fd = _dup(1);
+#ifndef WIN32
+    int n = open("/dev/null", O_WRONLY);
+    _dup2(n, 1);
+#else
+    int n = open("NUL", _O_WRONLY);
+    _dup2(n, 1);
+#endif // WIN32
 
-    int fd = _dup(_fileno(stdout));
-    dup2(0, 1);
+    
+
     //freopen("./printf.log", "a+", stdout);
 
     if (argc > 1)
@@ -107,7 +117,7 @@ int main(int argc, char* argv[])
         }
     }
 
-    dup2(fd, 1);
+    _dup2(fd, 1);
 
     FNLog::FastStartDefaultLogger();
 
