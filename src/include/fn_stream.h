@@ -27,6 +27,7 @@ namespace FNLog
     struct LogPercent
     {
         LogPercent(float v) :v_(v) {}
+        LogPercent(double v) :v_(static_cast<float>(v)) {}
         float v_;
     };
 

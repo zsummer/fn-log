@@ -171,7 +171,7 @@ int main(int argc, char* argv[])
     LogInfo() << LogPercent(1.23 / 1000000);
     LogInfo() << LogPercent(1.23 / 10000000);
     LogInfo() << LogPercent(1.23 / 100000000);
-    LogInfo() << LogPercent(1.23 / 1000000000) <<" : need 0%";
+    LogInfo() << LogPercent(1.23 / 1000000000) ;
 
 
     LogInfo() << "now:" << LogTimestamp();

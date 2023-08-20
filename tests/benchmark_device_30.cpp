@@ -326,7 +326,7 @@ int main(int argc, char *argv[])
                 .write_buffer("rrrrrrrrrrrrrrrrrrrradfads33333333333333rrd",
                     sizeof("rrrrrrrrrrrrrrrrrrrradfads33333333333333rrd") - 1);
 
-            if (total_count %10000000 == 0)
+            if (total_count %5000000 == 0)
             {
                 static double last = Now();
                 double now = Now();
@@ -334,7 +334,7 @@ int main(int argc, char *argv[])
                 {
                     LogInfo() << "channel:<" << (long long)channel_id << "> "
                         << ChannelDesc(channel.channel_type_) << " emtpy write :<"
-                        << channel.device_size_ << "> test " << 10000000 / (now - last) << " line/sec. ";
+                        << channel.device_size_ << "> test " << 5000000 / (now - last) << " line/sec. ";
                     last = now;
                     break;
                 }
@@ -354,7 +354,7 @@ int main(int argc, char *argv[])
                 .write_buffer("rrrrrrrrrrrrrrrrrrrradfads33333333333333rrd",
                     sizeof("rrrrrrrrrrrrrrrrrrrradfads33333333333333rrd") - 1);
 
-            if (total_count % 10000000 == 0)
+            if (total_count % 5000000 == 0)
             {
                 static double last = Now();
                 double now = Now();
@@ -362,7 +362,7 @@ int main(int argc, char *argv[])
                 {
                     LogInfo() << "channel:<" << (long long)channel_id << "> "
                         << ChannelDesc(channel.channel_type_) << " emtpy write :<"
-                        << channel.device_size_ << "> test " << 10000000 / (now - last) << " line/sec. ";
+                        << channel.device_size_ << "> test " << 5000000 / (now - last) << " line/sec. ";
                     last = now;
                     break;
                 }
@@ -381,7 +381,7 @@ int main(int argc, char *argv[])
                 .write_buffer("rrrrrrrrrrrrrrrrrrrradfads33333333333333rrd",
                     sizeof("rrrrrrrrrrrrrrrrrrrradfads33333333333333rrd") - 1);
 
-            if (total_count % 10000000 == 0)
+            if (total_count % 5000000 == 0)
             {
                 static double last = Now();
                 double now = Now();
@@ -389,7 +389,7 @@ int main(int argc, char *argv[])
                 {
                     LogInfo() << "channel:<" << (long long)channel_id << "> "
                         << ChannelDesc(channel.channel_type_) << " emtpy write :<"
-                        << channel.device_size_ << "> test " << 10000000 / (now - last) << " line/sec. ";
+                        << channel.device_size_ << "> test " << 5000000 / (now - last) << " line/sec. ";
                     last = now;
                     break;
                 }

@@ -141,7 +141,7 @@ int main(int argc, char *argv[])
         return ret;
     }
 
-    double now = Now();
+    double last = Now();
 
     FNLog::Logger& logger = FNLog::GetDefaultLogger();
 
@@ -158,14 +158,12 @@ int main(int argc, char *argv[])
 
             if (total_count %1000000 == 0)
             {
-                static long long last = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-                long long now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+                double now = Now();
                 if (total_count > 0)
                 {
                     LogInfo() << "channel:<" << (long long)channel_id << "> "
                         << ChannelDesc(channel.channel_type_) << " has write :<"
-                        << channel.device_size_ << "> test " << 1000000*1000 / (now - last) << " line/sec. ";
-                    last = now;
+                        << channel.device_size_ << "> test " << 1000000 / (now - last) << " line/sec. ";
                     break;
                 }
             }

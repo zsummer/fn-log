@@ -77,7 +77,7 @@ int main(int argc, char *argv[])
     }
 #endif
     FNLog::Logger& logger = FNLog::GetDefaultLogger();
-
+    LogAlarmStream(0, 1, 0) << "begin";
     unsigned int total_count = 0;
     double begin = Now();
     double last = Now();
@@ -90,38 +90,33 @@ int main(int argc, char *argv[])
                                 sizeof("rrrrrrrrrrrrrrrrrrrradfads33333333333333rrd") - 1)
                 << -23 << ": " << 32.2223 << (void*) nullptr;
             
-            if (total_count %300000 == 0)
+            if (total_count %100000 == 0)
             {
                 double now = Now();
                 if (total_count > 0 && now - last > 0.0001f)
                 {
                     LogInfoStream(0, 1, 0) << "channel:<" << (long long)i << "> "
                         << ChannelDesc(logger.shm_->channels_[i].channel_type_) << " <"
-                        << logger.shm_->channels_[i].device_size_ << "> test " << 100000*1000 / (now - last)  << "line/sec.";
+                        << logger.shm_->channels_[i].device_size_ << "> test " << 100000ULL / (now - last)  << "line/sec.";
 
   
+                    double now = Now();
+                    FNLog::Channel& channel = FNLog::GetDefaultLogger().shm_->channels_[i];
 
-                    last = now;
+                    long long sc = FNLog::AtomicLoadDeviceLog(channel, 0, FNLog::DEVICE_LOG_TOTAL_WRITE_LINE);
+                    long long sl = FNLog::AtomicLoadDeviceLog(channel, 0, FNLog::DEVICE_LOG_TOTAL_LOSE_LINE);
+                    if (sc > 0)
+                    {
+                        LogInfoStream(0, 1, 0) << "channel:<" << (long long)i << "> "
+                            << ChannelDesc(logger.shm_->channels_[i].channel_type_) << " <"
+                            << logger.shm_->channels_[i].device_size_ << ">"
+                            << " lose/total:" << sl << "/" << sc << ", lose:" << sl * 100.0 / sc << "%, real per second:" << (sc - sl) / ((now - begin));
+                    }
+
+                    break;
                 }
             }
 
-            if (total_count / 600000 > 0)
-            {
-                double now = Now();
-                FNLog::Channel& channel = FNLog::GetDefaultLogger().shm_->channels_[i];
-
-                long long sc = FNLog::AtomicLoadDeviceLog(channel, 0, FNLog::DEVICE_LOG_TOTAL_WRITE_LINE);
-                long long sl = FNLog::AtomicLoadDeviceLog(channel, 0, FNLog::DEVICE_LOG_TOTAL_LOSE_LINE);
-                if (sc > 0)
-                {
-                    LogInfoStream(0, 1, 0) << "channel:<" << (long long)i << "> "
-                        << ChannelDesc(logger.shm_->channels_[i].channel_type_) << " <"
-                        << logger.shm_->channels_[i].device_size_ << ">"
-                        << " lose/total:" << sl << "/" << sc << ", lose:" << sl * 100.0 / sc << "%, real per second:" << (sc - sl) / ((now - begin) );
-                }
-
-                break;
-            }
         } while (++total_count);
     }
 
