@@ -44,6 +44,7 @@ jobs:
       run: |
         cd ${{github.workspace}}/bin
           ./test_lex
+          ./test_bitlist
           ./test_buffer
           ./test_filter
           ./test_filter_advance
