@@ -49,7 +49,7 @@ jobs:
           ./test_filter_advance
           ./test_filter_mask
           ./test_load_config
-          ./test_udp >/dev/null 2>&1
+          ./test_udp 
           ./test_buffer
           ./test_buffer_correct
           ./test_fast_debug
@@ -75,6 +75,7 @@ jobs:
           ./benchmark_normal
           ./benchmark_udp
           ./benchmark_fast
+          ./benchmark_device_30
           ./benchmark_virtual_device
           if [ "$RUNNER_OS" == "Linux" ]; then
             ipcs -m

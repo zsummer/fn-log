@@ -99,7 +99,7 @@ else()
     ADD_DEFINITIONS(-Wall -O2 )
     SET(CMAKE_CXX_FLAGS -std=c++11)
     SET(CMAKE_CXX_FLAGS_DEBUG "$ENV{CXXFLAGS} -O0 -Wall -g -ggdb")
-    SET(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -O3 -Wall")
+    SET(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -O2 -Wall")
     LINK_LIBRARIES(pthread m c)
 endif()
 

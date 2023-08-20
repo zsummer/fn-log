@@ -454,6 +454,7 @@ public:
         handler_ = socket(AF_INET, SOCK_DGRAM, 0);
         if (handler_ == FNLOG_INVALID_SOCKET)
         {
+            //int ret = WSAGetLastError();
             return -1;
         }
         memset(&addr_, 0, sizeof(addr_));

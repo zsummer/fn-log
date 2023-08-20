@@ -58,6 +58,8 @@ std::string ChannelDesc(int channel_type)
     return "invalid channel";
 }
 
+#define Now()  std::chrono::duration<double>(std::chrono::system_clock::now().time_since_epoch()).count()
+
 int main(int argc, char *argv[])
 {
     int ret = FNLog::FastStartDefaultLogger(example_config_text);
@@ -65,10 +67,20 @@ int main(int argc, char *argv[])
     {
         return ret;
     }
+#ifdef WIN32
 
+    WSADATA wsaData;
+    if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0)
+    {
+        printf("%s", "WSAStartup error.\n");
+        return -1;
+    }
+#endif
     FNLog::Logger& logger = FNLog::GetDefaultLogger();
 
     unsigned int total_count = 0;
+    double begin = Now();
+    double last = Now();
     for (int i = 0; i < logger.shm_->channel_size_; i++)
     {
         total_count = 0;
@@ -78,25 +90,43 @@ int main(int argc, char *argv[])
                                 sizeof("rrrrrrrrrrrrrrrrrrrradfads33333333333333rrd") - 1)
                 << -23 << ": " << 32.2223 << (void*) nullptr;
             
-            if (total_count %100000 == 0)
+            if (total_count %300000 == 0)
             {
-                static long long last = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-                long long now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+                double now = Now();
                 if (total_count > 0 && now - last > 0.0001f)
                 {
                     LogInfoStream(0, 1, 0) << "channel:<" << (long long)i << "> "
                         << ChannelDesc(logger.shm_->channels_[i].channel_type_) << " <"
                         << logger.shm_->channels_[i].device_size_ << "> test " << 100000*1000 / (now - last)  << "line/sec.";
+
+  
+
                     last = now;
                 }
             }
 
-            if (total_count / 300000 > 0)
+            if (total_count / 600000 > 0)
             {
+                double now = Now();
+                FNLog::Channel& channel = FNLog::GetDefaultLogger().shm_->channels_[i];
+
+                long long sc = FNLog::AtomicLoadDeviceLog(channel, 0, FNLog::DEVICE_LOG_TOTAL_WRITE_LINE);
+                long long sl = FNLog::AtomicLoadDeviceLog(channel, 0, FNLog::DEVICE_LOG_TOTAL_LOSE_LINE);
+                if (sc > 0)
+                {
+                    LogInfoStream(0, 1, 0) << "channel:<" << (long long)i << "> "
+                        << ChannelDesc(logger.shm_->channels_[i].channel_type_) << " <"
+                        << logger.shm_->channels_[i].device_size_ << ">"
+                        << " lose/total:" << sl << "/" << sc << ", lose:" << sl * 100.0 / sc << "%, real per second:" << (sc - sl) / ((now - begin) );
+                }
+
                 break;
             }
         } while (++total_count);
     }
+
+
+
 
     LogAlarmStream(0, 1, 0) << "finish";
     return 0;
