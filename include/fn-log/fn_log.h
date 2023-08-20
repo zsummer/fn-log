@@ -1255,7 +1255,10 @@ namespace FNLog
         char name_[Logger::MAX_LOGGER_NAME_LEN];
         int name_len_;
     };
-
+    inline bool IsNumber(char ch)
+    {
+        return ch >= '0' && ch <= '9';
+    }
     inline bool IsBlank(char ch)
     {
         //not std::isblank
@@ -1759,17 +1762,43 @@ namespace FNLog
         const char* offset = begin;
         while (offset < end)
         {
-            if (*offset >= '0' && *offset <= '9')
+            while (offset < end && !IsNumber(*offset))
             {
-                int bit_offset = atoi(offset);
-                bitmap |= (1ULL << bit_offset);
-                while (offset < end && (*offset >= '0' && *offset <= '9'))
-                {
-                    offset++;
-                }
+                offset++;
+            }
+            if (offset == end)
+            {
+                break;
+            }
+
+            int bit_offset_first = atoi(offset);
+            while (offset < end && (IsNumber(*offset) || IsBlank(*offset)))
+            {
+                offset++;
+            }
+
+            if (offset == end || *offset != '-') //
+            {
+                bitmap |= (1ULL << bit_offset_first);
                 continue;
             }
-            offset++;
+
+            while (offset < end && !IsNumber(*offset) && *offset != ',' )
+            {
+                offset++;
+            }
+
+            if (offset == end || !IsNumber(*offset))
+            {
+                bitmap |= (1ULL << bit_offset_first);
+                continue;
+            }
+
+            int bit_offset_last = atoi(offset);
+            for (int i = (std::min)(bit_offset_first, bit_offset_last); i <= (std::max)(bit_offset_first, bit_offset_last); i++)
+            {
+                bitmap |= (1ULL << i);
+            }
         }
         return bitmap;
     }
