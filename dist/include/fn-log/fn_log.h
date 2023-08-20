@@ -39,7 +39,7 @@
 #include <unordered_set>
 #include <memory>
 #include <atomic>
-
+#include <fcntl.h>
 #ifdef WIN32
 #ifndef KEEP_INPUT_QUICK_EDIT
 #define KEEP_INPUT_QUICK_EDIT false
@@ -66,7 +66,7 @@
 #include <sys/time.h>
 #include <sys/stat.h>
 #include <dirent.h>
-#include <fcntl.h>
+
 #include <semaphore.h>
 #include <sys/syscall.h>
 #include <sys/ipc.h>
