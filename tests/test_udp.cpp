@@ -78,7 +78,7 @@ int main(int argc, char* argv[])
     long long lines =  FNLog::AtomicLoadDeviceLog(channel1, 0, FNLog::DEVICE_LOG_TOTAL_WRITE_LINE);
     do
     {
-        std::this_thread::sleep_for(std::chrono::milliseconds(50));
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
         long long news = FNLog::AtomicLoadDeviceLog(channel1, 0, FNLog::DEVICE_LOG_TOTAL_WRITE_LINE);
 
         if (news == lines)
@@ -100,15 +100,17 @@ int main(int argc, char* argv[])
     LogInfo() << "receiver:" << FNLog::AtomicLoadDeviceLog(channel1, 0, FNLog::DEVICE_LOG_TOTAL_WRITE_LINE);
     LogInfo() << "receiver lose:" << (max_count - lines) * 100.0 / max_count << "%";
 
+    LogInfo() << "test pass:" << lines * 100 / max_count <<"%";
     LogInfo() << "per second file write and send:" << lines / (end_1s - begin_s);
     LogInfo() << "per second udp recv:" << lines / (end_2s - begin_s);
 
 
-    if (lines*100/max_count < 10)
+    if (lines*100.0/max_count < 5)
     {
         //lose 90% 
-        LogFatal() << "lose udp logs";
-        //return -1;
+        LogFatal() << "lose udp logs.  lines:" << lines <<", lose:" << (max_count - lines) <<", total:" << max_count 
+            <<", pass rate:" << lines * 100.0 / max_count <<"%" <<"  too little.";
+        return -1;
     }
 
 
