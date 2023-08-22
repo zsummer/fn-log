@@ -258,6 +258,9 @@ namespace FNLog
         CHANNEL_LOG_MAX_PROC_QUE_SIZE,
         CHANNEL_LOG_MAX_DELAY_TIME_S, //second 
 
+        CHANNEL_LOG_HOTUPDATE_CHECK,
+        CHANNEL_LOG_HOTUPDATE_CHANGE,
+
         CHANNEL_LOG_MAX_ID
     };
 

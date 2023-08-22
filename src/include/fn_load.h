@@ -287,7 +287,7 @@ namespace FNLog
             return 0;
         }
         dst_chl.last_hot_check_ = now;
-
+        AtomicIncChannelLog(dst_chl, CHANNEL_LOG_HOTUPDATE_CHECK, 1);
         FileHandler config;
         struct stat file_stat;
         config.open(logger.yaml_path_.c_str(), "rb", file_stat);
@@ -369,7 +369,7 @@ namespace FNLog
             memcpy(&dst_chl.devices_[dst_chl.device_size_++], &src_dvc, sizeof(src_dvc));
             
         }
-
+        AtomicIncChannelLog(dst_chl, CHANNEL_LOG_HOTUPDATE_CHANGE, 1);
         return 0;
     }
 
