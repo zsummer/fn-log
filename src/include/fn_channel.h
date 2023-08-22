@@ -255,7 +255,7 @@ namespace FNLog
             }
 
             HotUpdateLogger(logger, channel.channel_id_);
-            if (channel.channel_type_ == CHANNEL_ASYNC && !empty_tick)
+            if (channel.channel_type_ == CHANNEL_ASYNC && empty_tick)
             {
                 std::this_thread::sleep_for(std::chrono::milliseconds(FN_LOG_MAX_ASYNC_SLEEP_MS));
             }
