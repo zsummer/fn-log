@@ -1,6 +1,6 @@
 version:
-last_sha1(./src)=216dc307575aaeafc48b5da80d841ae7f9ef19e2
-last_date(./src)=2023-08-22 11:25:39 +0800
+last_sha1(./src)=b549698097437dcdf47f32cf7e3de003ced90767
+last_date(./src)=2023-08-22 12:36:49 +0800
 
 git log -1 --stat ./src:
-commit 216dc307575aaeafc48b5da80d841ae7f9ef19e2 Author: zsummer <yawei.zhang@foxmail.com> Date: Tue Aug 22 11:25:39 2023 +0800 test hotupdate src/include/fn_data.h | 3 +++ src/include/fn_load.h | 4 ++-- 2 files changed, 5 insertions(+), 2 deletions(-)
+commit b549698097437dcdf47f32cf7e3de003ced90767 Author: zsummer <yawei.zhang@foxmail.com> Date: Tue Aug 22 12:36:20 2023 +0800 fixed empty_tick src/include/fn_channel.h | 2 +- 1 file changed, 1 insertion(+), 1 deletion(-)
