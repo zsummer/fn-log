@@ -174,10 +174,19 @@ namespace FNLog
             os << "ParseLogger has error:<" << ret << " " << DebugErrno(ret).c_str() << "> in line:[" << ls->line_no_ << "] ";
             if (ls->current_ != nullptr)
             {
-                os << " before:";
+                os << " before:\n";
                 int limit = 0;
-                while (limit < 30 && ls->current_ + limit < ls->end_ && ls->current_[limit] != '\0')
+                while (ls->current_ + limit < ls->end_ && ls->current_[limit] != '\0')
                 {
+                    if (limit < 380)
+                    {
+                        limit++;
+                        continue;
+                    }
+                    if (ls->current_[limit] == '\n')
+                    {
+                        break;
+                    }
                     limit++;
                 }
                 os.write(ls->current_, limit);

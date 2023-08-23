@@ -485,7 +485,7 @@ namespace FNLog
         E_CHANNEL_NOT_SEQUENCE,
 
 
-        E_INVALID_DEVICE_SIZE,
+        E_OUT_OF_DEVICE_SIZE,
         E_DEVICE_NOT_SEQUENCE,
 
 

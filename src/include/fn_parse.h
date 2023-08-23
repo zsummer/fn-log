@@ -61,8 +61,13 @@ namespace FNLog
         case E_CHANNEL_NOT_SEQUENCE:
             return "channel index need sequence.";
 
-        case E_INVALID_DEVICE_SIZE:
-            return "invalid device size";
+        case E_OUT_OF_DEVICE_SIZE:
+        {
+            char buf[30];
+            sprintf(buf, "%d", FN_LOG_MAX_DEVICE_SIZE);
+            return std::string("out of device size(") + buf + ")";
+        }
+            
         case E_DEVICE_NOT_SEQUENCE:
             return "device index need sequence.";
 
@@ -1158,6 +1163,7 @@ namespace FNLog
             if (ls.line_.blank_ <= indent)
             {
                 ls.current_ = current;
+                ls.line_no_--; //upper re lex
                 return 0;
             }
 
@@ -1300,6 +1306,7 @@ namespace FNLog
             if (ls.line_.blank_ <= indent)
             {
                 ls.current_ = current;
+                ls.line_no_--; //upper re lex
                 return 0;
             }
 
@@ -1353,7 +1360,7 @@ namespace FNLog
                     int device_id = atoi(ls.line_.val_begin_);
                     if (channel.device_size_ >= Channel::MAX_DEVICE_SIZE)
                     {
-                        return E_INVALID_DEVICE_SIZE;
+                        return E_OUT_OF_DEVICE_SIZE;
                     }
                     if (device_id != channel.device_size_)
                     {
