@@ -45,6 +45,7 @@ jobs:
         cd ${{github.workspace}}/bin
           ./test_lex
           ./test_bitlist
+          ./test_line_no
           ./test_buffer
           ./test_filter
           ./test_filter_advance

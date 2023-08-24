@@ -24,8 +24,8 @@ R"----(
         priority: debug
         category: 20
         category_extend: 1
-        category: 20
-        category_extend: 1
+        idenfity: 20
+        idenfity_extend: 1
 
  - channel: 2
     -device:0
@@ -34,254 +34,254 @@ R"----(
         priority: error
         category: 0
         category_extend: 1
-        category: 0
-        category_extend: 1
+        idenfity: 0
+        idenfity_extend: 1
     -device:1
         disable: false
         out_type: empty
         priority: info
         category: 1
         category_extend: 1
-        category: 1
-        category_extend: 1
+        idenfity: 1
+        idenfity_extend: 1
     -device:2
         disable: false
         out_type: empty
         category: 2
         category_extend: 1
-        category: 2
-        category_extend: 1
+        idenfity: 2
+        idenfity_extend: 1
     -device:3
         disable: false
         out_type: empty
         category: 3
         category_extend: 1
-        category: 3
-        category_extend: 1
+        idenfity: 3
+        idenfity_extend: 1
     -device:4
         category: 4
         category_extend: 1
-        category: 4
-        category_extend: 1
+        idenfity: 4
+        idenfity_extend: 1
     -device:5
         disable: false
         out_type: empty
         category: 5
         category_extend: 1
-        category: 5
-        category_extend: 1
+        idenfity: 5
+        idenfity_extend: 1
     -device:6
         disable: false
         out_type: empty
         priority: error
         category: 6
         category_extend: 1
-        category: 6
-        category_extend: 1
+        idenfity: 6
+        idenfity_extend: 1
     -device:7
         disable: false
         out_type: empty
         category: 7
         category_extend: 1
-        category: 7
-        category_extend: 1
+        idenfity: 7
+        idenfity_extend: 1
     -device:8
         disable: false
         out_type: empty
         priority: trace
         category: 8
         category_extend: 1
-        category: 8
-        category_extend: 1
+        idenfity: 8
+        idenfity_extend: 1
     -device:9
         disable: false
         out_type: empty
         category: 9
         category_extend: 1
-        category: 9
-        category_extend: 1
+        idenfity: 9
+        idenfity_extend: 1
     -device:10
         disable: false
         out_type: empty
         category: 10
         category_extend: 1
-        category: 10
-        category_extend: 1
+        idenfity: 10
+        idenfity_extend: 1
     -device:11
         disable: false
         out_type: empty
         category: 11
         category_extend: 1
-        category: 11
-        category_extend: 1
+        idenfity: 11
+        idenfity_extend: 1
     -device:12
         disable: false
         out_type: empty
         category: 12
         category_extend: 1
-        category: 12
-        category_extend: 1
+        idenfity: 12
+        idenfity_extend: 1
     -device:13
         disable: false
         out_type: empty
         category: 13
         category_extend: 1
-        category: 13
-        category_extend: 1
+        idenfity: 13
+        idenfity_extend: 1
     -device:14
         disable: false
         out_type: empty
         category: 14
         category_extend: 1
-        category: 14
-        category_extend: 1
+        idenfity: 14
+        idenfity_extend: 1
     -device:15
         disable: false
         out_type: empty
         category: 15
         category_extend: 1
-        category: 15
-        category_extend: 1
+        idenfity: 15
+        idenfity_extend: 1
     -device:16
         disable: false
         out_type: empty
         category: 16
         category_extend: 1
-        category: 16
-        category_extend: 1
+        idenfity: 16
+        idenfity_extend: 1
     -device:17
         disable: false
         out_type: empty
         category: 17
         category_extend: 1
-        category: 17
-        category_extend: 1
+        idenfity: 17
+        idenfity_extend: 1
     -device:18
         disable: false
         out_type: empty
         category: 18
         category_extend: 1
-        category: 18
-        category_extend: 1
+        idenfity: 18
+        idenfity_extend: 1
     -device:19
         disable: false
         out_type: empty
         category: 19
         category_extend: 1
-        category: 19
-        category_extend: 1
+        idenfity: 19
+        idenfity_extend: 1
     -device:20
         disable: false
         out_type: empty
         category: 20
         category_extend: 1
-        category: 20
-        category_extend: 1
+        idenfity: 20
+        idenfity_extend: 1
     -device:21
         disable: false
         out_type: empty
         category: 21
         category_extend: 1
-        category: 21
-        category_extend: 1
+        idenfity: 21
+        idenfity_extend: 1
     -device:22
         disable: false
         out_type: empty
         category: 22
         category_extend: 1
-        category: 22
-        category_extend: 1
+        idenfity: 22
+        idenfity_extend: 1
     -device:23
         disable: false
         out_type: empty
         category: 23
         category_extend: 1
-        category: 23
-        category_extend: 1
+        idenfity: 23
+        idenfity_extend: 1
     -device:24
         disable: false
         out_type: empty
         category: 24
         category_extend: 1
-        category: 24
-        category_extend: 1
+        idenfity: 24
+        idenfity_extend: 1
     -device:25
         disable: false
         out_type: empty
         category: 25
         category_extend: 1
-        category: 25
-        category_extend: 1
+        idenfity: 25
+        idenfity_extend: 1
     -device:26
         disable: false
         out_type: empty
         category: 26
         category_extend: 1
-        category: 26
-        category_extend: 1
+        idenfity: 26
+        idenfity_extend: 1
     -device:27
         disable: false
         out_type: empty
         category: 27
         category_extend: 1
-        category: 27
-        category_extend: 1
+        idenfity: 27
+        idenfity_extend: 1
     -device:28
         disable: false
         out_type: empty
         category: 28
         category_extend: 1
-        category: 28
-        category_extend: 1
+        idenfity: 28
+        idenfity_extend: 1
     -device:29
         disable: false
         out_type: empty
         category: 29
         category_extend: 1
-        category: 29
-        category_extend: 1
+        idenfity: 29
+        idenfity_extend: 1
     -device:30
         disable: false
         out_type: empty
         category: 30
         category_extend: 1
-        category: 30
-        category_extend: 1
+        idenfity: 30
+        idenfity_extend: 1
     -device:31
         disable: false
         out_type: empty
         category: 31
         category_extend: 1
-        category: 31
-        category_extend: 1
+        idenfity: 31
+        idenfity_extend: 1
     -device:32
         disable: false
         out_type: empty
         category: 32
         category_extend: 1
-        category: 32
-        category_extend: 1
+        idenfity: 32
+        idenfity_extend: 1
     -device:33
         disable: false
         out_type: empty
         category: 33
         category_extend: 1
-        category: 33
-        category_extend: 1
+        idenfity: 33
+        idenfity_extend: 1
     -device:34
         disable: false
         out_type: empty
         category: 34
         category_extend: 1
-        category: 34
-        category_extend: 1
+        idenfity: 34
+        idenfity_extend: 1
     -device:35
         disable: false
         out_type: empty
         category: 35
         category_extend: 1
-        category: 35
-        category_extend: 1
+        idenfity: 35
+        idenfity_extend: 1
 
 
 
