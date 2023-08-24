@@ -1999,10 +1999,6 @@ namespace FNLog
         memset(&ls.line_, 0, sizeof(ls.line_));
         if (ls.current_ >= ls.end_)
         {
-            if (ls.line_no_ == 0)
-            {
-                ls.line_no_ = 1;
-            }
             return PEC_NONE;
         }
         while (true)
@@ -2239,6 +2235,9 @@ namespace FNLog
                 device.out_type_ = ParseOutType(ls.line_.val_begin_, ls.line_.val_end_);
                 if (device.out_type_ == DEVICE_OUT_NULL)
                 {
+                    //logic error:
+                    ls.current_ = current;
+                    ls.line_no_--;
                     return PEC_UNDEFINED_DEVICE_TYPE;
                 }
                 break;
@@ -2329,11 +2328,17 @@ namespace FNLog
                 {
                     if (device.in_type_ == DEVICE_IN_NULL && device.config_fields_[DEVICE_CFG_UDP_IP] == 0)
                     {
+                        //logic error:
+                        ls.current_ = current;
+                        ls.line_no_--;
                         return PEC_ILLEGAL_ADDR_IP;
                     }
 
                     if (device.config_fields_[DEVICE_CFG_UDP_PORT] == 0)
                     {
+                        //logic error:
+                        ls.current_ = current;
+                        ls.line_no_--;
                         return PEC_ILLEGAL_ADDR_PORT;
                     }
                 }
@@ -2423,10 +2428,16 @@ namespace FNLog
                     int device_id = atoi(ls.line_.val_begin_);
                     if (channel.device_size_ >= Channel::MAX_DEVICE_SIZE)
                     {
+                        //logic error:
+                        ls.current_ = current;
+                        ls.line_no_--;
                         return E_OUT_OF_DEVICE_SIZE;
                     }
                     if (device_id != channel.device_size_)
                     {
+                        //logic error:
+                        ls.current_ = current;
+                        ls.line_no_--;
                         return E_DEVICE_NOT_SEQUENCE;
                     }
                     Device& device = channel.devices_[channel.device_size_++];
@@ -2468,7 +2479,7 @@ namespace FNLog
         ls.channel_size_ = 0;
         ls.hot_update_ = false;
         ls.current_ = ls.first_;
-        ls.line_no_ = 0;
+        ls.line_no_ = 1;
         ls.desc_len_ = 0;
         ls.name_len_ = 0;
         do
@@ -2499,6 +2510,9 @@ namespace FNLog
                 ret = PredefinedMacro(ls, text);
                 if (ret != PEC_NONE)
                 {
+                    //logic error:
+                    ls.current_ = current;
+                    ls.line_no_--;
                     return ret;
                 }
                 break;
@@ -2507,6 +2521,9 @@ namespace FNLog
                 ret = PredefinedVar(ls, text);
                 if (ret != PEC_NONE)
                 {
+                    //logic error:
+                    ls.current_ = current;
+                    ls.line_no_--;
                     return ret;
                 }
                 break;
@@ -2524,10 +2541,16 @@ namespace FNLog
                     int channel_id = atoi(ls.line_.val_begin_);
                     if (ls.channel_size_ >= Logger::MAX_CHANNEL_SIZE)
                     {
+                        //logic error:
+                        ls.current_ = current;
+                        ls.line_no_--;
                         return E_INVALID_CHANNEL_SIZE;
                     }
                     if (ls.channel_size_ != channel_id)
                     {
+                        //logic error:
+                        ls.current_ = current;
+                        ls.line_no_--;
                         return E_CHANNEL_NOT_SEQUENCE;
                     }
                     Channel& channel = ls.channels_[ls.channel_size_++];
