@@ -62,7 +62,7 @@ int main(int argc, char* argv[])
     //empty config 
     if (true)
     {
-        std::string content = "";
+        std::string content = "  ";
         InitState(ls);
         ls.first_ = content.c_str();
         ls.end_ = ls.first_ + content.length();
