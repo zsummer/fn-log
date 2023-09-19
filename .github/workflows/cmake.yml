@@ -62,7 +62,6 @@ jobs:
           ./test_serialize_object
           ./test_trans_log
           ./test_var_define
-          ./test_hotupdate
           ./stress_block_in
           ./stress_multi-thread-env_main_reboot
           ./stress_multi-thread-env_concurrent_reboot 50000 >/dev/null 2>&1
@@ -90,6 +89,7 @@ jobs:
             ipcs -m
             ipcs -mt
             ./benchmark_multi-thread_travis_shm
+            ./test_hotupdate
           else
               echo "$RUNNER_OS not supported full test"
           fi
