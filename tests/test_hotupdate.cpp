@@ -72,7 +72,7 @@ int main(int argc, char* argv[])
     FNLog::FileHandler::remove_file(path);
     FNLog::FileHandler file;
     struct stat s;
-    file.open(path.c_str(), "r", s);
+    file.open(path.c_str(), "rb", s);
     if (file.is_open())
     {
         printf("%s", "has error");
@@ -80,7 +80,7 @@ int main(int argc, char* argv[])
     }
     file.close();
 
-    file.open(path.c_str(), "w", s);
+    file.open(path.c_str(), "wb", s);
     if (!file.is_open())
     {
         printf("%s", "write file error");
@@ -115,7 +115,7 @@ int main(int argc, char* argv[])
 
     LogInfo() << "hotupdate checks:" << checks << ", changes:" << changes << " ok";
 
-    file.open(path.c_str(), "a", s);
+    file.open(path.c_str(), "ab", s);
     if (!file.is_open())
     {
         printf("%s", "write file error");

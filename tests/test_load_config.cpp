@@ -23,7 +23,7 @@ int main(int argc, char* argv[])
         {
             FNLog::FileHandler file;
             struct stat stt;
-            file.open(LOG_CONFIG_FILE, "r+", stt);
+            file.open(LOG_CONFIG_FILE, "rb+", stt);
             if (file.is_open())
             {
                 std::string content = file.read_content();
@@ -38,7 +38,7 @@ int main(int argc, char* argv[])
                     content = std::regex_replace(content, std::regex("priority: info"), "priority: trace");
                     LogAlarm() << "change log config file priority to trace.";
                 }
-                file.open(LOG_CONFIG_FILE, "w", stt);
+                file.open(LOG_CONFIG_FILE, "wb", stt);
                 if (file.is_open())
                 {
                     file.write(content.c_str(), content.length());
