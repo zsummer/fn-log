@@ -273,7 +273,7 @@ namespace FNLog
         {
             if (fabst < 0.0001 && fabst > 0.0000001)
             {
-                sprintf(dst, "%.08lf", fabst);
+                snprintf(dst, 30, "%.08lf", fabst);
             }
             else
             {

@@ -64,7 +64,7 @@ namespace FNLog
         case E_OUT_OF_DEVICE_SIZE:
         {
             char buf[30];
-            sprintf(buf, "%d", FN_LOG_MAX_DEVICE_SIZE);
+            snprintf(buf, 30, "%d", FN_LOG_MAX_DEVICE_SIZE);
             return std::string("out of device size(") + buf + ")";
         }
             
@@ -166,7 +166,7 @@ namespace FNLog
         RK_UDP_ADDR,
     };
 
-#if __GNUG__ && __GNUC__ >= 6
+#if FNLOG_GCC && __GNUC__ >= 6
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wclass-memaccess"
 #endif
@@ -1416,7 +1416,7 @@ namespace FNLog
         ls.channel_size_ = 0;
         ls.hot_update_ = false;
         ls.current_ = ls.first_;
-        ls.line_no_ = 1;
+        ls.line_no_ = 1; 
         ls.desc_len_ = 0;
         ls.name_len_ = 0;
         do
@@ -1511,7 +1511,7 @@ namespace FNLog
         return PEC_NONE;
     }
 
-#if __GNUG__ && __GNUC__ >= 6
+#if FNLOG_GCC && __GNUC__ >= 6
 #pragma GCC diagnostic pop
 #endif
 

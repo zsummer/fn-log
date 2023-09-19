@@ -81,6 +81,8 @@
 #endif
 #endif
 
+#define FNLOG_GCC (defined(__GNUC__) && !defined(__clang__))
+
 
 namespace FNLog
 {
@@ -158,6 +160,7 @@ namespace FNLog
     FileHandler::FileHandler()
     {
         file_ = nullptr;
+        chunk_1_[0] = '\0';
     }
     FileHandler::~FileHandler()
     {
@@ -281,10 +284,10 @@ namespace FNLog
         char buf[260] = { 0 };
 #ifdef WIN32
         DWORD winPID = GetCurrentProcessId();
-        sprintf(buf, "%06u", winPID);
+        snprintf(buf, 260, "%06u", winPID);
         pid = buf;
 #else
-        sprintf(buf, "%06d", getpid());
+        snprintf(buf, 260, "%06d", getpid());
         pid = buf;
 #endif
         return pid;
@@ -315,7 +318,7 @@ namespace FNLog
         name = buf;
         return name;;
 #else
-        sprintf(buf, "/proc/%d/cmdline", (int)getpid());
+        snprintf(buf, 260, "/proc/%d/cmdline", (int)getpid());
         FileHandler i;
 	struct stat file_stat;
         i.open(buf, "rb", file_stat);

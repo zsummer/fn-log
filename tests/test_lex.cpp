@@ -62,6 +62,24 @@ int main(int argc, char* argv[])
     //empty config 
     if (true)
     {
+        std::string content = "";
+        InitState(ls);
+        ls.first_ = content.c_str();
+        ls.end_ = ls.first_ + content.length();
+        ls.current_ = ls.first_;
+        int ret = 0;
+        ret = FNLog::Lex(ls);
+
+        FNLOG_ASSERT(ret == FNLog::PEC_NONE, "");
+        FNLOG_ASSERT(ls.line_no_ == 0, "");
+        FNLOG_ASSERT(ls.line_.key_end_ == ls.line_.key_begin_, "");
+        FNLOG_ASSERT(ls.line_.val_end_ == ls.line_.val_begin_, "");
+        FNLOG_ASSERT(ls.current_ <= ls.end_, "");
+    }
+
+    //has line 
+    if (true)
+    {
         std::string content = "  ";
         InitState(ls);
         ls.first_ = content.c_str();
@@ -76,7 +94,6 @@ int main(int argc, char* argv[])
         FNLOG_ASSERT(ls.line_.val_end_ == ls.line_.val_begin_, "");
         FNLOG_ASSERT(ls.current_ <= ls.end_, "");
     }
-
 
     if (true)
     {
@@ -101,6 +118,7 @@ int main(int argc, char* argv[])
         FNLOG_ASSERT(ls.line_.val_end_ == ls.line_.val_begin_, "");
         FNLOG_ASSERT(ls.current_ == ls.end_, "");
 
+        //no next line. still stay last line 
         ret = FNLog::Lex(ls);
         FNLOG_ASSERT(ret == FNLog::PEC_NONE, "");
         FNLOG_ASSERT(ls.line_no_ == 2, "");

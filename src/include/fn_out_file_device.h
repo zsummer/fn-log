@@ -102,7 +102,7 @@ namespace FNLog
                 if (name.substr(pos + 2, 3) == "EAR")
                 {
                     char buff[30] = { 0 };
-                    sprintf(buff, "%04d", t.tm_year + 1900);
+                    snprintf(buff, 30, "%04d", t.tm_year + 1900);
                     name.replace(pos, 5, buff);
                     break;
                 }
@@ -112,14 +112,14 @@ namespace FNLog
                 if (name.substr(pos + 2, 2) == "ON")
                 {
                     char buff[30] = { 0 };
-                    sprintf(buff, "%02d", t.tm_mon + 1);
+                    snprintf(buff, 30, "%02d", t.tm_mon + 1);
                     name.replace(pos, 4, buff);
                     break;
                 }
                 if (name.substr(pos + 2, 2) == "IN")
                 {
                     char buff[30] = { 0 };
-                    sprintf(buff, "%02d", t.tm_min);
+                    snprintf(buff, 30, "%02d", t.tm_min);
                     name.replace(pos, 4, buff);
                     break;
                 }
@@ -129,7 +129,7 @@ namespace FNLog
                 if (name.substr(pos + 2, 2) == "AY")
                 {
                     char buff[30] = { 0 };
-                    sprintf(buff, "%02d", t.tm_mday);
+                    snprintf(buff, 30, "%02d", t.tm_mday);
                     name.replace(pos, 4, buff);
                     break;
                 }
@@ -139,7 +139,7 @@ namespace FNLog
                 if (name.substr(pos + 2, 3) == "OUR")
                 {
                     char buff[30] = { 0 };
-                    sprintf(buff, "%02d", t.tm_hour);
+                    snprintf(buff, 30, "%02d", t.tm_hour);
                     name.replace(pos, 5, buff);
                     break;
                 }
@@ -149,7 +149,7 @@ namespace FNLog
                 if (name.substr(pos + 2, 2) == "EC")
                 {
                     char buff[30] = { 0 };
-                    sprintf(buff, "%02d", t.tm_sec);
+                    snprintf(buff, 30, "%02d", t.tm_sec);
                     name.replace(pos, 4, buff);
                     break;
                 }

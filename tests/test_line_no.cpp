@@ -137,6 +137,11 @@ int main(int argc, char* argv[])
     FNLOG_ASSERT(ret == 0, "");
     FNLOG_ASSERT(ls->line_no_ == 1, "");
 
+    text = " ";
+    ret = FNLog::ParseLogger(*ls, text);
+    FNLOG_ASSERT(ret == 0, "");
+    FNLOG_ASSERT(ls->line_no_ == 2, "");
+
 
     text = "\n";
     ret = FNLog::ParseLogger(*ls, text);
