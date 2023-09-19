@@ -1,8 +1,8 @@
 
 #define FN_LOG_MAX_LOG_SIZE 1000
-#define FN_LOG_MAX_LOG_QUEUE_SIZE 100000
+#define FN_LOG_MAX_LOG_QUEUE_SIZE 10000
 #define FN_LOG_HOTUPDATE_INTERVEL 3
-#define FN_LOG_MAX_CHANNEL_SIZE 5
+#define FN_LOG_MAX_CHANNEL_SIZE 2
 #include "fn_log.h"
 #include <signal.h>
 #include <chrono>
@@ -47,11 +47,11 @@ R"----(
 { \
     if (expr) \
     { \
-        LogInfoStream(1, 0, 0) << "test " << prefix << " success."; \
+        LogInfoStream(0, 0, 0) << "test " << prefix << " success."; \
     } \
     else \
     {   \
-        LogErrorStream(1, 0, 0) << "test " << prefix << " failed."; \
+        LogErrorStream(0, 0, 0) << "test " << prefix << " failed."; \
         return __LINE__ * -1; \
     } \
 }
@@ -106,15 +106,16 @@ int main(int argc, char* argv[])
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
 
-    long long checks = FNLog::AtomicLoadChannelLog(channel, FNLog::CHANNEL_LOG_HOTUPDATE_CHECK);
-    long long changes = FNLog::AtomicLoadChannelLog(channel, FNLog::CHANNEL_LOG_HOTUPDATE_CHANGE);
+    long long old_checks = FNLog::AtomicLoadChannelLog(channel, FNLog::CHANNEL_LOG_HOTUPDATE_CHECK);
+    long long old_changes = FNLog::AtomicLoadChannelLog(channel, FNLog::CHANNEL_LOG_HOTUPDATE_CHANGE);
+    LogInfo() << "hotupdate checks:" << old_checks << ", changes:" << old_changes ;
+    FNLOG_ASSERT(old_checks > 0, "");
+    FNLOG_ASSERT(old_checks <= 4, ""); //not key decision. app env has some pollution when in mac-OS @github action 
+    FNLOG_ASSERT(old_changes == 0, "");
 
-    FNLOG_ASSERT(checks > 0, "");
-    FNLOG_ASSERT(checks <= 2, "");
-    FNLOG_ASSERT(changes == 0, "");
+    
 
-    LogInfo() << "hotupdate checks:" << checks << ", changes:" << changes << " ok";
-
+    LogInfo() << "apend blank to " << path  << " ... ";
     file.open(path.c_str(), "ab", s);
     if (!file.is_open())
     {
@@ -124,17 +125,21 @@ int main(int argc, char* argv[])
     file.write(" ", 1);
     file.close();
 
-    for (int i = 0; i < 30; i++)
+
+    LogInfo() << "apended blank to " << path;
+    
+    for (int i = 0; i < 40; i++)
     {
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
-
-    checks = FNLog::AtomicLoadChannelLog(channel, FNLog::CHANNEL_LOG_HOTUPDATE_CHECK);
-    changes = FNLog::AtomicLoadChannelLog(channel, FNLog::CHANNEL_LOG_HOTUPDATE_CHANGE);
+    
+    long long checks = FNLog::AtomicLoadChannelLog(channel, FNLog::CHANNEL_LOG_HOTUPDATE_CHECK) - old_checks;
+    long long changes = FNLog::AtomicLoadChannelLog(channel, FNLog::CHANNEL_LOG_HOTUPDATE_CHANGE) - old_changes;
+    LogInfo() << "check state: inc checks:" << checks <<", inc changes:" << changes;
     FNLOG_ASSERT(checks > 0, "");
-    FNLOG_ASSERT(checks <= 3, "");
+    FNLOG_ASSERT(checks <= 2, "");
     FNLOG_ASSERT(changes == 1, "");
-    LogInfo() << "hotupdate checks:" << checks << ", changes:" << changes << " ok";
+    LogInfo() << "hotupdate checks:  ok";
 
     LogAlarm() << "all thread exit";
     return 0;
