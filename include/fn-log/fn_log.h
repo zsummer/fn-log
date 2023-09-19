@@ -85,7 +85,11 @@
 #endif
 #endif
 
-#define FNLOG_GCC (defined(__GNUC__) && !defined(__clang__))
+#if defined(__GNUC__) && !defined(__clang__)
+#define FNLOG_GCC 1
+#else
+#define FNLOG_GCC 0
+#endif
 
 
 namespace FNLog
@@ -4252,7 +4256,7 @@ namespace FNLog
         log.prefix_len_ = log.content_len_;
         return;
     }
-#ifdef __GNUG__
+#if FNLOG_GCC
 #pragma GCC push_options
 #pragma GCC optimize ("O2")
 #endif
@@ -4354,7 +4358,7 @@ namespace FNLog
         
         return false;
     }
-#ifdef __GNUG__
+#if FNLOG_GCC
 #pragma GCC pop_options
 #endif
     inline int HoldChannel(Logger& logger, int channel_id, int priority, int category, long long identify)
