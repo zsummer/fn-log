@@ -115,6 +115,7 @@ int main(int argc, char* argv[])
 
     LogInfo() << "hotupdate checks:" << checks << ", changes:" << changes << " ok";
 
+    LogInfo() << "apend blank to " << path  << " ... ";
     file.open(path.c_str(), "ab", s);
     if (!file.is_open())
     {
@@ -123,12 +124,13 @@ int main(int argc, char* argv[])
     }
     file.write(" ", 1);
     file.close();
-
+    LogInfo() << "apended blank to " << path;
+    
     for (int i = 0; i < 30; i++)
     {
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
-
+    LogInfo() << "check state ...";
     checks = FNLog::AtomicLoadChannelLog(channel, FNLog::CHANNEL_LOG_HOTUPDATE_CHECK);
     changes = FNLog::AtomicLoadChannelLog(channel, FNLog::CHANNEL_LOG_HOTUPDATE_CHANGE);
     FNLOG_ASSERT(checks > 0, "");
