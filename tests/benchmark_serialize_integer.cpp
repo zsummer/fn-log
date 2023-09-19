@@ -26,7 +26,7 @@ int main(int argc, char *argv[])
     unsigned int total_count = 0;
 
     total_count = 0;
-    unsigned long long active = 0;
+    volatile unsigned long long active = 0;
     do
     {
         char buf[30];

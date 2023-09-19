@@ -103,7 +103,7 @@ struct MyStruct
 {
     int* a[3];
 };
-constexpr static int s = sizeof(MyStruct);
+//constexpr static int s = sizeof(MyStruct);
 
 int main(int argc, char* argv[])
 {

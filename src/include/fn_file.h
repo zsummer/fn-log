@@ -81,7 +81,11 @@
 #endif
 #endif
 
-#define FNLOG_GCC (defined(__GNUC__) && !defined(__clang__))
+#if defined(__GNUC__) && !defined(__clang__)
+#define FNLOG_GCC 1
+#else
+#define FNLOG_GCC 0
+#endif
 
 
 namespace FNLog
