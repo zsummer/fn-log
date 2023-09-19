@@ -85,6 +85,8 @@
 #endif
 #endif
 
+#define FNLOG_GCC (defined(__GNUC__) && !defined(__clang__))
+
 
 namespace FNLog
 {
@@ -162,6 +164,7 @@ namespace FNLog
     FileHandler::FileHandler()
     {
         file_ = nullptr;
+        chunk_1_[0] = '\0';
     }
     FileHandler::~FileHandler()
     {
@@ -285,10 +288,10 @@ namespace FNLog
         char buf[260] = { 0 };
 #ifdef WIN32
         DWORD winPID = GetCurrentProcessId();
-        sprintf(buf, "%06u", winPID);
+        snprintf(buf, 260, "%06u", winPID);
         pid = buf;
 #else
-        sprintf(buf, "%06d", getpid());
+        snprintf(buf, 260, "%06d", getpid());
         pid = buf;
 #endif
         return pid;
@@ -319,7 +322,7 @@ namespace FNLog
         name = buf;
         return name;;
 #else
-        sprintf(buf, "/proc/%d/cmdline", (int)getpid());
+        snprintf(buf, 260, "/proc/%d/cmdline", (int)getpid());
         FileHandler i;
 	struct stat file_stat;
         i.open(buf, "rb", file_stat);
@@ -1127,7 +1130,7 @@ namespace FNLog
         case E_OUT_OF_DEVICE_SIZE:
         {
             char buf[30];
-            sprintf(buf, "%d", FN_LOG_MAX_DEVICE_SIZE);
+            snprintf(buf, 30, "%d", FN_LOG_MAX_DEVICE_SIZE);
             return std::string("out of device size(") + buf + ")";
         }
             
@@ -1229,7 +1232,7 @@ namespace FNLog
         RK_UDP_ADDR,
     };
 
-#if __GNUG__ && __GNUC__ >= 6
+#if FNLOG_GCC && __GNUC__ >= 6
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wclass-memaccess"
 #endif
@@ -2479,7 +2482,7 @@ namespace FNLog
         ls.channel_size_ = 0;
         ls.hot_update_ = false;
         ls.current_ = ls.first_;
-        ls.line_no_ = 1;
+        ls.line_no_ = 1; 
         ls.desc_len_ = 0;
         ls.name_len_ = 0;
         do
@@ -2574,7 +2577,7 @@ namespace FNLog
         return PEC_NONE;
     }
 
-#if __GNUG__ && __GNUC__ >= 6
+#if FNLOG_GCC && __GNUC__ >= 6
 #pragma GCC diagnostic pop
 #endif
 
@@ -2856,7 +2859,7 @@ namespace FNLog
         {
             if (fabst < 0.0001 && fabst > 0.0000001)
             {
-                sprintf(dst, "%.08lf", fabst);
+                snprintf(dst, 30, "%.08lf", fabst);
             }
             else
             {
@@ -3000,7 +3003,7 @@ namespace FNLog
 
 namespace FNLog
 {
-#if __GNUG__ && __GNUC__ >= 6
+#if FNLOG_GCC && __GNUC__ >= 6
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wclass-memaccess"
 #endif
@@ -3367,7 +3370,7 @@ namespace FNLog
         return 0;
     }
 
-#if __GNUG__ && __GNUC__ >= 6
+#if FNLOG_GCC && __GNUC__ >= 6
 #pragma GCC diagnostic pop
 #endif
 }
@@ -3505,7 +3508,7 @@ namespace FNLog
                 if (name.substr(pos + 2, 3) == "EAR")
                 {
                     char buff[30] = { 0 };
-                    sprintf(buff, "%04d", t.tm_year + 1900);
+                    snprintf(buff, 30, "%04d", t.tm_year + 1900);
                     name.replace(pos, 5, buff);
                     break;
                 }
@@ -3515,14 +3518,14 @@ namespace FNLog
                 if (name.substr(pos + 2, 2) == "ON")
                 {
                     char buff[30] = { 0 };
-                    sprintf(buff, "%02d", t.tm_mon + 1);
+                    snprintf(buff, 30, "%02d", t.tm_mon + 1);
                     name.replace(pos, 4, buff);
                     break;
                 }
                 if (name.substr(pos + 2, 2) == "IN")
                 {
                     char buff[30] = { 0 };
-                    sprintf(buff, "%02d", t.tm_min);
+                    snprintf(buff, 30, "%02d", t.tm_min);
                     name.replace(pos, 4, buff);
                     break;
                 }
@@ -3532,7 +3535,7 @@ namespace FNLog
                 if (name.substr(pos + 2, 2) == "AY")
                 {
                     char buff[30] = { 0 };
-                    sprintf(buff, "%02d", t.tm_mday);
+                    snprintf(buff, 30, "%02d", t.tm_mday);
                     name.replace(pos, 4, buff);
                     break;
                 }
@@ -3542,7 +3545,7 @@ namespace FNLog
                 if (name.substr(pos + 2, 3) == "OUR")
                 {
                     char buff[30] = { 0 };
-                    sprintf(buff, "%02d", t.tm_hour);
+                    snprintf(buff, 30, "%02d", t.tm_hour);
                     name.replace(pos, 5, buff);
                     break;
                 }
@@ -3552,7 +3555,7 @@ namespace FNLog
                 if (name.substr(pos + 2, 2) == "EC")
                 {
                     char buff[30] = { 0 };
-                    sprintf(buff, "%02d", t.tm_sec);
+                    snprintf(buff, 30, "%02d", t.tm_sec);
                     name.replace(pos, 4, buff);
                     break;
                 }
@@ -4505,7 +4508,7 @@ namespace FNLog
 namespace FNLog
 {
 
-#if __GNUG__ && __GNUC__ >= 6
+#if FNLOG_GCC && __GNUC__ >= 6
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wclass-memaccess"
 #endif
@@ -4910,7 +4913,7 @@ namespace FNLog
         UnloadSharedMemory(*this);
     }
 
-#if __GNUG__ && __GNUC__ >= 6
+#if FNLOG_GCC && __GNUC__ >= 6
 #pragma GCC diagnostic pop
 #endif
 
