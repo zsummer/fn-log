@@ -79,6 +79,7 @@ jobs:
           ./benchmark_fast
           ./benchmark_device_30
           ./benchmark_virtual_device
+          ./test_hotupdate
           if [ "$RUNNER_OS" == "Linux" ]; then
             ipcs -m
             ipcs -mt
@@ -89,7 +90,6 @@ jobs:
             ipcs -m
             ipcs -mt
             ./benchmark_multi-thread_travis_shm
-            ./test_hotupdate
           else
               echo "$RUNNER_OS not supported full test"
           fi
