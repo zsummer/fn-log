@@ -8,6 +8,8 @@ jobs:
   auto-dist:
     runs-on: ubuntu-latest
     steps:
+      - name: wait-pagas-build
+        run: sleep 40s
       - name: clone
         run: |
           git clone https://${{secrets.ACTIONTOKEN}}@github.com/zsummer/fn-log.git fn-log-master
