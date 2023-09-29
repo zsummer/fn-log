@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: wait-pagas-build
-        run: sleep 40s
+        run: sleep 60s
       - name: clone
         run: |
           git clone https://${{secrets.ACTIONTOKEN}}@github.com/zsummer/fn-log.git fn-log-master
