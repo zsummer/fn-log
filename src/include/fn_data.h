@@ -420,7 +420,7 @@ namespace FNLog
         int desc_len_;
         char name_[MAX_LOGGER_NAME_LEN];
         int name_len_;
-        LoggerFreqLimit freq_limits_[MAX_FREQ_LIMIT_SIZE];
+        LoggerFreqLimit freq_limits_[MAX_FREQ_LIMIT_SIZE]; // used __COUNTER__  
 
         long long shm_key_;
         SHMLogger* shm_;
