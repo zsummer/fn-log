@@ -378,6 +378,7 @@ namespace FNLog
         logger.desc_len_ = 0;
         memset(logger.name_, 0, Logger::MAX_LOGGER_NAME_LEN);
         logger.name_len_ = 0;
+        memset(logger.freq_limits_, 0, sizeof(logger.freq_limits_));
         std::string name = FileHandler::process_name();
         name = name.substr(0, Logger::MAX_LOGGER_NAME_LEN - 1);
         memcpy(logger.name_, name.c_str(), name.length() + 1);

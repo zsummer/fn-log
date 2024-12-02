@@ -60,6 +60,11 @@
 #define FN_LOG_MAX_LOG_QUEUE_SIZE 1000
 #endif
 
+#ifndef FN_LOG_FREQ_LIMIT_SIZE
+#define FN_LOG_FREQ_LIMIT_SIZE 2
+#endif
+
+
 #ifndef FN_LOG_MAX_ASYNC_SLEEP_MS 
 #define FN_LOG_MAX_ASYNC_SLEEP_MS 10
 #endif
@@ -331,6 +336,8 @@ namespace FNLog
         LOGGER_STATE_RUNNING,
         LOGGER_STATE_CLOSING,
     };
+
+
     
     struct SHMLogger
     {
@@ -371,6 +378,14 @@ namespace FNLog
         bool noop_;
     };
 
+
+    struct LoggerFreqLimit
+    {
+        unsigned long long ts; //ms  
+        unsigned long long cd; //cd 
+        unsigned long long skips;
+    };
+
     class Logger
     {
     public:
@@ -394,6 +409,7 @@ namespace FNLog
 
 
     public:
+        static const int MAX_FREQ_LIMIT_SIZE = FN_LOG_FREQ_LIMIT_SIZE;
         Logger();
         ~Logger();
         bool hot_update_;
@@ -404,6 +420,7 @@ namespace FNLog
         int desc_len_;
         char name_[MAX_LOGGER_NAME_LEN];
         int name_len_;
+        LoggerFreqLimit freq_limits_[MAX_FREQ_LIMIT_SIZE];
 
         long long shm_key_;
         SHMLogger* shm_;
