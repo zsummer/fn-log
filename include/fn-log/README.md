@@ -345,7 +345,7 @@ cd ../bin
   > option:  
   > default:  
   > desc: in out_type:udp valid.  
-  > desc: example format 127.0.0.1_8080   
+  > desc: example format 127.0.0.1:8080   
 
 - [x] path  
   > option:  
