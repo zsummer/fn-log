@@ -385,6 +385,8 @@ namespace FNLog
         logger.name_len_ = (int)name.length();
         logger.shm_key_ = 0;
         logger.shm_ = NULL;
+        logger.tick_sum_ = 0;
+        logger.tick_count_ = 0;
         
 
 #if ((defined WIN32) && !KEEP_INPUT_QUICK_EDIT)

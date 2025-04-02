@@ -129,6 +129,13 @@ int main(int argc, char* argv[])
             g_multi_proc[i].join();
         }
     }
+    long long ticks = FNLog::GetDefaultLogger().tick_count_;
+    long long sum = FNLog::GetDefaultLogger().tick_sum_;
+    LogInfo() << "logs:" << ticks << ", sum:" << sum
+        << ", avg:" << sum /(ticks > 0 ? ticks : 1);
+
+
+
     return 0;
 }
 

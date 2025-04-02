@@ -82,13 +82,33 @@ namespace FNLog
             other.log_data_ = nullptr;
             other.hold_idx_ = -1;
         }
+        long long get_tick()
+        {
+#ifdef WIN32
+            _mm_lfence();
+            return (long long)__rdtsc();
+#else
+            unsigned int lo = 0;
+            unsigned int hi = 0;
+            __asm__ __volatile__("lfence;rdtsc" : "=a" (lo), "=d" (hi) ::);
+            unsigned long long val = ((unsigned long long)hi << 32) | lo;
+            return (long long)val;
+#endif
+        }
 
         explicit LogStream(Logger& logger, int channel_id, int priority, int category, long long identify,
             const char * const file_name, int file_name_len, int line,
             const char * const func_name, int func_name_len, unsigned int prefix)
         {
-            logger_ = nullptr;
-            log_data_ = nullptr;
+            if (BlockInput(logger, channel_id, priority, category, identify))
+            {
+                return;
+            }
+
+#ifdef FN_LOG_CPU_COST_STAT
+            tick_ = get_tick();
+#endif 
+
             int hold_idx = HoldChannel(logger, channel_id, priority, category, identify);
             if (hold_idx < 0)
             {
@@ -177,6 +197,7 @@ namespace FNLog
         {
             if (log_data_) 
             {
+                int channel_id = log_data_->channel_id_;
                 if (RefVirtualDevice() != NULL)
                 {
                     Channel& channel = logger_->shm_->channels_[log_data_->channel_id_];
@@ -194,6 +215,12 @@ namespace FNLog
                 }
                 PushLog(*logger_, log_data_->channel_id_, hold_idx_);
                 hold_idx_ = -1;
+
+#ifdef FN_LOG_CPU_COST_STAT
+                tick_ = get_tick() - tick_;
+                logger_->tick_sum_ += tick_;
+                logger_->tick_count_++;
+#endif 
                 log_data_ = nullptr;
                 logger_ = nullptr;
             }
@@ -463,6 +490,7 @@ namespace FNLog
         LogData * log_data_ = nullptr;
         Logger* logger_ = nullptr;
         int hold_idx_ = -1;//ring buffer  
+        long long tick_ = 0;
     };
 
 

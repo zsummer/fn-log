@@ -173,7 +173,10 @@ int main(int argc, char *argv[])
     LogAlarmStream(0, 1, 0) << "1000w trace(sync no write) use" << (Now() - now) * (10) << " secend";
 
 
-
+    long long ticks = FNLog::GetDefaultLogger().tick_count_;
+    long long sum = FNLog::GetDefaultLogger().tick_sum_;
+    LogAlarmStream(0, 1, 0) << "logs:" << ticks << ", sum:" << sum
+        << ", avg:" << sum / (ticks > 0 ? ticks : 1);
 
 
     LogAlarmStream(0, 1, 0) << "finish";

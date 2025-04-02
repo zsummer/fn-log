@@ -141,7 +141,7 @@ int main(int argc, char *argv[])
         return ret;
     }
 
-    double last = Now();
+    
 
     FNLog::Logger& logger = FNLog::GetDefaultLogger();
 
@@ -149,12 +149,19 @@ int main(int argc, char *argv[])
     for (int channel_id = 0; channel_id < logger.shm_->channel_size_; channel_id++)
     {
         total_count = 0;
+        double last = Now();
         FNLog::Channel& channel = logger.shm_->channels_[channel_id];
         do
         {
-            LOG_STREAM_DEFAULT_LOGGER(channel_id, FNLog::PRIORITY_DEBUG, 0, 0, FNLog::LOG_PREFIX_NULL)
-                .write_buffer("rrrrrrrrrrrrrrrrrrrradfads33333333333333rrd",
-                    sizeof("rrrrrrrrrrrrrrrrrrrradfads33333333333333rrd") - 1);
+
+            LogDebugStream(channel_id, 0, 0).write_buffer("rrrrrrrrrrrrrrrrrrrradfads33333333333333rrd",
+                sizeof("rrrrrrrrrrrrrrrrrrrradfads33333333333333rrd") - 1)
+                << -23 << ": " << 32.2223 << (void*) nullptr;
+
+
+            //LOG_STREAM_DEFAULT_LOGGER(channel_id, FNLog::PRIORITY_DEBUG, 0, 0, FNLog::LOG_PREFIX_NULL)
+            //    .write_buffer("rrrrrrrrrrrrrrrrrrrradfads33333333333333rrd",
+            //        sizeof("rrrrrrrrrrrrrrrrrrrradfads33333333333333rrd") - 1);
 
             if (total_count %1000000 == 0)
             {
@@ -163,7 +170,13 @@ int main(int argc, char *argv[])
                 {
                     LogInfo() << "channel:<" << (long long)channel_id << "> "
                         << ChannelDesc(channel.channel_type_) << " has write :<"
-                        << channel.device_size_ << "> test " << 1000000 / (now - last) << " line/sec. ";
+                        << channel.device_size_ << "> test " << total_count / (now - last) << " line/sec. ";
+
+                    long long ticks = FNLog::GetDefaultLogger().tick_count_;
+                    long long sum = FNLog::GetDefaultLogger().tick_sum_;
+                    LogAlarmStream(0, 1, 0) << "logs:" << ticks << ", sum:" << sum
+                        << ", avg:" << sum / (ticks > 0 ? ticks : 1);
+
                     break;
                 }
             }
@@ -183,6 +196,7 @@ int main(int argc, char *argv[])
             LogInfoStream(0, 1, 0) << "channel[" << channel_id << "] log field[" << field << "]:" << FNLog::AtomicLoadChannelLog(channel, field);
         }
     }
+
     LogAlarmStream(0, 1, 0) << "finish";
     return 0;
 }

@@ -89,6 +89,7 @@ int main(int argc, char *argv[])
     for (int i = 0; i < logger.shm_->channel_size_; i++)
     {
         total_count = 0;
+        long long last = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
         do
         {
             LogDebugStream(i, 0, 0).write_buffer("rrrrrrrrrrrrrrrrrrrradfads33333333333333rrd",
@@ -97,14 +98,19 @@ int main(int argc, char *argv[])
             
             if (total_count %1000000 == 0)
             {
-                static long long last = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+                
                 long long now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
                 if (total_count > 0)
                 {
                     LogInfoStream(0, 1, 0) << "channel:<" << (long long)i << "> "
                         << ChannelDesc(logger.shm_->channels_[i].channel_type_) << " <"
-                        << logger.shm_->channels_[i].device_size_ << "> test " << 1000000*1000 / (now - last) << " line/sec. ";
-                    last = now;
+                        << logger.shm_->channels_[i].device_size_ << "> test " << total_count * 1000 / (now - last) << " line/sec. ";
+
+                    long long ticks = FNLog::GetDefaultLogger().tick_count_;
+                    long long sum = FNLog::GetDefaultLogger().tick_sum_;
+                    LogAlarmStream(0, 1, 0) << "logs:" << ticks << ", sum:" << sum
+                        << ", avg:" << sum / (ticks > 0 ? ticks : 1);
+
                     break;
                 }
             }

@@ -429,7 +429,7 @@ namespace FNLog
 #endif
     inline int HoldChannel(Logger& logger, int channel_id, int priority, int category, long long identify)
     {
-        if (BlockInput(logger, channel_id, priority, category, identify))
+        if (channel_id >= logger.shm_->channel_size_)
         {
             return -1;
         }
@@ -531,6 +531,11 @@ namespace FNLog
         {
             return 0;
         }
+        if (BlockInput(logger, channel_id, log.priority_, category, identify))
+        {
+            return 0;
+        }
+
         int hold_idx = FNLog::HoldChannel(logger, channel_id, log.priority_, category, identify);
         if (hold_idx < 0)
         {

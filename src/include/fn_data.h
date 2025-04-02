@@ -78,7 +78,12 @@
 #endif
 
 
-//#define FN_LOG_USING_ATOM_CFG
+
+
+#define FN_LOG_CPU_COST_STAT
+
+#define FN_LOG_USING_ATOM_CFG
+
 
 namespace FNLog
 {
@@ -421,6 +426,8 @@ namespace FNLog
         char name_[MAX_LOGGER_NAME_LEN];
         int name_len_;
         LoggerFreqLimit freq_limits_[MAX_FREQ_LIMIT_SIZE]; // used __COUNTER__  
+        std::atomic<long long> tick_sum_;
+        std::atomic<long long> tick_count_;
 
         long long shm_key_;
         SHMLogger* shm_;
