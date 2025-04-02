@@ -87,7 +87,7 @@ namespace FNLog
 #ifdef WIN32
             _mm_lfence();
             return (long long)__rdtsc();
-#else
+#elif defined(__GCC_ASM_FLAG_OUTPUTS__) && defined(__x86_64__)
             unsigned int lo = 0;
             unsigned int hi = 0;
             __asm__ __volatile__("lfence;rdtsc" : "=a" (lo), "=d" (hi) ::);
