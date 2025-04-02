@@ -197,7 +197,6 @@ namespace FNLog
         {
             if (log_data_) 
             {
-                int channel_id = log_data_->channel_id_;
                 if (RefVirtualDevice() != NULL)
                 {
                     Channel& channel = logger_->shm_->channels_[log_data_->channel_id_];
