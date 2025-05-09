@@ -139,5 +139,15 @@ int main(int argc, char* argv[])
 
     }
 
+    if (true)
+    {
+        std::string str;
+        for (size_t i = 0; i < 100*1000; i++)
+        {
+            str += "0123";
+        }
+        LogInfo() << FNLog::LogBinText(str.c_str(), str.length());
+    }
+
     return 0;
 }
