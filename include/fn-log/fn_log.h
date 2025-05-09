@@ -4986,6 +4986,15 @@ namespace FNLog
         float v_;
     };
 
+    struct LogBinText
+    {
+        LogBinText(const char* bin, int len) { text_bin = bin; bin_len = len; }
+        const char* text_bin;
+        int bin_len;
+    };
+
+
+
     struct LogTimestamp
     {
         LogTimestamp()
@@ -5426,6 +5435,11 @@ namespace FNLog
                 }
             }
             return *this;
+        }
+
+        LogStream & operator <<(const LogBinText& text)
+        {
+            return write_binary(text.text_bin, text.bin_len);
         }
 
         LogStream & operator <<(const LogTimestamp& date)
