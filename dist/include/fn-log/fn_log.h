@@ -5042,19 +5042,22 @@ namespace FNLog
             logger_ = other.logger_;
             log_data_ = other.log_data_;
             hold_idx_ = other.hold_idx_;
+            tick_ = other.tick_;
             other.logger_ = nullptr;
             other.log_data_ = nullptr;
             other.hold_idx_ = -1;
+            other.tick_ = 0;
         }
         long long get_tick()
         {
 #ifdef WIN32
-            _mm_lfence();
+            //_mm_lfence();
             return (long long)__rdtsc();
 #elif defined(__GCC_ASM_FLAG_OUTPUTS__) && defined(__x86_64__)
             unsigned int lo = 0;
             unsigned int hi = 0;
-            __asm__ __volatile__("lfence;rdtsc" : "=a" (lo), "=d" (hi) ::);
+ //           __asm__ __volatile__("lfence;rdtsc" : "=a" (lo), "=d" (hi) ::);
+            __asm__ __volatile__("rdtsc" : "=a" (lo), "=d" (hi) ::);
             unsigned long long val = ((unsigned long long)hi << 32) | lo;
             return (long long)val;
 #else
