@@ -102,6 +102,8 @@ namespace FNLog
             __asm__ __volatile__("lfence;rdtsc" : "=a" (lo), "=d" (hi) ::);
             unsigned long long val = ((unsigned long long)hi << 32) | lo;
             return (long long)val;
+#else
+            return 0;
 #endif
         }
 
