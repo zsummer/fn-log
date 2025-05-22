@@ -57,6 +57,7 @@ jobs:
           ./test_fast_debug
           ./test_fast_default
           ./test_coverage
+          ./test_hex_out
           ./test_channel_normal
           ./test_rolling
           ./test_serialize_object

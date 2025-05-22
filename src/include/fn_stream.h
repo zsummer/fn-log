@@ -33,11 +33,21 @@ namespace FNLog
 
     struct LogBinText
     {
-        LogBinText(const char* bin, int len) { text_bin = bin; bin_len = len; }
-        const char* text_bin;
+        LogBinText(const void* bin, int len) { text_bin = bin; bin_len = len; }
+        template<class T>
+        LogBinText(const T& t) { text_bin = &t; bin_len = sizeof(T); }
+        const void* text_bin;
         int bin_len;
     };
 
+    struct LogHexText
+    {
+        LogHexText(const void* bin, int len) { text_bin = bin; bin_len = len; }
+        template<class T>
+        LogHexText(const T& t) { text_bin = &t; bin_len = sizeof(T); }
+        const void* text_bin;
+        int bin_len;
+    };
 
 
     struct LogTimestamp
@@ -305,7 +315,37 @@ namespace FNLog
             return *this;
         }
 
-        LogStream& write_binary(const char* dst, int len)
+        LogStream& write_bin_text(const char* dst, int len)
+        {
+            if (!log_data_)
+            {
+                return *this;
+            }
+            write_buffer("\r\n\t[", sizeof("\r\n\t[") - 1);
+            for (int i = 0; i < (len / 16) + 1; i++)
+            {
+                if (i*16 >= len)
+                {
+                    continue;
+                }
+                write_buffer("\r\n\t[", sizeof("\r\n\t[") - 1);
+                *this << (void*)(dst + (size_t)i * 16);
+                write_buffer(": ", sizeof(": ") - 1);
+                for (int j = i * 16; j < (i + 1) * 16 && j < len; j++)
+                {
+                    if (log_data_->content_len_ + 30 >= LogData::LOG_SIZE)
+                    {
+                        break;
+                    }
+                    log_data_->content_len_ += FNLog::write_bin_unsafe<8>(log_data_->content_ + log_data_->content_len_,
+                        (unsigned long long)(unsigned char)dst[j]);
+                    write_buffer(" ", sizeof(" ") - 1);
+                }
+            }
+            write_buffer("\r\n\t]\r\n\t", sizeof("\r\n\t]\r\n\t") - 1);
+            return *this;
+        }
+        LogStream& write_hex_text(const char* dst, int len)
         {
             if (!log_data_)
             {
@@ -314,6 +354,10 @@ namespace FNLog
             write_buffer("\r\n\t[", sizeof("\r\n\t[")-1);
             for (int i = 0; i < (len / 32) + 1; i++)
             {
+                if (i * 32 >= len)
+                {
+                    continue;
+                }
                 write_buffer("\r\n\t[", sizeof("\r\n\t[") - 1);
                 *this << (void*)(dst + (size_t)i * 32);
                 write_buffer(": ", sizeof(": ") - 1);
@@ -487,9 +531,14 @@ namespace FNLog
             return *this;
         }
 
-        LogStream & operator <<(const LogBinText& text)
+        LogStream & operator <<(const LogHexText& text)
         {
-            return write_binary(text.text_bin, text.bin_len);
+            return write_hex_text((const char *)text.text_bin, text.bin_len);
+        }
+
+        LogStream& operator <<(const LogBinText& text)
+        {
+            return write_bin_text((const char*)text.text_bin, text.bin_len);
         }
 
         LogStream & operator <<(const LogTimestamp& date)

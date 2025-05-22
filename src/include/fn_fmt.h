@@ -158,20 +158,24 @@ namespace FNLog
 
 
 
-        int real_wide = 0;
+        int real_wide = 1;
+        if (number != 0)
+        {
 #ifndef WIN32
-        real_wide = sizeof(number) * 8 - __builtin_clzll(number);
+            real_wide = sizeof(number) * 8 - __builtin_clzll(number);
 #else
-        unsigned long win_index = 0;
-        if (_BitScanReverse(&win_index, (unsigned long)(number >> 32)))
-        {
-            real_wide = win_index + 1 + 32;
-        }
-        else if(_BitScanReverse(&win_index, (unsigned long)(number & 0xffffffff)))
-        {
-            real_wide = win_index + 1;
-        }
+            unsigned long win_index = 0;
+            if (_BitScanReverse(&win_index, (unsigned long)(number >> 32)))
+            {
+                real_wide = win_index + 1 + 32;
+            }
+            else if (_BitScanReverse(&win_index, (unsigned long)(number & 0xffffffff)))
+            {
+                real_wide = win_index + 1;
+            }
 #endif 
+        }
+
         switch (real_wide)
         {
         case  1:case  2:case  3:case  4:real_wide = 1; break;
@@ -223,14 +227,17 @@ namespace FNLog
         static const char* lut =
             "0123456789abcdefghijk";
 
-        int real_wide = 0;
+        int real_wide = 1;
+        if (number != 0)
+        {
 #ifndef WIN32
-        real_wide = sizeof(number) * 8 - __builtin_clzll(number);
+            real_wide = sizeof(number) * 8 - __builtin_clzll(number);
 #else
-        unsigned long win_index = 0;
-        _BitScanReverse64(&win_index, number);
-        real_wide = (int)win_index + 1;
+            unsigned long win_index = 0;
+            _BitScanReverse64(&win_index, number);
+            real_wide = (int)win_index + 1;
 #endif 
+        }
         if (real_wide < WIDE)
         {
             real_wide = WIDE;
@@ -243,6 +250,10 @@ namespace FNLog
             *(dst + cur_wide - 1) = lut[m2];
             cur_wide--;
         } while (number);
+        while (cur_wide-- != 0)
+        {
+            *(dst + cur_wide) = '0';
+        }
         return real_wide;
     }
 

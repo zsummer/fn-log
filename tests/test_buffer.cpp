@@ -43,7 +43,7 @@ int main(int argc, char* argv[])
             switch (rd)
             {
             case 0:
-                ls.write_binary("aaa", 3);
+                ls.write_hex_text("aaa", 3);
                 break;
             case 1:
                 ls.write_buffer("bbb", 3);

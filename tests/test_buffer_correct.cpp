@@ -146,7 +146,7 @@ int main(int argc, char* argv[])
         {
             str += "0123";
         }
-        LogInfo() << FNLog::LogBinText(str.c_str(), str.length());
+        LogInfo() << FNLog::LogHexText(str.c_str(), str.length());
     }
 
     return 0;
