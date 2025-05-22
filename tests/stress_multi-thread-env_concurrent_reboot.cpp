@@ -121,8 +121,8 @@ int main(int argc, char* argv[])
 
     FNLog::FastStartDefaultLogger();
 
-    LogInfo() << "start ok/total:" << start_ok << "/" << start_cnt << ", start ok rate:" << start_ok * 100 / start_cnt << "%";
-    LogInfo() << "stop ok/total:" << stop_ok << "/" << stop_cnt << ", stop ok rate:" << stop_ok * 100 / stop_cnt << "%";
+    LogInfo() << "start ok/total:" << (int)start_ok << "/" << (int)start_cnt << ", start ok rate:" << start_ok * 100 / start_cnt << "%";
+    LogInfo() << "stop ok/total:" << (int)stop_ok << "/" << (int)stop_cnt << ", stop ok rate:" << stop_ok * 100 / stop_cnt << "%";
     if (start_ok <= 0 || stop_ok <= 0)
     {
         return -1;
