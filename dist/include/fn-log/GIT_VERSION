@@ -1,6 +1,6 @@
 version:
-last_sha1(./src)=e608dafc803c93a6782e500fe27ab2718c07f32a
-last_date(./src)=2025-05-12 16:47:51 +0800
+last_sha1(./src)=b64cc3021c56fc50579af05d5314a8517748dbcf
+last_date(./src)=2025-05-22 22:56:35 +0800
 
 git log -1 --stat ./src:
-commit e608dafc803c93a6782e500fe27ab2718c07f32a Author: zsummer <yawei.zhang@foxmail.com> Date: Mon May 12 16:47:51 2025 +0800 fixed get_tick typo error on some platform src/include/fn_stream.h | 7 +++++-- 1 file changed, 5 insertions(+), 2 deletions(-)
+commit b64cc3021c56fc50579af05d5314a8517748dbcf Author: zsummer <yawei.zhang@foxmail.com> Date: Thu May 22 22:56:35 2025 +0800 add LogBinText LogHexText test src/include/fn_fmt.h | 43 +++++++++++++++++++++-------------- src/include/fn_stream.h | 59 ++++++++++++++++++++++++++++++++++++++++++++----- 2 files changed, 81 insertions(+), 21 deletions(-)
