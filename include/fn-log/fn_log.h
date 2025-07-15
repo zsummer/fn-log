@@ -2508,11 +2508,13 @@ namespace FNLog
         ls.end_ = first + text.length();
         memset(&ls.channels_, 0, sizeof(ls.channels_));
         ls.channel_size_ = 0;
+        ls.shm_key_ = 0;
         ls.hot_update_ = false;
         ls.current_ = ls.first_;
         ls.line_no_ = 1; 
         ls.desc_len_ = 0;
         ls.name_len_ = 0;
+        
         do
         {
             const char* current = ls.current_;
