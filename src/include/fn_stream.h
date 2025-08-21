@@ -122,11 +122,14 @@ namespace FNLog
 
         explicit LogStream(Logger& logger, int channel_id, int priority, int category, long long identify,
             const char * const file_name, int file_name_len, int line,
-            const char * const func_name, int func_name_len, unsigned int prefix)
+            const char * const func_name, int func_name_len, unsigned int prefix, bool ignore_check)
         {
-            if (BlockInput(logger, channel_id, priority, category, identify))
+            if (!ignore_check)
             {
-                return;
+                if (BlockInput(logger, channel_id, priority, category, identify))
+                {
+                    return;
+                }
             }
 
 #ifdef FN_LOG_CPU_COST_STAT
