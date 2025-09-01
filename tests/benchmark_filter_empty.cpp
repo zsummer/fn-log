@@ -85,6 +85,7 @@ int main(int argc, char *argv[])
 #endif // NDEBUG
 
 
+    LogAlarmStream(0, 1, 0) << "----------------------------------------\n\n";
 
     double now = Now();
 
@@ -96,24 +97,24 @@ int main(int argc, char *argv[])
     }
     LogAlarmStream(0, 1, 0) << "1000w debug(write) use" << (Now() - now) * (10) << " secend";
     now = Now();
-    for (unsigned long long i = 0; i < 1000000; i++)
+    for (unsigned long long i = 0; i < 10000000; i++)
     {
         LogTraceStream(0, 0, 0) << "asdf" << i << ", " << 2.3 << "asdfasdf";
     }
-    LogAlarmStream(0, 1, 0) << "1000w trace(no write) use" << (Now() - now) * (10) << " secend";
+    LogAlarmStream(0, 1, 0) << "1000w trace(no write) use" << (Now() - now) * (1) << " secend";
 
     now = Now();
-    for (unsigned long long i = 0; i < 1000000; i++)
+    for (unsigned long long i = 0; i < 10000000; i++)
     {
         LogDebugStream(1, 0, 0) << "asdf" << i << ", " << 2.3 << "asdfasdf";
     }
-    LogAlarmStream(0, 1, 0) << "1000w debug(no device no write) use" << (Now() - now) * (10) << " secend";
+    LogAlarmStream(0, 1, 0) << "1000w debug(no device no write) use" << (Now() - now) * (1) << " secend";
     now = Now();
-    for (unsigned long long i = 0; i < 1000000; i++)
+    for (unsigned long long i = 0; i < 10000000; i++)
     {
         LogTraceStream(1, 0, 0) << "asdf" << i << ", " << 2.3 << "asdfasdf";
     }
-    LogAlarmStream(0, 1, 0) << "1000w trace(no device no write) use" << (Now() - now) * (10) << " secend";
+    LogAlarmStream(0, 1, 0) << "1000w trace(no device no write) use" << (Now() - now) * (1) << " secend";
 
 
     now = Now();
@@ -123,11 +124,61 @@ int main(int argc, char *argv[])
     }
     LogAlarmStream(0, 1, 0) << "1000w debug(sync write) use" << (Now() - now) * (100) << " secend";
     now = Now();
-    for (unsigned long long i = 0; i < 1000000; i++)
+    for (unsigned long long i = 0; i < 10000000; i++)
     {
         LogTraceStream(2, 0, 0) << "asdf" << i << ", " << 2.3 << "asdfasdf";
     }
-    LogAlarmStream(0, 1, 0) << "1000w trace(sync no write) use" << (Now() - now) * (10) << " secend";
+    LogAlarmStream(0, 1, 0) << "1000w trace(sync no write) use" << (Now() - now) * (1) << " secend";
+
+
+    LogAlarmStream(0, 1, 0) << "----------------------------------------\n\n";
+
+
+    LogAlarmStream(0, 1, 0) << "input format: LOG_DEBUG(xxxx << xxx); test:";
+    now = Now();
+    for (unsigned long long i = 0; i < 1000000; i++)
+    {
+        LOG_DEBUG(0, 0, 0, "asdf" << i << ", " << 2.3 << "asdfasdf");
+    }
+    LogAlarmStream(0, 1, 0) << "1000w debug(write) use" << (Now() - now) * (10) << " secend";
+    now = Now();
+    for (unsigned long long i = 0; i < 10000000; i++)
+    {
+        LOG_TRACE(0, 0, 0, "asdf" << i << ", " << 2.3 << "asdfasdf");
+    }
+    LogAlarmStream(0, 1, 0) << "1000w trace(no write) use" << (Now() - now) * (1) << " secend";
+
+    now = Now();
+    for (unsigned long long i = 0; i < 10000000; i++)
+    {
+        LOG_DEBUG(1, 0, 0, "asdf" << i << ", " << 2.3 << "asdfasdf");
+    }
+    LogAlarmStream(0, 1, 0) << "1000w debug(no device no write) use" << (Now() - now) * (1) << " secend";
+    now = Now();
+    for (unsigned long long i = 0; i < 10000000; i++)
+    {
+        LOG_TRACE(1, 0, 0, "asdf" << i << ", " << 2.3 << "asdfasdf");
+    }
+    LogAlarmStream(0, 1, 0) << "1000w trace(no device no write) use" << (Now() - now) * (1) << " secend";
+
+
+    now = Now();
+    for (unsigned long long i = 0; i < 100000; i++)
+    {
+        LogDebugStream(2, 0, 0) << "asdf" << i << ", " << 2.3 << "asdfasdf";
+    }
+    LogAlarmStream(0, 1, 0) << "1000w debug(sync write) use" << (Now() - now) * (100) << " secend";
+    now = Now();
+    for (unsigned long long i = 0; i < 10000000; i++)
+    {
+        LogTraceStream(2, 0, 0) << "asdf" << i << ", " << 2.3 << "asdfasdf";
+    }
+    LogAlarmStream(0, 1, 0) << "1000w trace(sync no write) use" << (Now() - now) * (1) << " secend";
+
+
+    LogAlarmStream(0, 1, 0) << "----------------------------------------\n\n";
+
+
 
 
     LogAlarmStream(0, 1, 0) << "\n\n";
@@ -139,24 +190,24 @@ int main(int argc, char *argv[])
     }
     LogAlarmStream(0, 1, 0) << "1000w debug(write) use" << (Now() - now) * (10) << " secend";
     now = Now();
-    for (unsigned long long i = 0; i < 1000000; i++)
+    for (unsigned long long i = 0; i < 10000000; i++)
     {
         LOGFMT_TRACE(0, 0, 0, "%s, %llu, %g, %s", "asdf", i, 2.3, "asdfasdf");
     }
-    LogAlarmStream(0, 1, 0) << "1000w trace(no write) use" << (Now() - now) * (10) << " secend";
+    LogAlarmStream(0, 1, 0) << "1000w trace(no write) use" << (Now() - now) * (1) << " secend";
 
     now = Now();
-    for (unsigned long long i = 0; i < 1000000; i++)
+    for (unsigned long long i = 0; i < 10000000; i++)
     {
         LOGFMT_DEBUG(1, 0, 0, "%s, %llu, %g, %s", "asdf", i, 2.3, "asdfasdf");
     }
-    LogAlarmStream(0, 1, 0) << "1000w debug(no device no write) use" << (Now() - now) * (10) << " secend";
+    LogAlarmStream(0, 1, 0) << "1000w debug(no device no write) use" << (Now() - now) * (1) << " secend";
     now = Now();
-    for (unsigned long long i = 0; i < 1000000; i++)
+    for (unsigned long long i = 0; i < 10000000; i++)
     {
         LOGFMT_TRACE(1, 0, 0, "%s, %llu, %g, %s", "asdf", i, 2.3, "asdfasdf");
     }
-    LogAlarmStream(0, 10, 0) << "1000w trace(no device no write) use" << (Now() - now) * (10) << " secend";
+    LogAlarmStream(0, 10, 0) << "1000w trace(no device no write) use" << (Now() - now) * (1) << " secend";
 
 
     now = Now();
@@ -166,11 +217,14 @@ int main(int argc, char *argv[])
     }
     LogAlarmStream(0, 1, 0) << "1000w debug(sync write) use" << (Now() - now) * (100) << " secend";
     now = Now();
-    for (unsigned long long i = 0; i < 1000000; i++)
+    for (unsigned long long i = 0; i < 10000000; i++)
     {
         LOGFMT_TRACE(2, 0, 0, "%s, %llu, %g, %s", "asdf", i, 2.3, "asdfasdf");
     }
-    LogAlarmStream(0, 1, 0) << "1000w trace(sync no write) use" << (Now() - now) * (10) << " secend";
+    LogAlarmStream(0, 1, 0) << "1000w trace(sync no write) use" << (Now() - now) * (1) << " secend";
+
+    LogAlarmStream(0, 1, 0) << "----------------------------------------\n\n";
+
 
 
     long long ticks = FNLog::GetDefaultLogger().tick_count_;
@@ -178,6 +232,7 @@ int main(int argc, char *argv[])
     LogAlarmStream(0, 1, 0) << "logs:" << ticks << ", sum:" << sum
         << ", avg:" << sum / (ticks > 0 ? ticks : 1);
 
+    
 
     LogAlarmStream(0, 1, 0) << "finish";
     return 0;
