@@ -1,6 +1,6 @@
 version:
-last_sha1(./src)=39d8e403bf2ace8b825a0a105e7e4808bb4ea5eb
-last_date(./src)=2025-08-21 15:39:28 +0800
+last_sha1(./src)=e649ef56f65c4cf714601e78c11ea2f18b9b7c00
+last_date(./src)=2025-09-01 16:50:07 +0800
 
 git log -1 --stat ./src:
-commit 39d8e403bf2ace8b825a0a105e7e4808bb4ea5eb Author: zsummer <yawei.zhang@foxmail.com> Date: Thu Aug 21 15:28:49 2025 +0800 function style stream src/include/fn_macro.h | 86 ++++++++++++++++++++++++++++--------------------- src/include/fn_stream.h | 9 ++++-- 2 files changed, 55 insertions(+), 40 deletions(-)
+commit e649ef56f65c4cf714601e78c11ea2f18b9b7c00 Author: zsummer <yawei.zhang@foxmail.com> Date: Mon Sep 1 16:49:51 2025 +0800 device config use load(std::memory_order_relaxed) src/include/fn_channel.h | 16 ++++++++-------- 1 file changed, 8 insertions(+), 8 deletions(-)
