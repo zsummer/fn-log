@@ -380,8 +380,8 @@ namespace FNLog
         for (int i = 0; i < channel.device_size_; i++)
         {
             Device::ConfigFields& fields = channel.devices_[i].config_fields_;
-            long long field_able = fields[FNLog::DEVICE_CFG_ABLE];
-            long long field_priority = fields[FNLog::DEVICE_CFG_PRIORITY];
+            long long field_able = fields[FNLog::DEVICE_CFG_ABLE].load(std::memory_order_relaxed);
+            long long field_priority = fields[FNLog::DEVICE_CFG_PRIORITY].load(std::memory_order_relaxed);
             if (!field_able || priority < field_priority)
             {
                 continue;
@@ -390,12 +390,12 @@ namespace FNLog
             {
                 continue;
             }
-            long long field_begin_category = fields[FNLog::DEVICE_CFG_CATEGORY];
-            long long field_category_count = fields[FNLog::DEVICE_CFG_CATEGORY_EXTEND];
-            unsigned long long field_category_mask = (unsigned long long)fields[FNLog::DEVICE_CFG_CATEGORY_MASK];
-            long long field_begin_identify = fields[FNLog::DEVICE_CFG_IDENTIFY];
-            long long field_identify_count = fields[FNLog::DEVICE_CFG_IDENTIFY_EXTEND];
-            unsigned long long field_identify_mask = (unsigned long long)fields[FNLog::DEVICE_CFG_IDENTIFY_MASK];
+            long long field_begin_category = fields[FNLog::DEVICE_CFG_CATEGORY].load(std::memory_order_relaxed);
+            long long field_category_count = fields[FNLog::DEVICE_CFG_CATEGORY_EXTEND].load(std::memory_order_relaxed);
+            unsigned long long field_category_mask = (unsigned long long)fields[FNLog::DEVICE_CFG_CATEGORY_MASK].load(std::memory_order_relaxed);
+            long long field_begin_identify = fields[FNLog::DEVICE_CFG_IDENTIFY].load(std::memory_order_relaxed);
+            long long field_identify_count = fields[FNLog::DEVICE_CFG_IDENTIFY_EXTEND].load(std::memory_order_relaxed);
+            unsigned long long field_identify_mask = (unsigned long long)fields[FNLog::DEVICE_CFG_IDENTIFY_MASK].load(std::memory_order_relaxed);
 
 
             if (field_category_count > 0 && (category < field_begin_category || category >= field_begin_category + field_category_count))
