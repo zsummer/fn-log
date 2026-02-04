@@ -1,6 +1,6 @@
 version:
-last_sha1(./src)=b7daa1279e1a6147cd01cbdd5e2542c6e5f7bad0
-last_date(./src)=2026-02-04 14:52:09 +0800
+last_sha1(./src)=57524a7a1e1494ca80bf9f52e2c62b1a858271ce
+last_date(./src)=2026-02-04 17:25:40 +0800
 
 git log -1 --stat ./src:
-commit b7daa1279e1a6147cd01cbdd5e2542c6e5f7bad0 Author: zsummer <yawei.zhang@foxmail.com> Date: Wed Feb 4 14:51:50 2026 +0800 optimize ai review src/include/fn_channel.h | 3 +-- src/include/fn_file.h | 6 +++++- src/include/fn_log.h | 2 +- 3 files changed, 7 insertions(+), 4 deletions(-)
+commit 57524a7a1e1494ca80bf9f52e2c62b1a858271ce Author: zsummer <yawei.zhang@foxmail.com> Date: Wed Feb 4 17:25:40 2026 +0800 optimize MACRO src/include/fn_macro.h | 35 ++++++++++++++++++----------------- 1 file changed, 18 insertions(+), 17 deletions(-)

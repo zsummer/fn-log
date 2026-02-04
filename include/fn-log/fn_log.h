@@ -5721,7 +5721,7 @@ FNLog::LogStream& LogTemplatePack(FNLog::LogStream& ls, Args&& ... args)
 
 
 //--------------------CPP MACRO STREAM STYLE FORMAT ---------------------------
-#define LOG_STREAM_FUNC(logger, channel, priority, category, identify, prefix, log) \
+#define LOG_STREAM_FUNC(logger, channel, priority, category, identify, prefix, ...) \
 do{ \
     if (FNLog::BlockInput(FNLog::GetDefaultLogger(), channel, priority, category, identify))  \
     { \
@@ -5730,25 +5730,26 @@ do{ \
     FNLog::LogStream __log_stream(LOG_STREAM_ORIGIN(FNLog::GetDefaultLogger(), channel, priority, category, identify, prefix, true));\
     if (__log_stream.log_data_)\
     {\
-        __log_stream << log;\
+        __log_stream << __VA_ARGS__; \
     }\
 } while (0)
 
-#define LOG_TRACE(channel, category, identify, log) LOG_STREAM_FUNC(FNLog::GetDefaultLogger(), channel, FNLog::PRIORITY_TRACE, category, identify, FNLog::LOG_PREFIX_DEFAULT, log)
-#define LOG_DEBUG(channel, category, identify, log) LOG_STREAM_FUNC(FNLog::GetDefaultLogger(), channel, FNLog::PRIORITY_DEBUG, category, identify, FNLog::LOG_PREFIX_DEFAULT, log)
-#define LOG_INFO(channel,  category, identify, log) LOG_STREAM_FUNC(FNLog::GetDefaultLogger(), channel, FNLog::PRIORITY_INFO,  category, identify, FNLog::LOG_PREFIX_DEFAULT, log)
-#define LOG_WARN(channel,  category, identify, log) LOG_STREAM_FUNC(FNLog::GetDefaultLogger(), channel, FNLog::PRIORITY_WARN,  category, identify, FNLog::LOG_PREFIX_DEFAULT, log)
-#define LOG_ERROR(channel, category, identify, log) LOG_STREAM_FUNC(FNLog::GetDefaultLogger(), channel, FNLog::PRIORITY_ERROR, category, identify, FNLog::LOG_PREFIX_DEFAULT, log)
-#define LOG_ALARM(channel, category, identify, log) LOG_STREAM_FUNC(FNLog::GetDefaultLogger(), channel, FNLog::PRIORITY_ALARM, category, identify, FNLog::LOG_PREFIX_DEFAULT, log)
-#define LOG_FATAL(channel, category, identify, log) LOG_STREAM_FUNC(FNLog::GetDefaultLogger(), channel, FNLog::PRIORITY_FATAL, category, identify, FNLog::LOG_PREFIX_DEFAULT, log)
 
-#define LOGT(log) LOG_TRACE(0, 0, 0, log)
-#define LOGD(log) LOG_DEBUG(0, 0, 0, log)
-#define LOGI(log) LOG_INFO(0,  0, 0, log)
-#define LOGW(log) LOG_WARN(0,  0, 0, log)
-#define LOGE(log) LOG_ERROR(0, 0, 0, log)
-#define LOGA(log) LOG_ALARM(0, 0, 0, log)
-#define LOGF(log) LOG_FATAL(0, 0, 0, log)
+#define LOG_TRACE(channel, category, identify, ...) LOG_STREAM_FUNC(FNLog::GetDefaultLogger(), channel, FNLog::PRIORITY_TRACE, category, identify, FNLog::LOG_PREFIX_DEFAULT, ##__VA_ARGS__)
+#define LOG_DEBUG(channel, category, identify, ...) LOG_STREAM_FUNC(FNLog::GetDefaultLogger(), channel, FNLog::PRIORITY_DEBUG, category, identify, FNLog::LOG_PREFIX_DEFAULT, ##__VA_ARGS__)
+#define LOG_INFO(channel,  category, identify, ...) LOG_STREAM_FUNC(FNLog::GetDefaultLogger(), channel, FNLog::PRIORITY_INFO,  category, identify, FNLog::LOG_PREFIX_DEFAULT, ##__VA_ARGS__)
+#define LOG_WARN(channel,  category, identify, ...) LOG_STREAM_FUNC(FNLog::GetDefaultLogger(), channel, FNLog::PRIORITY_WARN,  category, identify, FNLog::LOG_PREFIX_DEFAULT, ##__VA_ARGS__)
+#define LOG_ERROR(channel, category, identify, ...) LOG_STREAM_FUNC(FNLog::GetDefaultLogger(), channel, FNLog::PRIORITY_ERROR, category, identify, FNLog::LOG_PREFIX_DEFAULT, ##__VA_ARGS__)
+#define LOG_ALARM(channel, category, identify, ...) LOG_STREAM_FUNC(FNLog::GetDefaultLogger(), channel, FNLog::PRIORITY_ALARM, category, identify, FNLog::LOG_PREFIX_DEFAULT, ##__VA_ARGS__)
+#define LOG_FATAL(channel, category, identify, ...) LOG_STREAM_FUNC(FNLog::GetDefaultLogger(), channel, FNLog::PRIORITY_FATAL, category, identify, FNLog::LOG_PREFIX_DEFAULT, ##__VA_ARGS__)
+
+#define LOGT(...) LOG_TRACE(0, 0, 0, ##__VA_ARGS__)
+#define LOGD(...) LOG_DEBUG(0, 0, 0, ##__VA_ARGS__)
+#define LOGI(...) LOG_INFO(0,  0, 0, ##__VA_ARGS__)
+#define LOGW(...) LOG_WARN(0,  0, 0, ##__VA_ARGS__)
+#define LOGE(...) LOG_ERROR(0, 0, 0, ##__VA_ARGS__)
+#define LOGA(...) LOG_ALARM(0, 0, 0, ##__VA_ARGS__)
+#define LOGF(...) LOG_FATAL(0, 0, 0, ##__VA_ARGS__)
 
 
 //--------------------C STYLE FORMAT ---------------------------
