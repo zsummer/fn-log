@@ -1,6 +1,6 @@
 #define FN_LOG_MAX_CHANNEL_SIZE 4
 #include "fn_log.h"
-
+#include <chrono>
 
 static const std::string example_config_text =
 R"----(

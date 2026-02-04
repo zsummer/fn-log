@@ -3,6 +3,7 @@
 #define FN_LOG_MAX_LOG_SIZE 10000
 #define FN_LOG_MAX_LOG_QUEUE_SIZE 10000
 #include "fn_log.h"
+#include <chrono>
 
 using namespace FNLog;
 

@@ -43,7 +43,6 @@ namespace FNLog
         case DEVICE_OUT_EMPTY:
             EnterProcOutEmptyDevice(logger, channel_id, device_id, log);
             break;
-            break;
         default:
             break;
         }
@@ -314,7 +313,7 @@ namespace FNLog
         unsigned long long tid = 0;
         pthread_threadid_np(nullptr, &tid);
         log.thread_ = (unsigned int)tid;
-#else
+#else 
         static thread_local unsigned int therad_id = (unsigned int)syscall(SYS_gettid);
         log.thread_ = therad_id;
 #endif

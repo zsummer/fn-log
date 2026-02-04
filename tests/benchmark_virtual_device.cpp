@@ -6,7 +6,7 @@
 #define FN_LOG_MAX_LOG_QUEUE_SIZE 100000
 
 #include "fn_log.h"
-
+#include <chrono>
 
 static const std::string example_config_text =
 R"----(

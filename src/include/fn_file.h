@@ -125,6 +125,10 @@ namespace FNLog
 
     long FileHandler::open(const char* path, const char* mod, struct stat& file_stat)
     {
+        if (path == nullptr)
+        {
+            return -1;
+        }
         if (file_ != nullptr)
         {
             fclose(file_);
@@ -137,7 +141,7 @@ namespace FNLog
             {
                 fclose(file_);
                 file_ = nullptr;
-                return -1;
+                return -2;
             }
             return file_stat.st_size;
         }
