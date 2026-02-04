@@ -1,6 +1,6 @@
 version:
-last_sha1(./src)=e649ef56f65c4cf714601e78c11ea2f18b9b7c00
-last_date(./src)=2025-09-01 16:50:07 +0800
+last_sha1(./src)=b7daa1279e1a6147cd01cbdd5e2542c6e5f7bad0
+last_date(./src)=2026-02-04 14:52:09 +0800
 
 git log -1 --stat ./src:
-commit e649ef56f65c4cf714601e78c11ea2f18b9b7c00 Author: zsummer <yawei.zhang@foxmail.com> Date: Mon Sep 1 16:49:51 2025 +0800 device config use load(std::memory_order_relaxed) src/include/fn_channel.h | 16 ++++++++-------- 1 file changed, 8 insertions(+), 8 deletions(-)
+commit b7daa1279e1a6147cd01cbdd5e2542c6e5f7bad0 Author: zsummer <yawei.zhang@foxmail.com> Date: Wed Feb 4 14:51:50 2026 +0800 optimize ai review src/include/fn_channel.h | 3 +-- src/include/fn_file.h | 6 +++++- src/include/fn_log.h | 2 +- 3 files changed, 7 insertions(+), 4 deletions(-)

@@ -129,6 +129,10 @@ namespace FNLog
 
     long FileHandler::open(const char* path, const char* mod, struct stat& file_stat)
     {
+        if (path == nullptr)
+        {
+            return -1;
+        }
         if (file_ != nullptr)
         {
             fclose(file_);
@@ -141,7 +145,7 @@ namespace FNLog
             {
                 fclose(file_);
                 file_ = nullptr;
-                return -1;
+                return -2;
             }
             return file_stat.st_size;
         }
@@ -4014,7 +4018,6 @@ namespace FNLog
         case DEVICE_OUT_EMPTY:
             EnterProcOutEmptyDevice(logger, channel_id, device_id, log);
             break;
-            break;
         default:
             break;
         }
@@ -4285,7 +4288,7 @@ namespace FNLog
         unsigned long long tid = 0;
         pthread_threadid_np(nullptr, &tid);
         log.thread_ = (unsigned int)tid;
-#else
+#else 
         static thread_local unsigned int therad_id = (unsigned int)syscall(SYS_gettid);
         log.thread_ = therad_id;
 #endif
@@ -5820,7 +5823,7 @@ namespace FNLog
 
 
     inline void SetAllChannelCategory(Logger& logger, int begin, int count) { BatchSetChannelCategoryMacro(begin, count);}
-    inline void SetAllFilePriority(Logger& logger, int begin, int count) { BatchSetDeviceCategoryMacro(DEVICE_OUT_FILE, begin, count); }
+    inline void SetAllFileCategory(Logger& logger, int begin, int count) { BatchSetDeviceCategoryMacro(DEVICE_OUT_FILE, begin, count); }
     inline void SetAllScreenCategory(Logger& logger, int begin, int count) { BatchSetDeviceCategoryMacro(DEVICE_OUT_SCREEN, begin, count); }
     inline void SetAllUDPCategory(Logger& logger, int begin, int count) { BatchSetDeviceCategoryMacro(DEVICE_OUT_UDP, begin, count); }
 
