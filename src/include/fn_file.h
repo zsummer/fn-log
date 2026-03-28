@@ -88,8 +88,29 @@
 #endif
 
 
+#if defined(__GNUC__) || defined(__clang__)
+#define FN_LOG_LIKELY(x)   __builtin_expect(!!(x), 1)
+#define FN_LOG_UNLIKELY(x) __builtin_expect(!!(x), 0)
+#else
+#define FN_LOG_LIKELY(x)   (x)
+#define FN_LOG_UNLIKELY(x) (x)
+#endif
+
+
 namespace FNLog
 {
+
+#ifndef FN_LOG_TRANSIT_BUFFER_SIZE
+#define FN_LOG_TRANSIT_BUFFER_SIZE (256*1024)
+#endif
+
+    enum WriteMode
+    {
+        WRITE_TRANS = 0,  // 写入transit buffer（默认）
+        WRITE_DIRECT,     // flush transit + 直接写
+        WRITE_FLUSH,      // flush transit + 直接写 + fflush
+    };
+
     static const int CHUNK_SIZE = 128;
     class FileHandler
     {
@@ -99,7 +120,7 @@ namespace FNLog
         inline bool is_open();
         inline long open(const char* path, const char* mod, struct stat& file_stat);
         inline void close();
-        inline void write(const char* data, size_t len);
+        inline void write(const char* data, size_t len, WriteMode mode = WRITE_TRANS);
         inline void flush();
 
         inline std::string read_line();
@@ -114,9 +135,15 @@ namespace FNLog
         static inline struct tm time_to_tm(time_t t);
 
         static inline bool rollback(const std::string& path, int depth, int max_depth);
+
+    private:
+        inline void flush_transit();
+
     public:
         char chunk_1_[128];
         FILE* file_;
+        char transit_buf_[FN_LOG_TRANSIT_BUFFER_SIZE];
+        int transit_len_;
     };
 
 
@@ -147,11 +174,28 @@ namespace FNLog
         }
         return -2;
     }
+
+    void FileHandler::flush_transit()
+    {
+        if (file_ && transit_len_ > 0)
+        {
+            if (fwrite(transit_buf_, 1, transit_len_, file_) != (size_t)transit_len_)
+            {
+                transit_len_ = 0;
+                fclose(file_);
+                file_ = nullptr;
+                return;
+            }
+            transit_len_ = 0;
+        }
+    }
+
     void FileHandler::close()
     {
         if (file_ != nullptr)
         {
-#if !defined(__APPLE__) && !defined(WIN32) 
+            flush_transit();
+#if !defined(__APPLE__) && !defined(WIN32)
             if (file_ != nullptr)
             {
                 int fd = fileno(file_);
@@ -169,6 +213,7 @@ namespace FNLog
     {
         file_ = nullptr;
         chunk_1_[0] = '\0';
+        transit_len_ = 0;
     }
     FileHandler::~FileHandler()
     {
@@ -180,20 +225,45 @@ namespace FNLog
         return file_ != nullptr;
     }
 
-    void FileHandler::write(const char* data, size_t len)
+    void FileHandler::write(const char* data, size_t len, WriteMode mode)
     {
         if (file_ && len > 0)
         {
-            if (fwrite(data, 1, len, file_) != len)
+            if (mode != WRITE_TRANS)
             {
-                close();
+                flush_transit();
+                if (fwrite(data, 1, len, file_) != len)
+                {
+                    close();
+                    return;
+                }
+                if (mode == WRITE_FLUSH)
+                {
+                    fflush(file_);
+                }
+                return;
             }
+            if (transit_len_ + (int)len > FN_LOG_TRANSIT_BUFFER_SIZE)
+            {
+                flush_transit();
+            }
+            if ((int)len >= FN_LOG_TRANSIT_BUFFER_SIZE)
+            {
+                if (fwrite(data, 1, len, file_) != len)
+                {
+                    close();
+                }
+                return;
+            }
+            memcpy(transit_buf_ + transit_len_, data, len);
+            transit_len_ += (int)len;
         }
     }
     void FileHandler::flush()
     {
         if (file_)
         {
+            flush_transit();
             fflush(file_);
         }
     }

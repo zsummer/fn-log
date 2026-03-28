@@ -78,6 +78,17 @@
 #endif
 
 
+#ifndef FN_LOG_BACKEND_SPIN_COUNT
+#define FN_LOG_BACKEND_SPIN_COUNT 800
+#endif
+
+#ifndef FN_LOG_BACKEND_YIELD_COUNT
+#define FN_LOG_BACKEND_YIELD_COUNT 5000
+#endif
+
+#ifndef FN_LOG_BACKEND_SLEEP_US
+#define FN_LOG_BACKEND_SLEEP_US 1000
+#endif
 
 
 #define FN_LOG_CPU_COST_STAT
@@ -322,6 +333,7 @@ namespace FNLog
         int virtual_device_id_;
         int device_size_;
         unsigned int channel_state_;
+        int min_priority_;  
         ConfigFields config_fields_;
         Device devices_[MAX_DEVICE_SIZE];
 

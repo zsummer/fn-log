@@ -20,6 +20,30 @@ namespace FNLog
 #pragma GCC diagnostic ignored "-Wclass-memaccess"
 #endif
     
+
+    inline void UpdateChannelMinPriority(Channel& channel)
+    {
+        int min_pri = PRIORITY_MAX;
+        for (int i = 0; i < channel.device_size_; i++)
+        {
+            Device& device = channel.devices_[i];
+            if (!AtomicLoadC(device, DEVICE_CFG_ABLE))
+            {
+                continue;
+            }
+            if (device.in_type_ != DEVICE_IN_NULL)
+            {
+                continue;
+            }
+            int dev_pri = (int)AtomicLoadC(device, DEVICE_CFG_PRIORITY);
+            if (dev_pri < min_pri)
+            {
+                min_pri = dev_pri;
+            }
+        }
+        channel.min_priority_ = min_pri;
+    }
+
     inline void ResetSHMLogger(SHMLogger& shm)
     {
         shm.shm_id_ = 0;
@@ -236,6 +260,12 @@ namespace FNLog
         }
         memcpy(&logger.shm_->channels_, &ls->channels_, sizeof(logger.shm_->channels_));
 
+
+        for (int i = 0; i < logger.shm_->channel_size_; i++)
+        {
+            UpdateChannelMinPriority(logger.shm_->channels_[i]);
+        }
+
         if (logger.shm_->channel_size_ > Logger::MAX_CHANNEL_SIZE || logger.shm_->channel_size_ <= 0)
         {
             printf("InitFromYMAL channel size:%d out channel max%d. \n", logger.shm_->channel_size_, Logger::MAX_CHANNEL_SIZE);
@@ -379,6 +409,8 @@ namespace FNLog
             
         }
         AtomicIncChannelLog(dst_chl, CHANNEL_LOG_HOTUPDATE_CHANGE, 1);
+
+        UpdateChannelMinPriority(dst_chl);
         return 0;
     }
 

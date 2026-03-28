@@ -116,6 +116,14 @@ namespace FNLog
     }
 }
 
+//--------------------COMPILE-TIME PRIORITY FILTER (任务1) ---------------------------
+
+#ifdef FN_LOG_COMPILE_PRIORITY
+#define FN_LOG_PRIORITY_VALID(priority) ((priority) >= (FN_LOG_COMPILE_PRIORITY))
+#else
+#define FN_LOG_PRIORITY_VALID(priority) true
+#endif
+
 //--------------------BASE STREAM MACRO ---------------------------
 
 //temporary LogStream  
@@ -135,14 +143,25 @@ __LINE__, __FUNCTION__, sizeof(__FUNCTION__) -1, prefix, ignore_check)
     LOG_STREAM_ORIGIN_REF(FNLog::GetDefaultLogger(), channel, priority, category, identify, FNLog::LOG_PREFIX_DEFAULT, false)
 
 
+
+#ifdef FN_LOG_COMPILE_PRIORITY
+#define LOG_STREAM_DEFAULT_LOGGER_WITH_COMPILE_CHECK(channel, priority, category, identify) \
+    (FN_LOG_PRIORITY_VALID(priority)) ? \
+        LOG_STREAM_DEFAULT_LOGGER_WITH_PREFIX(channel, priority, category, identify) : \
+        FNLog::LogStream(FNLog::GetDefaultLogger(), 0, 0, 0, 0, "", 0, 0, "", 0, FNLog::LOG_PREFIX_NULL, false).self()
+#else
+#define LOG_STREAM_DEFAULT_LOGGER_WITH_COMPILE_CHECK(channel, priority, category, identify) \
+    LOG_STREAM_DEFAULT_LOGGER_WITH_PREFIX(channel, priority, category, identify)
+#endif
+
 //--------------------CPP STREAM STYLE FORMAT ---------------------------
-#define LogTraceStream(channel, category, identify) LOG_STREAM_DEFAULT_LOGGER_WITH_PREFIX(channel, FNLog::PRIORITY_TRACE, category, identify)
-#define LogDebugStream(channel, category, identify) LOG_STREAM_DEFAULT_LOGGER_WITH_PREFIX(channel, FNLog::PRIORITY_DEBUG, category, identify)
-#define LogInfoStream(channel,  category, identify) LOG_STREAM_DEFAULT_LOGGER_WITH_PREFIX(channel, FNLog::PRIORITY_INFO,  category, identify)
-#define LogWarnStream(channel,  category, identify) LOG_STREAM_DEFAULT_LOGGER_WITH_PREFIX(channel, FNLog::PRIORITY_WARN,  category, identify)
-#define LogErrorStream(channel, category, identify) LOG_STREAM_DEFAULT_LOGGER_WITH_PREFIX(channel, FNLog::PRIORITY_ERROR, category, identify)
-#define LogAlarmStream(channel, category, identify) LOG_STREAM_DEFAULT_LOGGER_WITH_PREFIX(channel, FNLog::PRIORITY_ALARM, category, identify)
-#define LogFatalStream(channel, category, identify) LOG_STREAM_DEFAULT_LOGGER_WITH_PREFIX(channel, FNLog::PRIORITY_FATAL, category, identify)
+#define LogTraceStream(channel, category, identify) LOG_STREAM_DEFAULT_LOGGER_WITH_COMPILE_CHECK(channel, FNLog::PRIORITY_TRACE, category, identify)
+#define LogDebugStream(channel, category, identify) LOG_STREAM_DEFAULT_LOGGER_WITH_COMPILE_CHECK(channel, FNLog::PRIORITY_DEBUG, category, identify)
+#define LogInfoStream(channel,  category, identify) LOG_STREAM_DEFAULT_LOGGER_WITH_COMPILE_CHECK(channel, FNLog::PRIORITY_INFO,  category, identify)
+#define LogWarnStream(channel,  category, identify) LOG_STREAM_DEFAULT_LOGGER_WITH_COMPILE_CHECK(channel, FNLog::PRIORITY_WARN,  category, identify)
+#define LogErrorStream(channel, category, identify) LOG_STREAM_DEFAULT_LOGGER_WITH_COMPILE_CHECK(channel, FNLog::PRIORITY_ERROR, category, identify)
+#define LogAlarmStream(channel, category, identify) LOG_STREAM_DEFAULT_LOGGER_WITH_COMPILE_CHECK(channel, FNLog::PRIORITY_ALARM, category, identify)
+#define LogFatalStream(channel, category, identify) LOG_STREAM_DEFAULT_LOGGER_WITH_COMPILE_CHECK(channel, FNLog::PRIORITY_FATAL, category, identify)
 
 #define LogTrace() LogTraceStream(0, 0, 0)
 #define LogDebug() LogDebugStream(0, 0, 0)
@@ -186,6 +205,7 @@ FNLog::LogStream& LogTemplatePack(FNLog::LogStream& ls, Args&& ... args)
 //--------------------CPP MACRO STREAM STYLE FORMAT ---------------------------
 #define LOG_STREAM_FUNC(logger, channel, priority, category, identify, prefix, ...) \
 do{ \
+    if (!FN_LOG_PRIORITY_VALID(priority)) { break; } \
     if (FNLog::BlockInput(FNLog::GetDefaultLogger(), channel, priority, category, identify))  \
     { \
         break;   \
@@ -220,6 +240,7 @@ do{ \
 // function format warn:   void(int x1, int x2, const char *args, ...) __attribute__((format(printf, 3, 4)));    
 #define LOG_FORMAT(channel, priority, category, identify, prefix, logformat, ...) \
 do{ \
+    if (!FN_LOG_PRIORITY_VALID(priority)) { break; } \
     if (FNLog::BlockInput(FNLog::GetDefaultLogger(), channel, priority, category, identify))  \
     { \
         break;   \
