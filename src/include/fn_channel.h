@@ -99,6 +99,7 @@ namespace FNLog
     {
         Channel& channel = logger.shm_->channels_[channel_id];
         RingBuffer& ring_buffer = logger.shm_->ring_buffers_[channel_id];
+        int backoff_count = 0; // 任务3：自适应退避计数器
         do
         {
             int flush_count = 0;
@@ -256,7 +257,23 @@ namespace FNLog
             HotUpdateLogger(logger, channel.channel_id_);
             if (channel.channel_type_ == CHANNEL_ASYNC && empty_tick)
             {
-                std::this_thread::sleep_for(std::chrono::milliseconds(FN_LOG_MAX_ASYNC_SLEEP_MS));
+                backoff_count++;
+                if (FN_LOG_BACKEND_SPIN_COUNT > 0 && backoff_count <= FN_LOG_BACKEND_SPIN_COUNT)
+                {
+                    // busy-spin 阶段
+                }
+                else if (FN_LOG_BACKEND_YIELD_COUNT > 0 && backoff_count <= FN_LOG_BACKEND_SPIN_COUNT + FN_LOG_BACKEND_YIELD_COUNT)
+                {
+                    std::this_thread::yield();
+                }
+                else
+                {
+                    std::this_thread::sleep_for(std::chrono::microseconds(FN_LOG_BACKEND_SLEEP_US));
+                }
+            }
+            else
+            {
+                backoff_count = 0;
             }
             
         } while (channel.channel_type_ == CHANNEL_ASYNC 
@@ -327,16 +344,16 @@ namespace FNLog
 #endif
     inline bool BlockInput(Logger& logger, int channel_id, int priority, int category, long long identify)
     {
-        if (logger.shm_ == NULL || channel_id >= logger.shm_->channel_size_ || channel_id < 0)
+        if (FN_LOG_UNLIKELY(logger.shm_ == NULL || channel_id >= logger.shm_->channel_size_ || channel_id < 0))
         {
             return true;
         }
-        if (logger.logger_state_ != LOGGER_STATE_RUNNING)
+        if (FN_LOG_UNLIKELY(logger.logger_state_ != LOGGER_STATE_RUNNING))
         {
             return true;
         }
         Channel& channel = logger.shm_->channels_[channel_id];
-        if (channel.channel_state_ != CHANNEL_STATE_RUNNING)
+        if (FN_LOG_UNLIKELY(channel.channel_state_ != CHANNEL_STATE_RUNNING))
         {
             return true;
         }
@@ -344,7 +361,12 @@ namespace FNLog
         {
             return true;
         }
-        if (priority >= PRIORITY_MAX)
+
+        if (priority < channel.min_priority_)
+        {
+            return true;
+        }
+        if (FN_LOG_UNLIKELY(priority >= PRIORITY_MAX))
         {
             static_assert(PRIORITY_MAX == PRIORITY_FATAL + 1, "safety priority to record channel log CHANNEL_LOG_PRIORITY");
             priority = PRIORITY_FATAL;
@@ -391,12 +413,10 @@ namespace FNLog
             }
             long long field_begin_category = fields[FNLog::DEVICE_CFG_CATEGORY].load(std::memory_order_relaxed);
             long long field_category_count = fields[FNLog::DEVICE_CFG_CATEGORY_EXTEND].load(std::memory_order_relaxed);
-            unsigned long long field_category_mask = (unsigned long long)fields[FNLog::DEVICE_CFG_CATEGORY_MASK].load(std::memory_order_relaxed);
             long long field_begin_identify = fields[FNLog::DEVICE_CFG_IDENTIFY].load(std::memory_order_relaxed);
             long long field_identify_count = fields[FNLog::DEVICE_CFG_IDENTIFY_EXTEND].load(std::memory_order_relaxed);
-            unsigned long long field_identify_mask = (unsigned long long)fields[FNLog::DEVICE_CFG_IDENTIFY_MASK].load(std::memory_order_relaxed);
 
-
+ 
             if (field_category_count > 0 && (category < field_begin_category || category >= field_begin_category + field_category_count))
             {
                 continue;
@@ -405,13 +425,21 @@ namespace FNLog
             {
                 continue;
             }
-            if (field_category_mask &&  (field_category_mask & ((1ULL) << (unsigned int)category)) == 0)
+            if (field_category_count > 0)
             {
-                continue;
+                unsigned long long field_category_mask = (unsigned long long)fields[FNLog::DEVICE_CFG_CATEGORY_MASK].load(std::memory_order_relaxed);
+                if (field_category_mask && (field_category_mask & ((1ULL) << (unsigned int)category)) == 0)
+                {
+                    continue;
+                }
             }
-            if (field_identify_mask &&  (field_identify_mask & ((1ULL) << (unsigned int)identify)) == 0)
+            if (field_identify_count > 0)
             {
-                continue;
+                unsigned long long field_identify_mask = (unsigned long long)fields[FNLog::DEVICE_CFG_IDENTIFY_MASK].load(std::memory_order_relaxed);
+                if (field_identify_mask && (field_identify_mask & ((1ULL) << (unsigned int)identify)) == 0)
+                {
+                    continue;
+                }
             }
             need_write = true;
             break;

@@ -88,6 +88,15 @@
 #endif
 
 
+#if defined(__GNUC__) || defined(__clang__)
+#define FN_LOG_LIKELY(x)   __builtin_expect(!!(x), 1)
+#define FN_LOG_UNLIKELY(x) __builtin_expect(!!(x), 0)
+#else
+#define FN_LOG_LIKELY(x)   (x)
+#define FN_LOG_UNLIKELY(x) (x)
+#endif
+
+
 namespace FNLog
 {
     static const int CHUNK_SIZE = 128;
