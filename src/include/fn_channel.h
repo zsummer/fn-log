@@ -99,7 +99,7 @@ namespace FNLog
     {
         Channel& channel = logger.shm_->channels_[channel_id];
         RingBuffer& ring_buffer = logger.shm_->ring_buffers_[channel_id];
-        int backoff_count = 0; // 任务3：自适应退避计数器
+        int backoff_count = 0; 
         do
         {
             int flush_count = 0;
@@ -260,7 +260,7 @@ namespace FNLog
                 backoff_count++;
                 if (FN_LOG_BACKEND_SPIN_COUNT > 0 && backoff_count <= FN_LOG_BACKEND_SPIN_COUNT)
                 {
-                    // busy-spin 阶段
+                    // busy-spin  
                 }
                 else if (FN_LOG_BACKEND_YIELD_COUNT > 0 && backoff_count <= FN_LOG_BACKEND_SPIN_COUNT + FN_LOG_BACKEND_YIELD_COUNT)
                 {

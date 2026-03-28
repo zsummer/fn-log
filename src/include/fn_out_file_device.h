@@ -331,7 +331,8 @@ namespace FNLog
         {
             return;
         }
-        writer.write(log.content_, log.content_len_);
+        WriteMode wm = (log.priority_ >= PRIORITY_ALARM) ? WRITE_FLUSH : WRITE_TRANS;
+        writer.write(log.content_, log.content_len_, wm);
         AtomicIncDeviceLog(channel, device_id, DEVICE_LOG_TOTAL_WRITE_LINE, 1);
         AtomicIncDeviceLog(channel, device_id, DEVICE_LOG_TOTAL_WRITE_BYTE, log.content_len_);
         AtomicIncDeviceLog(channel, device_id, DEVICE_LOG_CUR_FILE_SIZE, log.content_len_);
