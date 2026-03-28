@@ -1,11 +1,11 @@
 /*
  * benchmark_perf.cpp
- * 简单性能基准测试：用优化前后版本分别运行对比
- * 测量：单线程吞吐量、多线程吞吐量、热路径延迟分位数
+
  */
 
-#define FN_LOG_MAX_LOG_SIZE 1000
-#define FN_LOG_MAX_LOG_QUEUE_SIZE 100000
+ 
+#define FN_LOG_MAX_LOG_SIZE 8000 
+#define FN_LOG_MAX_LOG_QUEUE_SIZE 100000 
 #include "fn_log.h"
 
 #include <algorithm>
@@ -99,6 +99,15 @@ void bench_throughput(int thread_count)
     printf("[Throughput] threads=%-2d  lines=%-12lld  %.0f lines/sec\n",
            thread_count, lines, (double)lines / sec);
 }
+
+/*
+optimeze todo: 
+    1. rdtsc 
+    2. head log delay format and write to transit (use some meta data) 
+    3. all delay format support 
+    4. arena MPSC (like SPSC)  
+    5. meta and log content separate
+*/
 
 int main(int argc, char* argv[])
 {
